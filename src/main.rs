@@ -90,6 +90,7 @@ impl<'a> RawStl<'a> {
     }
 }
 
+#[derive(Copy, Clone)]
 struct StlKey(*const u8);
 
 impl StlKey {
@@ -164,10 +165,9 @@ impl<'a> Chunk<'a> {
         } else {
             let mut remap: FnvHashMap<u32, u32> = Default::default();
             for k in other.set.drain() {
-                if let Some(v) = self.set.get(&k) {
+                if !self.set.insert(k) {
+                    let v = self.set.get(&k).unwrap();
                     remap.insert(stl.index(&k), stl.index(v));
-                } else {
-                    self.set.insert(k);
                 }
             }
 
