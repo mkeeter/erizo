@@ -1,5 +1,6 @@
 extern crate nalgebra as na;
 
+use crossbeam_utils::thread;
 use failure::{Error, err_msg};
 use fnv::{FnvHashSet, FnvHashMap};
 use nom::types::CompleteByteSlice;
@@ -40,7 +41,9 @@ named!(parse_header<&[u8], (&[u8], u32)>,
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#[derive(Copy, Clone)]
 struct RawStl<'a>(&'a [u8]);
+
 impl<'a> RawStl<'a> {
     const HEADER_SIZE: usize = 80;
     const VEC_SIZE: usize = 3 * size_of::<f32>();
@@ -116,41 +119,38 @@ type StlVertexSet = FnvHashSet<StlKey>;
 type StlVertexMap = FnvHashMap<u32, u32>;
 type StlFoldType = (StlVertexSet, StlVertexMap);
 
+/*
+ *  Runs on a particular set of triangles, writing them into the
+ *  given array and returning the vertex hashset.
+ *
+ *  range is in terms of global vertex indices
+ *  vertices is a local slice of the mutable vertices array
+ */
+fn build_vertex_set(stl: &RawStl, vertices: &mut [u32],
+                    range: std::ops::Range<u32>) -> StlVertexSet
+{
+    let mut set = StlVertexSet::default();
+    for (i, v) in range.into_iter().zip(vertices.iter_mut()) {
+        let key = stl.key(i);
+        *v = if let Some(ptr) = set.get(&key) {
+            stl.index(ptr)
+        } else {
+            set.insert(key);
+            i
+        };
+    }
+    set
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Chunk<'a> {
-    stl: &'a RawStl<'a>,
-    // Set of unique vertices within this chunk of the model
+struct Chunk {
     set: StlVertexSet,
     remap: StlVertexMap,
 }
 
-impl<'a> Chunk<'a> {
-    fn empty(stl: &'a RawStl) -> Self {
-        Chunk { stl: stl, set: StlVertexSet::default(), remap: StlVertexMap::default() }
-    }
-    /*
-     *  Runs on a particular set of triangles, writing them into the
-     *  given array and returning the vertex hashset.
-     *
-     *  range is in terms of global vertex indices
-     *  vertices is a local slice of the mutable vertices array
-     */
-    fn build(stl: &'a RawStl, vertices: &mut [u32], indexes: &[u32]) -> Self
-    {
-        let mut set = StlVertexSet::default();
-        for (i, v) in indexes.iter().zip(vertices.iter_mut()) {
-            let key = stl.key(*i);
-            *v = if let Some(ptr) = set.get(&key) {
-                stl.index(ptr)
-            } else {
-                set.insert(key);
-                *i
-            };
-        }
-        Chunk { stl: stl, set: set, remap: StlVertexMap::default() }
-    }
-
+/*
+impl Chunk {
     fn merge(mut self, other: Self) -> Self {
         for k in other.set.into_iter() {
             if let Some(v) = self.set.get(&k) {
@@ -169,6 +169,7 @@ impl<'a> Chunk<'a> {
         self
     }
 }
+*/
 
 fn main() -> Result<(), Error> {
     let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
@@ -185,6 +186,30 @@ fn main() -> Result<(), Error> {
     // This is our buffer of raw vertex indices
     let mut vertices = Vec::new();
     vertices.resize(vertex_count as usize, 0);
+
+    // We split into one chunk per thread
+    let n = num_cpus::get();
+    let chunk_size = vertex_count as usize / n;
+    thread::scope(|s| {
+        let mut workers = vec![];
+        for (i, vs) in (0..n).into_iter()
+            .zip(vertices.as_mut_slice().chunks_mut(chunk_size))
+        {
+            let start = (i * chunk_size) as u32;
+            let end = if i == n - 1 {
+                vertex_count as u32
+            } else {
+                start + chunk_size as u32
+            };
+            workers.push(s.spawn(move |_|
+                build_vertex_set(&stl, vs, start..end)));
+        }
+
+        for w in workers {
+            let s = w.join().unwrap();
+            println!("{:?}", s.len());
+        }
+    });
 
     // The fold function takes a single vertex and adds it to a pre-existing
     // set, saving the new index into the vertex array.
@@ -221,6 +246,7 @@ fn main() -> Result<(), Error> {
         (sa, ra)
      };
 
+    /*
     let out = (0..vertex_count).into_iter().collect::<Vec<_>>().par_chunks(1000)
         .zip(vertices.par_chunks_mut(1000));
 
@@ -231,6 +257,7 @@ fn main() -> Result<(), Error> {
         .reduce(|| Chunk::empty(&stl), Chunk::merge);
 
     println!("out len: {:?}", out.0.len());
+        */
     //println!("{:?}", vertices);
 
     /*
