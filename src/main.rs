@@ -1,6 +1,5 @@
 extern crate nalgebra as na;
 
-use crossbeam_utils::thread;
 use failure::{Error, err_msg};
 use fnv::{FnvHashSet, FnvHashMap};
 use nom::types::CompleteByteSlice;
@@ -119,8 +118,6 @@ unsafe impl std::marker::Send for StlKey { }
 
 type StlVertexSet = FnvHashSet<StlKey>;
 type StlVertexMap = FnvHashMap<u32, u32>;
-type StlFoldType = (StlVertexSet, StlVertexMap);
-
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -144,6 +141,10 @@ impl Chunk {
         }
     }
 
+    fn is_empty(&self) -> bool {
+        self.set.is_empty() && self.remap.is_empty()
+    }
+
     fn build(range: std::ops::Range<u32>,
              vertices: &mut [u32],
              stl: &RawStl) -> Self
@@ -163,7 +164,14 @@ impl Chunk {
         out
     }
 
-    fn merge(mut self, other: Self, stl: &RawStl) -> Self {
+    fn merge(mut self, mut other: Self, stl: &RawStl) -> Self {
+        // Special-casing empty objects
+        if self.is_empty() {
+            return other;
+        } else if other.is_empty() {
+            return self;
+        }
+
         for k in other.set.into_iter() {
             if let Some(v) = self.set.get(&k) {
                 self.remap.insert(stl.index(&k), stl.index(v));
@@ -183,8 +191,8 @@ impl Chunk {
 }
 
 fn main() -> Result<(), Error> {
-    //let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
-    let file = File::open("broken.stl")?;
+    let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
+    //let file = File::open("broken.stl")?;
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     println!("Loading stl");
 
@@ -204,7 +212,7 @@ fn main() -> Result<(), Error> {
 
     // It's cleaner to do this as a fold + reduce, but that's a lot
     // slower, because it creates many intermediate structures which
-    // have be merged.
+    // have be merged (instead of one per physical thread).
     let out = (0..n).into_par_iter()
         .zip(vertices.as_mut_slice()
                      .par_chunks_mut(chunk_size))
@@ -214,60 +222,8 @@ fn main() -> Result<(), Error> {
             Chunk::build(start..end, vs, &stl)
         })
         .reduce(|| Chunk::empty(), |a, b| a.merge(b, &stl));
+    println!("Unique vertices: {}", out.set.len());
+    println!("Remap operations: {}", out.remap.len());
 
-    println!("vertices: {}, merge: {}", out.set.len(), out.remap.len());
-        /*
-    thread::scope(|s| {
-        let mut workers = vec![];
-        for (i, vs) in (0..n).into_iter()
-            .zip(vertices.as_mut_slice().chunks_mut(chunk_size))
-        {
-            let start = (i * chunk_size) as u32;
-            let end = if i == n - 1 {
-                vertex_count as u32
-            } else {
-                start + chunk_size as u32
-            };
-            workers.push(s.spawn(move |_|
-                build_vertex_set(&stl, vs, start..end)));
-        }
-
-        for w in workers {
-            let s = w.join().unwrap();
-            println!("{:?}", s.len());
-        }
-    });
-    */
-
-
-    /*
-    let out = (0..vertex_count).into_iter().collect::<Vec<_>>().par_chunks(1000)
-        .zip(vertices.par_chunks_mut(1000));
-
-    let out = (0..vertex_count).into_par_iter()
-        .zip(vertices.par_iter_mut())
-        .chunks(1000)
-        .map(|(i, v)| Chunk::build(&stl, &v, &i))
-        .reduce(|| Chunk::empty(&stl), Chunk::merge);
-
-    println!("out len: {:?}", out.0.len());
-        */
-    //println!("{:?}", vertices);
-
-    /*
-        for (i, v) in range.zip(vertices.iter_mut()) {
-            let key = stl.key(i);
-            *v = if let Some(ptr) = set.get(&key) {
-                stl.index(ptr)
-            } else {
-                set.insert(key);
-                i
-            };
-            */
-
-
-    //let out = Chunk::run(&stl, vertices.as_mut_slice(), 0..vertex_count);
-    //println!("{:?}", vertices);
-    //println!("total vertex count: {}", out.set.len());
     Ok(())
 }
