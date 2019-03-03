@@ -1,10 +1,11 @@
 extern crate nalgebra as na;
 
 use failure::{Error, err_msg};
-use fnv::FnvHashSet;
+use fnv::{FnvHashSet, FnvHashMap};
 use nom::types::CompleteByteSlice;
 use nom::{le_f32, le_u32, named, do_parse, call, take};
 use memmap::MmapOptions;
+use rayon::prelude::*;
 
 use std::collections::HashSet;
 use std::cmp::Ordering;
@@ -41,15 +42,49 @@ named!(parse_header<&[u8], (&[u8], u32)>,
 
 struct RawStl<'a>(&'a [u8]);
 impl<'a> RawStl<'a> {
+    const HEADER_SIZE: usize = 80;
+    const VEC_SIZE: usize = 3 * size_of::<f32>();
+    const TRIANGLE_SIZE: usize = 4 * Self::VEC_SIZE + size_of::<u16>();
+
     fn key(&self, v: u32) -> StlKey {
         let triangle = (v / 3) as usize;
         let vertex = (v % 3) as usize;
-        let i = 80
+        let i =
+            // Header
+            Self::HEADER_SIZE
+            // Number of triangles
             + size_of::<u32>()
-            + triangle * (3 * 4 * size_of::<f32>() + size_of::<u16>())
-            + 3 * size_of::<f32>()
+            // Skipped triangles
+            + triangle * Self::TRIANGLE_SIZE
+            // Normal
+            + Self::VEC_SIZE
+            // Skipped vertices
             + vertex * 3 * size_of::<f32>();
         StlKey(self.0[i..].as_ptr())
+    }
+
+    fn index(&self, k: &StlKey) -> u32 {
+        // Find the pointer offset in bytes
+        let mut diff = k.0 as usize - self.0.as_ptr() as usize;
+
+        // Skip the header + triangle count
+        diff -= Self::HEADER_SIZE + size_of::<u32>();
+
+        // Pick out which triangle this vertex lives in
+        let tri = diff / Self::TRIANGLE_SIZE;
+        diff -= tri * Self::TRIANGLE_SIZE;
+
+        // skip the normal
+        diff -= Self::VEC_SIZE;
+
+        let vert = diff / Self::VEC_SIZE;
+        assert!(vert < 3);
+
+        (tri * 3 + vert) as u32
+    }
+
+    fn triangle_count(&self) -> u32 {
+        le_u32(&self.0[Self::HEADER_SIZE..]).unwrap().1
     }
 }
 
@@ -77,45 +112,27 @@ impl Hash for StlKey {
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
-struct Worker<'a> {
-    chunk: &'a [u8],
-    verts: HashMap<[u8; 12], u32>,
-    tris: &'a mut [Vec3i],
-    vert_count: u32,
-}
-
-impl <'a> Worker <'a> {
-    fn new(chunk: &'a [u8], tris: &'a mut [Vec3i]) -> Worker<'a> {
-        Worker {
-            chunk: chunk,
-            verts: HashMap::new(),
-            tris: tris,
-            vert_count: 0,
-        }
+ *  Runs on a particular set of triangles, writing them into the
+ *  given array and returning the vertex hashset.
+ *
+ *  range is in terms of global vertex indices
+ *  vertices is a local slice of the mutable vertices array
+ */
+fn run(stl: &RawStl, vertices: &mut [u32],
+       range: std::ops::Range<u32>) -> FnvHashSet<StlKey>
+{
+    let mut set: FnvHashSet<StlKey> = FnvHashSet::default();
+    for (i, v) in range.zip(vertices.iter_mut()) {
+        let key = stl.key(i);
+        *v = if let Some(ptr) = set.get(&key) {
+            stl.index(ptr)
+        } else {
+            set.insert(key);
+            i
+        };
     }
-
-    fn run(&mut self) {
-        let mut i = 0;
-        let mut key: [u8; 12] = [0; 12];
-        let mut tri: [u32; 3] = [0; 3];
-        loop {
-            i += 12; // normal
-            for t in 0..3 {
-                key.copy_from_slice(&self.chunk[i..(i + 12)]);
-                /*
-                tri[t] = self.verts.entry(key)
-                    .or_insert_with(|| {
-                        let v = self.vert_count;
-                        self.vert_count += 1;
-                        v}).clone();
-                        */
-                i += 12; // triangle
-            }
-            i += 2; // array
-        }
-    }
+    set
 }
-*/
 
 fn main() -> Result<(), Error> {
     let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
@@ -123,17 +140,17 @@ fn main() -> Result<(), Error> {
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     println!("Loading stl");
 
-    let header = parse_header(&mmap)
-        .map_err(|s| err_msg(format!("{:?}", s)))?;
-    let triangle_count = (header.1).1;
+    let stl = RawStl(&mmap);
+    let triangle_count = stl.triangle_count();
     println!("Triangle count: {}", triangle_count);
 
-    let stl = RawStl(&mmap);
-    let mut set: HashSet<StlKey, _> = FnvHashSet::default();
-    for v in 0..triangle_count * 3 {
-        set.insert(stl.key(v));
-    }
-    println!("total vertex count: {}", set.len());
+    let vertex_count = triangle_count * 3;
 
+    // This is our buffer of raw vertex indices
+    let mut vertices = Vec::new();
+    vertices.resize(vertex_count as usize, 0);
+
+    let set = run(&stl, vertices.as_mut_slice(), 0..vertex_count);
+    println!("total vertex count: {}", set.len());
     Ok(())
 }
