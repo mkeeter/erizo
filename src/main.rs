@@ -90,7 +90,6 @@ impl<'a> RawStl<'a> {
     }
 }
 
-#[derive(Debug)]
 struct StlKey(*const u8);
 
 impl StlKey {
@@ -116,14 +115,9 @@ unsafe impl std::marker::Send for StlKey { }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type StlVertexSet = FnvHashSet<StlKey>;
-type StlVertexMap = FnvHashMap<u32, u32>;
-
-////////////////////////////////////////////////////////////////////////////////
-
-struct Chunk {
-    set: StlVertexSet,
-    remap: StlVertexMap,
+struct Chunk<'a> {
+    set: FnvHashSet<StlKey>,
+    vs: Vec<&'a mut [u32]>,
 }
 
 /*
@@ -133,20 +127,20 @@ struct Chunk {
  *  range is in terms of global vertex indices
  *  vertices is a local slice of the mutable vertices array
  */
-impl Chunk {
+impl<'a> Chunk<'a> {
     fn empty() -> Self {
         Self {
-            set: StlVertexSet::default(),
-            remap: StlVertexMap::default(),
+            set: Default::default(),
+            vs: vec![],
         }
     }
 
     fn is_empty(&self) -> bool {
-        self.set.is_empty() && self.remap.is_empty()
+        self.set.is_empty()
     }
 
     fn build(range: std::ops::Range<u32>,
-             vertices: &mut [u32],
+             vertices: &'a mut [u32],
              stl: &RawStl) -> Self
     {
         assert!(range.end - range.start == vertices.len() as u32);
@@ -161,38 +155,43 @@ impl Chunk {
                 i
             };
         }
+        out.vs.push(vertices);
         out
     }
 
     fn merge(mut self, mut other: Self, stl: &RawStl) -> Self {
         // Special-casing empty objects
         if self.is_empty() {
-            return other;
+            other
         } else if other.is_empty() {
-            return self;
-        }
+            self
+        } else {
+            let mut remap: FnvHashMap<u32, u32> = Default::default();
+            for k in other.set.into_iter() {
+                if let Some(v) = self.set.get(&k) {
+                    remap.insert(stl.index(&k), stl.index(v));
+                } else {
+                    self.set.insert(k);
+                }
+            }
 
-        for k in other.set.into_iter() {
-            if let Some(v) = self.set.get(&k) {
-                self.remap.insert(stl.index(&k), stl.index(v));
-            } else {
-                self.set.insert(k);
+            // Steal all of the other chunk's remapped vertices
+            for vs in other.vs.drain(..) {
+                for v in vs.iter_mut() {
+                    if let Some(w) = remap.get(v) {
+                        *v = *w;
+                    }
+                }
+                self.vs.push(vs);
             }
+            self
         }
-        for (orig, remapped) in other.remap.into_iter() {
-            if let Some(v) = self.remap.get(&remapped) {
-                self.remap.insert(orig, *v);
-            } else {
-                self.remap.insert(orig, remapped);
-            }
-        }
-        self
     }
 }
 
 fn main() -> Result<(), Error> {
-    let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
-    //let file = File::open("broken.stl")?;
+    //let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
+    let file = File::open("cube.stl")?;
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     println!("Loading stl");
 
@@ -223,7 +222,8 @@ fn main() -> Result<(), Error> {
         })
         .reduce(|| Chunk::empty(), |a, b| a.merge(b, &stl));
     println!("Unique vertices: {}", out.set.len());
-    println!("Remap operations: {}", out.remap.len());
+
+    println!("{:?}", vertices);
 
     Ok(())
 }
