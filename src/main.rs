@@ -88,6 +88,7 @@ impl<'a> RawStl<'a> {
     }
 }
 
+#[derive(Debug)]
 struct StlKey(*const u8);
 
 impl StlKey {
@@ -109,29 +110,61 @@ impl Hash for StlKey {
     }
 }
 
+unsafe impl std::marker::Send for StlKey { }
+
+type StlVertexSet = FnvHashSet<StlKey>;
+type StlVertexMap = FnvHashMap<u32, u32>;
+type StlFoldType = (StlVertexSet, StlVertexMap);
+
 ////////////////////////////////////////////////////////////////////////////////
 
-/*
- *  Runs on a particular set of triangles, writing them into the
- *  given array and returning the vertex hashset.
- *
- *  range is in terms of global vertex indices
- *  vertices is a local slice of the mutable vertices array
- */
-fn run(stl: &RawStl, vertices: &mut [u32],
-       range: std::ops::Range<u32>) -> FnvHashSet<StlKey>
-{
-    let mut set: FnvHashSet<StlKey> = FnvHashSet::default();
-    for (i, v) in range.zip(vertices.iter_mut()) {
-        let key = stl.key(i);
-        *v = if let Some(ptr) = set.get(&key) {
-            stl.index(ptr)
-        } else {
-            set.insert(key);
-            i
-        };
+struct Chunk<'a> {
+    stl: &'a RawStl<'a>,
+    // Set of unique vertices within this chunk of the model
+    set: StlVertexSet,
+    remap: StlVertexMap,
+}
+
+impl<'a> Chunk<'a> {
+    /*
+     *  Runs on a particular set of triangles, writing them into the
+     *  given array and returning the vertex hashset.
+     *
+     *  range is in terms of global vertex indices
+     *  vertices is a local slice of the mutable vertices array
+     */
+    fn build(stl: &'a RawStl, vertices: &mut [u32], indexes: &[u32]) -> Self
+    {
+        let mut set = StlVertexSet::default();
+        for (i, v) in indexes.iter().zip(vertices.iter_mut()) {
+            let key = stl.key(*i);
+            *v = if let Some(ptr) = set.get(&key) {
+                stl.index(ptr)
+            } else {
+                set.insert(key);
+                *i
+            };
+        }
+        Chunk { stl: stl, set: set, remap: StlVertexMap::default() }
     }
-    set
+
+    fn merge(mut self, other: Self) -> Self {
+        for k in other.set.into_iter() {
+            if let Some(v) = self.set.get(&k) {
+                self.remap.insert(self.stl.index(&k), self.stl.index(v));
+            } else {
+                self.set.insert(k);
+            }
+        }
+        for (orig, remapped) in other.remap.into_iter() {
+            if let Some(v) = self.remap.get(&remapped) {
+                self.remap.insert(orig, *v);
+            } else {
+                self.remap.insert(orig, remapped);
+            }
+        }
+        self
+    }
 }
 
 fn main() -> Result<(), Error> {
@@ -150,7 +183,67 @@ fn main() -> Result<(), Error> {
     let mut vertices = Vec::new();
     vertices.resize(vertex_count as usize, 0);
 
-    let set = run(&stl, vertices.as_mut_slice(), 0..vertex_count);
-    println!("total vertex count: {}", set.len());
+    // The fold function takes a single vertex and adds it to a pre-existing
+    // set, saving the new index into the vertex array.
+    let fold_fn =
+    |mut set: StlVertexSet, (i, v): (u32, &mut u32) | -> StlVertexSet {
+        let key = stl.key(i);
+        *v = if let Some(ptr) = set.get(&key) {
+            stl.index(ptr)
+        } else {
+            set.insert(key);
+            i
+        };
+        set
+    };
+
+    // The reduce function combines a pair of vertex sets and remapping maps
+    let reduce_fn =
+    |(mut sa, mut ra): StlFoldType, (sb, rb): StlFoldType| -> StlFoldType  {
+        println!("{}, {}", sa.len(), sb.len());
+        for k in sb.into_iter() {
+            if let Some(v) = sa.get(&k) {
+                ra.insert(stl.index(&k), stl.index(v));
+            } else {
+                sa.insert(k);
+            }
+        }
+        for (orig, remapped) in rb.into_iter() {
+            if let Some(v) = ra.get(&remapped) {
+                ra.insert(orig, *v);
+            } else {
+                ra.insert(orig, remapped);
+            }
+        }
+        (sa, ra)
+     };
+
+    let out = (0..vertex_count).into_iter().collect::<Vec<_>>().par_chunks(1000)
+        .zip(vertices.par_chunks_mut(1000));
+
+    let out = (0..vertex_count).into_par_iter()
+        .zip(vertices.par_iter_mut())
+        .fold(|| StlVertexSet::default(), fold_fn)
+        .map(|s| (s, StlVertexMap::default()))
+        .reduce(|| StlFoldType::default(), reduce_fn);
+
+    println!("out len: {:?}", out.0.len());
+    //println!("{:?}", vertices);
+
+    /*
+        for (i, v) in range.zip(vertices.iter_mut()) {
+            let key = stl.key(i);
+            *v = if let Some(ptr) = set.get(&key) {
+                stl.index(ptr)
+            } else {
+                set.insert(key);
+                i
+            };
+            */
+
+
+    //let out = Chunk::run(&stl, vertices.as_mut_slice(), 0..vertex_count);
+    //println!("{:?}", vertices);
+    //println!("total vertex count: {}", out.set.len());
     Ok(())
 }
