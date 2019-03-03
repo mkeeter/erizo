@@ -219,5 +219,11 @@ fn main() -> Result<(), Error> {
         .reduce(|| Chunk::empty(), |a, b| a.merge(b, &stl));
     println!("Unique vertices: {}", out.set.len());
 
+    // This is memory-inefficient but fast.
+    let mut remap = vec![0; vertex_count as usize];
+    for (u, v) in out.set.iter().enumerate() {
+        remap[stl.index(v) as usize] = u;
+    }
+
     Ok(())
 }
