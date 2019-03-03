@@ -120,13 +120,6 @@ struct Chunk<'a> {
     vs: Vec<&'a mut [u32]>,
 }
 
-/*
- *  Runs on a particular set of triangles, writing them into the
- *  given array and returning the vertex hashset.
- *
- *  range is in terms of global vertex indices
- *  vertices is a local slice of the mutable vertices array
- */
 impl<'a> Chunk<'a> {
     fn empty() -> Self {
         Self {
@@ -139,12 +132,15 @@ impl<'a> Chunk<'a> {
         self.set.is_empty()
     }
 
+    /*
+     *  range is in terms of global vertex indices
+     *  vertices is a local slice of the mutable vertices array
+     */
     fn build(range: std::ops::Range<u32>,
              vertices: &'a mut [u32],
              stl: &RawStl) -> Self
     {
-        assert!(range.end - range.start == vertices.len() as u32);
-        println!("{:?}", range);
+        assert!(range.len() == vertices.len());
         let mut out = Self::empty();
         for (i, v) in range.into_iter().zip(vertices.iter_mut()) {
             let key = stl.key(i);
@@ -167,7 +163,7 @@ impl<'a> Chunk<'a> {
             self
         } else {
             let mut remap: FnvHashMap<u32, u32> = Default::default();
-            for k in other.set.into_iter() {
+            for k in other.set.drain() {
                 if let Some(v) = self.set.get(&k) {
                     remap.insert(stl.index(&k), stl.index(v));
                 } else {
@@ -190,8 +186,8 @@ impl<'a> Chunk<'a> {
 }
 
 fn main() -> Result<(), Error> {
-    //let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
-    let file = File::open("cube.stl")?;
+    let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
+    //let file = File::open("cube.stl")?;
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     println!("Loading stl");
 
@@ -222,8 +218,6 @@ fn main() -> Result<(), Error> {
         })
         .reduce(|| Chunk::empty(), |a, b| a.merge(b, &stl));
     println!("Unique vertices: {}", out.set.len());
-
-    println!("{:?}", vertices);
 
     Ok(())
 }
