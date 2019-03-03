@@ -163,19 +163,31 @@ impl<'a> Chunk<'a> {
         } else if other.is_empty() {
             self
         } else {
-            let mut remap: FnvHashMap<u32, u32> = Default::default();
+            // We build an array to quickly check whether to remap
+            let mut min = u32::max_value();
+            let mut remap = {
+                let mut max = u32::min_value();
+                for k in other.set.iter() {
+                    let i = stl.index(k);
+                    if i < min { min = i; }
+                    if i > max { max = i; }
+                }
+                vec![0; (max - min) as usize + 1]
+            };
+
             for k in other.set.drain() {
                 if !self.set.insert(k) {
                     let v = self.set.get(&k).unwrap();
-                    remap.insert(stl.index(&k), stl.index(v));
+                    remap[(stl.index(&k) - min) as usize] = stl.index(v) + 1;
                 }
             }
 
             // Steal all of the other chunk's remapped vertices
             for vs in other.vs.drain(..) {
                 for v in vs.iter_mut() {
-                    if let Some(w) = remap.get(v) {
-                        *v = *w;
+                    let w = remap[(*v - min) as usize];
+                    if w != 0 {
+                        *v = w - 1;
                     }
                 }
                 self.vs.push(vs);
