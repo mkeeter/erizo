@@ -126,6 +126,9 @@ struct Chunk<'a> {
 }
 
 impl<'a> Chunk<'a> {
+    fn empty(stl: &'a RawStl) -> Self {
+        Chunk { stl: stl, set: StlVertexSet::default(), remap: StlVertexMap::default() }
+    }
     /*
      *  Runs on a particular set of triangles, writing them into the
      *  given array and returning the vertex hashset.
@@ -223,9 +226,9 @@ fn main() -> Result<(), Error> {
 
     let out = (0..vertex_count).into_par_iter()
         .zip(vertices.par_iter_mut())
-        .fold(|| StlVertexSet::default(), fold_fn)
-        .map(|s| (s, StlVertexMap::default()))
-        .reduce(|| StlFoldType::default(), reduce_fn);
+        .chunks(1000)
+        .map(|(i, v)| Chunk::build(&stl, &v, &i))
+        .reduce(|| Chunk::empty(&stl), Chunk::merge);
 
     println!("out len: {:?}", out.0.len());
     //println!("{:?}", vertices);
