@@ -115,32 +115,12 @@ impl Hash for StlKey {
 
 unsafe impl std::marker::Send for StlKey { }
 
+////////////////////////////////////////////////////////////////////////////////
+
 type StlVertexSet = FnvHashSet<StlKey>;
 type StlVertexMap = FnvHashMap<u32, u32>;
 type StlFoldType = (StlVertexSet, StlVertexMap);
 
-/*
- *  Runs on a particular set of triangles, writing them into the
- *  given array and returning the vertex hashset.
- *
- *  range is in terms of global vertex indices
- *  vertices is a local slice of the mutable vertices array
- */
-fn build_vertex_set(stl: &RawStl, vertices: &mut [u32],
-                    range: std::ops::Range<u32>) -> StlVertexSet
-{
-    let mut set = StlVertexSet::default();
-    for (i, v) in range.into_iter().zip(vertices.iter_mut()) {
-        let key = stl.key(i);
-        *v = if let Some(ptr) = set.get(&key) {
-            stl.index(ptr)
-        } else {
-            set.insert(key);
-            i
-        };
-    }
-    set
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -150,11 +130,43 @@ struct Chunk {
 }
 
 /*
+ *  Runs on a particular set of triangles, writing them into the
+ *  given array and returning the vertex hashset.
+ *
+ *  range is in terms of global vertex indices
+ *  vertices is a local slice of the mutable vertices array
+ */
 impl Chunk {
-    fn merge(mut self, other: Self) -> Self {
+    fn empty() -> Self {
+        Self {
+            set: StlVertexSet::default(),
+            remap: StlVertexMap::default(),
+        }
+    }
+
+    fn build(range: std::ops::Range<u32>,
+             vertices: &mut [u32],
+             stl: &RawStl) -> Self
+    {
+        assert!(range.end - range.start == vertices.len() as u32);
+        println!("{:?}", range);
+        let mut out = Self::empty();
+        for (i, v) in range.into_iter().zip(vertices.iter_mut()) {
+            let key = stl.key(i);
+            *v = if let Some(ptr) = out.set.get(&key) {
+                stl.index(ptr)
+            } else {
+                out.set.insert(key);
+                i
+            };
+        }
+        out
+    }
+
+    fn merge(mut self, other: Self, stl: &RawStl) -> Self {
         for k in other.set.into_iter() {
             if let Some(v) = self.set.get(&k) {
-                self.remap.insert(self.stl.index(&k), self.stl.index(v));
+                self.remap.insert(stl.index(&k), stl.index(v));
             } else {
                 self.set.insert(k);
             }
@@ -169,11 +181,10 @@ impl Chunk {
         self
     }
 }
-*/
 
 fn main() -> Result<(), Error> {
-    let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
-    //let file = File::open("cube.stl")?;
+    //let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
+    let file = File::open("broken.stl")?;
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     println!("Loading stl");
 
@@ -189,7 +200,23 @@ fn main() -> Result<(), Error> {
 
     // We split into one chunk per thread
     let n = num_cpus::get();
-    let chunk_size = vertex_count as usize / n;
+    let chunk_size = (vertex_count as usize + n - 1) / n;
+
+    // It's cleaner to do this as a fold + reduce, but that's a lot
+    // slower, because it creates many intermediate structures which
+    // have be merged.
+    let out = (0..n).into_par_iter()
+        .zip(vertices.as_mut_slice()
+                     .par_chunks_mut(chunk_size))
+        .map(|(i, vs)| {
+            let start = (i * chunk_size) as u32;
+            let end = start + vs.len() as u32;
+            Chunk::build(start..end, vs, &stl)
+        })
+        .reduce(|| Chunk::empty(), |a, b| a.merge(b, &stl));
+
+    println!("vertices: {}, merge: {}", out.set.len(), out.remap.len());
+        /*
     thread::scope(|s| {
         let mut workers = vec![];
         for (i, vs) in (0..n).into_iter()
@@ -210,41 +237,8 @@ fn main() -> Result<(), Error> {
             println!("{:?}", s.len());
         }
     });
+    */
 
-    // The fold function takes a single vertex and adds it to a pre-existing
-    // set, saving the new index into the vertex array.
-    let fold_fn =
-    |mut set: StlVertexSet, (i, v): (u32, &mut u32) | -> StlVertexSet {
-        let key = stl.key(i);
-        *v = if let Some(ptr) = set.get(&key) {
-            stl.index(ptr)
-        } else {
-            set.insert(key);
-            i
-        };
-        set
-    };
-
-    // The reduce function combines a pair of vertex sets and remapping maps
-    let reduce_fn =
-    |(mut sa, mut ra): StlFoldType, (sb, rb): StlFoldType| -> StlFoldType  {
-        println!("{}, {}", sa.len(), sb.len());
-        for k in sb.into_iter() {
-            if let Some(v) = sa.get(&k) {
-                ra.insert(stl.index(&k), stl.index(v));
-            } else {
-                sa.insert(k);
-            }
-        }
-        for (orig, remapped) in rb.into_iter() {
-            if let Some(v) = ra.get(&remapped) {
-                ra.insert(orig, *v);
-            } else {
-                ra.insert(orig, remapped);
-            }
-        }
-        (sa, ra)
-     };
 
     /*
     let out = (0..vertex_count).into_iter().collect::<Vec<_>>().par_chunks(1000)
