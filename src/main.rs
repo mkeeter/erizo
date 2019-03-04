@@ -16,27 +16,12 @@ use std::mem::size_of;
 type Vec3f = na::Vector3<f32>;
 type Vec3i = na::Vector3<u32>;
 
-named!(parse_vec<&[u8], Vec3f>,
+named!(parse_vec<&[u8], [f32; 3]>,
     do_parse!(
         x: le_f32 >>
         y: le_f32 >>
         z: le_f32 >>
-        (Vec3f::new(x, y, z))));
-/*
-named!(parse_line<&[u8], ([u8; 12], [u8; 12], [u8; 12])>,
-    do_parse!(
-        _normal: take!(12) >>
-        a:       take!(12)  >>
-        b:       take!(12) >>
-        c:       take!(12) >>
-        _attrs:  take!(size_of::<u16>()) >>
-        (*a, *b, *c)));
-        */
-named!(parse_header<&[u8], (&[u8], u32)>,
-    do_parse!(
-        header: take!(80) >>
-        count:  le_u32 >>
-        (header, count)));
+        ([x, y, z])));
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -198,8 +183,8 @@ impl<'a> Chunk<'a> {
 }
 
 fn main() -> Result<(), Error> {
-    let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
-    //let file = File::open("cube.stl")?;
+    //let file = File::open("/Users/mkeeter/Models/porsche.stl")?;
+    let file = File::open("cube.stl")?;
     let mmap = unsafe { MmapOptions::new().map(&file)? };
     println!("Loading stl");
 
@@ -231,11 +216,23 @@ fn main() -> Result<(), Error> {
         .reduce(|| Chunk::empty(), |a, b| a.merge(b, &stl));
     println!("Unique vertices: {}", out.set.len());
 
-    // This is memory-inefficient but fast.
+    // This is a memory-inefficient but fast way to control global remapping
     let mut remap = vec![0; vertex_count as usize];
+
+    let mut coords = Vec::new();
+    coords.reserve(out.set.len() * 3);
     for (u, v) in out.set.iter().enumerate() {
-        remap[stl.index(v) as usize] = u;
+        for w in parse_vec(v.get_slice()).unwrap().1.iter() {
+            coords.push(*w);
+        }
+        remap[stl.index(v) as usize] = u as u32;
     }
+
+    vertices.par_iter_mut()
+        .for_each(|v| *v = remap[(*v) as usize]);
+
+    println!("{:?}", vertices);
+    println!("{:?}", coords);
 
     Ok(())
 }
