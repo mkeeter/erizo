@@ -5,11 +5,10 @@ authors = ["Matt Keeter <matt.j.keeter@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-crossbeam-utils = "0.6.5"
-memmap = "0.7.0"
-nom = "4.0.0"
 failure = "0.1.5"
-nalgebra = "0.16.0"
 fnv = "1.0.3"
-rayon = "1.0.3"
+memmap = "0.7.0"
+nalgebra = "0.16.0"
+nom = "4.0.0"
 num_cpus = "1.0"
+rayon = "1.0.3"
