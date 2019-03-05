@@ -52,11 +52,9 @@ macro_rules! gl_check {
 }
 
 fn compile_shader(src: &str, ty: GLenum) -> GLuint {
-    let shader;
+    let c_str = CString::new(src.as_bytes()).unwrap();
     unsafe {
-        shader = gl::CreateShader(ty);
-        // Attempt to compile the shader
-        let c_str = CString::new(src.as_bytes()).unwrap();
+        let shader = gl::CreateShader(ty);
         gl::ShaderSource(shader, 1, &c_str.as_ptr(), ptr::null());
         gl::CompileShader(shader);
         gl_check!(shader, COMPILE_STATUS, GetShaderiv, GetShaderInfoLog);
