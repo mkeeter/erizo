@@ -40,20 +40,13 @@ macro_rules! gl_check {
         if status != (gl::TRUE as GLint) {
             let mut len = 0;
             gl::$get_iv($item, gl::INFO_LOG_LENGTH, &mut len);
-            let mut buf = Vec::with_capacity(len as usize);
-            buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
-            gl::$get_log(
-                $item,
-                len,
-                ptr::null_mut(),
-                buf.as_mut_ptr() as *mut GLchar,
-            );
-            panic!(
-                "{}",
-                str::from_utf8(&buf)
-                    .ok()
-                    .expect("Log info not valid utf8")
-            );
+
+            let mut buf = vec![0; len as usize];
+            gl::$get_log($item, len, ptr::null_mut(),
+                         buf.as_mut_ptr() as *mut GLchar);
+
+            panic!("{}", str::from_utf8(&buf)
+                .expect("Log info not valid utf8"));
         }
     }
 }
