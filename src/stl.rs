@@ -227,8 +227,5 @@ pub fn load_from_file(filename: &str) -> Result<IndexedMesh, Error> {
     //println!("{:?}", vertices);
     //println!("{:?}", coords);
     //
-    Ok(IndexedMesh {
-        vertices: coords,
-        triangles: vertices,
-    })
+    Ok(IndexedMesh::new(coords, vertices))
 }

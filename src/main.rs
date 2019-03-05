@@ -1,3 +1,5 @@
+extern crate nalgebra_glm as glm;
+
 use std::ffi::CString;
 use std::mem;
 use std::ptr;
@@ -76,8 +78,9 @@ fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
 ////////////////////////////////////////////////////////////////////////////////
 
 fn main() -> Result<(), Error> {
-    //let mesh = load_from_file("/Users/mkeeter/Models/porsche.stl")?;
-    let mesh = load_from_file("sphere.stl")?;
+    let mesh = load_from_file("/Users/mkeeter/Models/porsche.stl")?;
+    //let mesh = load_from_file("sphere.stl")?;
+    println!("{:?}, {:?}", mesh.lower, mesh.upper);
 
     let mut events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
