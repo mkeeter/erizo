@@ -65,9 +65,8 @@ fn link_program(vs: GLuint, gs: GLuint, fs: GLuint) -> GLuint {
 ////////////////////////////////////////////////////////////////////////////////
 
 fn main() -> Result<(), Error> {
-    let stl = Stl::open("/Users/mattkeeter/formlabs/models/local/porsche.stl")?;
-    let mesh = load_from_file(stl.view())?;
-
+    let now = std::time::Instant::now();
+    let mesh = load_from_file("/Users/mkeeter/Models/porsche.stl")?;
     //let mesh = load_from_file("sphere.stl")?;
 
     let model_matrix = {
@@ -100,7 +99,7 @@ fn main() -> Result<(), Error> {
                             gl::VERTEX_SHADER);
     let gs = compile_shader(include_bytes!("../gl/indexed.gs"),
                             gl::GEOMETRY_SHADER);
-    let fs = compile_shader(include_bytes!("../gl/model.frag"),
+    let fs = compile_shader(include_bytes!("../gl/model.fs"),
                             gl::FRAGMENT_SHADER);
     let program = link_program(vs, gs, fs);
 
@@ -158,6 +157,7 @@ fn main() -> Result<(), Error> {
     }
 
     let mut running = true;
+    let mut first = true;
     while running {
         events_loop.poll_events(|event| {
             match event {
@@ -191,6 +191,10 @@ fn main() -> Result<(), Error> {
         }
 
         gl_window.swap_buffers().unwrap();
+        if first {
+            first = false;
+            println!("First draw in {:?}", now.elapsed());
+        }
     }
 
     Ok(())
