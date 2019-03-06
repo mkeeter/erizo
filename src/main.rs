@@ -16,62 +16,6 @@ use crate::stl::load_from_file;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// Shader sources
-static VS_SRC: &'static str = "
-#version 330
-layout(location=0) in vec3 position;
-
-uniform mat4 proj;
-uniform mat4 model;
-
-void main() {
-    gl_Position = proj * model * vec4(position, 1.0);
-}";
-
-static GS_SRC: &'static str = "
-#version 330
-layout (triangles) in;
-layout (triangle_strip, max_vertices=3) out;
-
-out vec3 vert_norm;
-out vec3 pos_bary;
-
-void main() {
-    vec3 a = gl_in[0].gl_Position.xyz;
-    vec3 b = gl_in[1].gl_Position.xyz;
-    vec3 c = gl_in[2].gl_Position.xyz;
-    vec3 na = cross(a - b, c - b);
-    vec3 nb = cross(b - c, a - c);
-    vec3 nc = cross(c - a, b - a);
-
-    vert_norm = normalize(na + nb + nc);
-
-    pos_bary = vec3(1.0, 0.0, 0.0);
-    gl_Position = gl_in[0].gl_Position;
-    EmitVertex();
-
-    pos_bary = vec3(0.0, 1.0, 0.0);
-    gl_Position = gl_in[1].gl_Position;
-    EmitVertex();
-
-    pos_bary = vec3(0.0, 0.0, 1.0);
-    gl_Position = gl_in[2].gl_Position;
-    EmitVertex();
-}
-";
-
-static FS_SRC: &'static str = "
-#version 330
-in vec3 vert_norm;
-in vec3 pos_bary;
-
-out vec4 out_color;
-
-void main() {
-    out_color = vec4(abs(vert_norm), 1.0) * 0.8
-              + vec4(pos_bary, 1.0) * 0.2;
-}";
-
 macro_rules! gl_check {
     ($item:ident, $status:ident, $get_iv:ident, $get_log:ident) => {
 
@@ -92,8 +36,8 @@ macro_rules! gl_check {
     }
 }
 
-fn compile_shader(src: &str, ty: GLenum) -> GLuint {
-    let c_str = CString::new(src.as_bytes()).unwrap();
+fn compile_shader(src: &[u8], ty: GLenum) -> GLuint {
+    let c_str = CString::new(src).unwrap();
     unsafe {
         let shader = gl::CreateShader(ty);
         gl::ShaderSource(shader, 1, &c_str.as_ptr(), ptr::null());
@@ -143,9 +87,12 @@ fn main() -> Result<(), Error> {
     gl::load_with(|symbol| gl_window.get_proc_address(symbol) as *const _);
 
     // Create GLSL shaders
-    let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
-    let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
-    let gs = compile_shader(GS_SRC, gl::GEOMETRY_SHADER);
+    let vs = compile_shader(include_bytes!("../gl/model.vs"),
+                            gl::VERTEX_SHADER);
+    let gs = compile_shader(include_bytes!("../gl/indexed.gs"),
+                            gl::GEOMETRY_SHADER);
+    let fs = compile_shader(include_bytes!("../gl/model.frag"),
+                            gl::FRAGMENT_SHADER);
     let program = link_program(vs, gs, fs);
 
     let proj_loc = {
