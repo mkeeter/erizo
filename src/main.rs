@@ -16,6 +16,33 @@ use crate::stl::load_from_file;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static GS_SRC: &'static str = "
+#version 330
+layout (triangles) in;
+layout (triangle_strip, max_vertices=3) out;
+
+out vec3 vert_norm;
+
+void main() {
+    vec3 a = gl_in[0].gl_Position.xyz;
+    vec3 b = gl_in[1].gl_Position.xyz;
+    vec3 c = gl_in[2].gl_Position.xyz;
+    vec3 na = cross(a - b, c - b);
+    vec3 nb = cross(b - c, a - c);
+    vec3 nc = cross(c - a, b - a);
+
+    vert_norm = normalize(na + nb + nc);
+    gl_Position = gl_in[0].gl_Position;
+    EmitVertex();
+
+    gl_Position = gl_in[1].gl_Position;
+    EmitVertex();
+
+    gl_Position = gl_in[2].gl_Position;
+    EmitVertex();
+}
+";
+
 // Shader sources
 static VS_SRC: &'static str = "
 #version 330
@@ -30,10 +57,11 @@ void main() {
 
 static FS_SRC: &'static str = "
 #version 330
+in vec3 vert_norm;
 out vec4 out_color;
 
 void main() {
-    out_color = vec4(1.0, 1.0, 1.0, 1.0);
+    out_color = vec4(abs(vert_norm.x), abs(vert_norm.y), abs(vert_norm.z), 1.0);
 }";
 
 macro_rules! gl_check {
@@ -67,10 +95,11 @@ fn compile_shader(src: &str, ty: GLenum) -> GLuint {
     }
 }
 
-fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
+fn link_program(vs: GLuint, gs: GLuint, fs: GLuint) -> GLuint {
     unsafe {
         let program = gl::CreateProgram();
         gl::AttachShader(program, vs);
+        gl::AttachShader(program, gs);
         gl::AttachShader(program, fs);
         gl::LinkProgram(program);
         gl_check!(program, LINK_STATUS, GetProgramiv, GetProgramInfoLog);
@@ -108,7 +137,8 @@ fn main() -> Result<(), Error> {
     // Create GLSL shaders
     let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
     let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
-    let program = link_program(vs, fs);
+    let gs = compile_shader(GS_SRC, gl::GEOMETRY_SHADER);
+    let program = link_program(vs, gs, fs);
 
     let proj_loc = {
         let c_str = CString::new("proj")?;
@@ -182,7 +212,9 @@ fn main() -> Result<(), Error> {
         unsafe {
             // Clear the screen to black
             gl::ClearColor(0.3, 0.3, 0.3, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::ClearDepth(1.0);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+            gl::Enable(gl::DEPTH_TEST);
 
             // Draw a triangle from the 3 vertices
             gl::UseProgram(program);
