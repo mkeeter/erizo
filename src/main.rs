@@ -68,7 +68,10 @@ fn main() -> Result<(), Error> {
     let model_matrix = {
         let center = (mesh.lower + mesh.upper) / 2.0;
         let scale = 2.0 / glm::comp_max(&(mesh.upper - mesh.lower));
-        glm::translate(&glm::scale(&glm::Mat4::identity(), &glm::vec3(scale, scale, scale)), &center)
+        let mut mat = glm::Mat4::identity();
+        mat = glm::scale(&mat, &glm::vec3(scale, scale, scale));
+        mat = glm::translate(&mat, &center);
+        mat
     };
     println!("{:?}, {:?}", mesh.lower, mesh.upper);
 
