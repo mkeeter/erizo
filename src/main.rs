@@ -12,7 +12,10 @@ use failure::Error;
 
 mod stl;
 mod mesh;
-use crate::stl::load_from_file;
+mod loader;
+mod key;
+use crate::loader::load_from_file;
+use crate::stl::Stl;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -62,8 +65,10 @@ fn link_program(vs: GLuint, gs: GLuint, fs: GLuint) -> GLuint {
 ////////////////////////////////////////////////////////////////////////////////
 
 fn main() -> Result<(), Error> {
-    //let mesh = load_from_file("/Users/mkeeter/Models/porsche.stl")?;
-    let mesh = load_from_file("sphere.stl")?;
+    let stl = Stl::open("/Users/mattkeeter/formlabs/models/local/porsche.stl")?;
+    let mesh = load_from_file(stl.view())?;
+
+    //let mesh = load_from_file("sphere.stl")?;
 
     let model_matrix = {
         let center = (mesh.lower + mesh.upper) / 2.0;
@@ -74,6 +79,7 @@ fn main() -> Result<(), Error> {
         mat
     };
     println!("{:?}, {:?}", mesh.lower, mesh.upper);
+    println!("{:?}, {:?}", mesh.triangles.len(), mesh.vertices.len());
 
     let mut events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
