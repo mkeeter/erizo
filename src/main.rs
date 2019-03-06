@@ -21,8 +21,11 @@ static VS_SRC: &'static str = "
 #version 330
 layout(location=0) in vec3 position;
 
+uniform mat4 proj;
+uniform mat4 model;
+
 void main() {
-    gl_Position = vec4(position, 1.0);
+    gl_Position = proj * model * vec4(position, 1.0);
 }";
 
 static FS_SRC: &'static str = "
@@ -80,6 +83,12 @@ fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
 fn main() -> Result<(), Error> {
     let mesh = load_from_file("/Users/mkeeter/Models/porsche.stl")?;
     //let mesh = load_from_file("sphere.stl")?;
+
+    let model_matrix = {
+        let center = (mesh.lower + mesh.upper) / 2.0;
+        let scale = 2.0 / glm::comp_max(&(mesh.upper - mesh.lower));
+        glm::translate(&glm::scale(&glm::Mat4::identity(), &glm::vec3(scale, scale, scale)), &center)
+    };
     println!("{:?}, {:?}", mesh.lower, mesh.upper);
 
     let mut events_loop = glutin::EventsLoop::new();
@@ -100,6 +109,18 @@ fn main() -> Result<(), Error> {
     let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
     let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
     let program = link_program(vs, fs);
+
+    let proj_loc = {
+        let c_str = CString::new("proj")?;
+        unsafe { gl::GetUniformLocation(program, c_str.as_ptr()) }
+    };
+    assert!(proj_loc != -1);
+
+    let model_loc = {
+        let c_str = CString::new("model")?;
+        unsafe { gl::GetUniformLocation(program, c_str.as_ptr()) }
+    };
+    assert!(model_loc != -1);
 
     let mut vao = 0;
     let mut vert_vbo = 0;
@@ -165,6 +186,10 @@ fn main() -> Result<(), Error> {
 
             // Draw a triangle from the 3 vertices
             gl::UseProgram(program);
+            let proj_matrix = glm::scale(&glm::Mat4::identity(), &glm::vec3(0.5, 0.7, 1.0));
+            gl::UniformMatrix4fv(proj_loc, 1, gl::FALSE, proj_matrix.as_ptr());
+            gl::UniformMatrix4fv(model_loc, 1, gl::FALSE, model_matrix.as_ptr());
+
             gl::DrawElements(gl::TRIANGLES, mesh.triangles.len() as i32,
                              gl::UNSIGNED_INT, ptr::null());
         }
