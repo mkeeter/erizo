@@ -16,33 +16,6 @@ use crate::stl::load_from_file;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static GS_SRC: &'static str = "
-#version 330
-layout (triangles) in;
-layout (triangle_strip, max_vertices=3) out;
-
-out vec3 vert_norm;
-
-void main() {
-    vec3 a = gl_in[0].gl_Position.xyz;
-    vec3 b = gl_in[1].gl_Position.xyz;
-    vec3 c = gl_in[2].gl_Position.xyz;
-    vec3 na = cross(a - b, c - b);
-    vec3 nb = cross(b - c, a - c);
-    vec3 nc = cross(c - a, b - a);
-
-    vert_norm = normalize(na + nb + nc);
-    gl_Position = gl_in[0].gl_Position;
-    EmitVertex();
-
-    gl_Position = gl_in[1].gl_Position;
-    EmitVertex();
-
-    gl_Position = gl_in[2].gl_Position;
-    EmitVertex();
-}
-";
-
 // Shader sources
 static VS_SRC: &'static str = "
 #version 330
@@ -55,13 +28,48 @@ void main() {
     gl_Position = proj * model * vec4(position, 1.0);
 }";
 
+static GS_SRC: &'static str = "
+#version 330
+layout (triangles) in;
+layout (triangle_strip, max_vertices=3) out;
+
+out vec3 vert_norm;
+out vec3 pos_bary;
+
+void main() {
+    vec3 a = gl_in[0].gl_Position.xyz;
+    vec3 b = gl_in[1].gl_Position.xyz;
+    vec3 c = gl_in[2].gl_Position.xyz;
+    vec3 na = cross(a - b, c - b);
+    vec3 nb = cross(b - c, a - c);
+    vec3 nc = cross(c - a, b - a);
+
+    vert_norm = normalize(na + nb + nc);
+
+    pos_bary = vec3(1.0, 0.0, 0.0);
+    gl_Position = gl_in[0].gl_Position;
+    EmitVertex();
+
+    pos_bary = vec3(0.0, 1.0, 0.0);
+    gl_Position = gl_in[1].gl_Position;
+    EmitVertex();
+
+    pos_bary = vec3(0.0, 0.0, 1.0);
+    gl_Position = gl_in[2].gl_Position;
+    EmitVertex();
+}
+";
+
 static FS_SRC: &'static str = "
 #version 330
 in vec3 vert_norm;
+in vec3 pos_bary;
+
 out vec4 out_color;
 
 void main() {
-    out_color = vec4(abs(vert_norm.x), abs(vert_norm.y), abs(vert_norm.z), 1.0);
+    out_color = vec4(abs(vert_norm), 1.0) * 0.8
+              + vec4(pos_bary, 1.0) * 0.2;
 }";
 
 macro_rules! gl_check {
@@ -110,8 +118,8 @@ fn link_program(vs: GLuint, gs: GLuint, fs: GLuint) -> GLuint {
 ////////////////////////////////////////////////////////////////////////////////
 
 fn main() -> Result<(), Error> {
-    let mesh = load_from_file("/Users/mkeeter/Models/porsche.stl")?;
-    //let mesh = load_from_file("sphere.stl")?;
+    //let mesh = load_from_file("/Users/mkeeter/Models/porsche.stl")?;
+    let mesh = load_from_file("sphere.stl")?;
 
     let model_matrix = {
         let center = (mesh.lower + mesh.upper) / 2.0;
