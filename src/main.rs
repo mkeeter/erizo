@@ -1,6 +1,7 @@
 extern crate nalgebra_glm as glm;
 
 use std::ffi::CString;
+use std::env;
 use std::mem;
 use std::ptr;
 use std::str;
@@ -66,8 +67,9 @@ fn link_program(vs: GLuint, gs: GLuint, fs: GLuint) -> GLuint {
 
 fn main() -> Result<(), Error> {
     let now = std::time::Instant::now();
-    let mesh = load_from_file("/Users/mkeeter/Models/porsche.stl")?;
-    //let mesh = load_from_file("sphere.stl")?;
+    let args = env::args().collect::<Vec<_>>();
+    let stl = Stl::open(&args[1])?;
+    let mesh = load_from_file(stl.view())?;
 
     let model_matrix = {
         let center = (mesh.lower + mesh.upper) / 2.0;
