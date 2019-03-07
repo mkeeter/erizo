@@ -239,7 +239,7 @@ impl RawMesh {
 
             gl::EnableVertexAttribArray(2);
             gl::VertexAttribPointer(
-                1, /* Vertex attribute location */
+                2, /* Vertex attribute location */
                 3, /* Number of elements */
                 gl::FLOAT,
                 gl::FALSE as GLboolean,
