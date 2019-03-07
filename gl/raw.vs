@@ -7,7 +7,7 @@ out vec4 vb;
 out vec4 vc;
 
 void main() {
-    gl_Position = vec4(a, 1.0);
-    vb = vec4(b, 1.0);
-    vc = vec4(c, 1.0);
+    gl_Position = vec4(b, 1.0);
+    vb = vec4(c, 1.0);
+    vc = vec4(a, 1.0);
 }

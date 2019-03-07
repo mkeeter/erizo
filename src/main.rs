@@ -195,11 +195,8 @@ impl RawMesh {
         let mut out = RawMesh {
             vbo: 0,
             vao: 0,
-            num_points: stl.len() / 3 / 3,
+            num_points: stl.len() / 3,
         };
-        println!("{:?}", stl.0.as_ptr());
-        println!("len: {}", stl.len());
-        println!("buffer len {}", stl.0.len());
 
         unsafe {
             // Create Vertex Array Object
@@ -211,7 +208,7 @@ impl RawMesh {
             gl::BindBuffer(gl::ARRAY_BUFFER, out.vbo);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
-                (stl.len() * 3 * mem::size_of::<f32>() as u32) as GLsizeiptr,
+                (stl.len() / 3 * 50 as u32) as GLsizeiptr,
                 mem::transmute(stl.key(0).0),
                 gl::STATIC_DRAW,
             );
@@ -223,7 +220,7 @@ impl RawMesh {
                 3, /* Number of elements */
                 gl::FLOAT,
                 gl::FALSE as GLboolean,
-                0, /* Offset */
+                50, /* Offset */
                 ptr::null(),
             );
 
@@ -262,6 +259,7 @@ fn main() -> Result<(), Error> {
     let now = std::time::Instant::now();
     let args = env::args().collect::<Vec<_>>();
     let stl = Stl::open(&args[1])?;
+    println!("opened mesh at {:?}", now.elapsed());
 
     let mut events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
@@ -270,26 +268,31 @@ fn main() -> Result<(), Error> {
     let context = glutin::ContextBuilder::new()
         .with_vsync(true);
     let gl_window = glutin::GlWindow::new(window, context, &events_loop).unwrap();
+    println!("built window at {:?}", now.elapsed());
 
     unsafe {
         gl_window.make_current().unwrap();
     }
+    println!("made current at {:?}", now.elapsed());
 
     gl::load_with(|symbol| gl_window.get_proc_address(symbol) as *const _);
+    println!("loaded GL at {:?}", now.elapsed());
 
     let mesh = RawMesh::new(&stl.view())?;
+    println!("Build raw mesh in {:?}", now.elapsed());
     let model_matrix = {
         let (lower, upper) = stl.bounds();
+        println!("Found bounds in {:?}", now.elapsed());
         let center = (lower + upper) / 2.0;
         let scale = 2.0 / glm::comp_max(&(upper - lower));
         let mut mat = glm::Mat4::identity();
         mat = glm::scale(&mat, &glm::vec3(scale, scale, scale));
         mat = glm::translate(&mat, &center);
-        println!("{:?}, {:?}, {:?}", lower, upper, mat);
         mat
     };
 
     let shader = Shader::fast()?;
+    println!("Build shader at {:?}", now.elapsed());
 
     let mut running = true;
     let mut first = true;
