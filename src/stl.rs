@@ -1,18 +1,17 @@
 use std::fs::File;
 use std::mem::size_of;
+use std::f32::INFINITY;
 
 use failure::Error;
 use memmap::{Mmap, MmapOptions};
 use nom::le_u32;
+use rayon::prelude::*;
 
-use crate::key::{VertexKey, Keyed};
+use crate::key::{VertexKey, Keyed, parse_vec};
 
 ////////////////////////////////////////////////////////////////////////////////
 
 pub struct Stl(pub Mmap);
-
-#[derive(Copy, Clone)]
-pub struct StlView<'a>(pub &'a [u8]);
 
 impl Stl {
     pub fn open(filename: &str) -> Result<Stl, Error> {
@@ -28,7 +27,24 @@ impl Stl {
     pub fn view(&self) -> StlView {
         StlView(&self.0)
     }
+
+    pub fn bounds(&self) -> (glm::Vec3, glm::Vec3) {
+        /* Use map + reduce to find the bounds of the model */
+        let id_fn = || (glm::vec3( INFINITY,  INFINITY,  INFINITY),
+                        glm::vec3(-INFINITY, -INFINITY, -INFINITY));
+        let v = self.view();
+        (0..v.len()).into_par_iter()
+            .map(|i| parse_vec(v.key(i).get_slice()).unwrap().1)
+            .map(|p| glm::vec3(p[0], p[1], p[2]))
+            .fold(  id_fn, |a, p| (glm::min2(&a.0, &p),
+                                   glm::max2(&a.1, &p)))
+            .reduce(id_fn, |a, b| (glm::min2(&a.0, &b.0),
+                                   glm::max2(&a.1, &b.1)))
+    }
 }
+
+#[derive(Copy, Clone)]
+pub struct StlView<'a>(pub &'a [u8]);
 
 impl<'a> Keyed for StlView<'a> {
     fn key(&self, v: u32) -> VertexKey {
@@ -71,5 +87,4 @@ impl<'a> Keyed for StlView<'a> {
     fn len(&self) -> u32 {
         le_u32(&self.0[Stl::HEADER_SIZE..]).unwrap().1 * 3
     }
-
 }

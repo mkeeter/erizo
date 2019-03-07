@@ -1,17 +1,9 @@
 use failure::Error;
 use fnv::FnvHashSet;
-use nom::{le_f32, named, do_parse, call};
 use rayon::prelude::*;
 
 use crate::mesh::IndexedMesh;
-use crate::key::{Keyed, VertexKey};
-
-named!(parse_vec<&[u8], [f32; 3]>,
-    do_parse!(
-        x: le_f32 >>
-        y: le_f32 >>
-        z: le_f32 >>
-        ([x, y, z])));
+use crate::key::{Keyed, VertexKey, parse_vec};
 
 struct Chunk<'a> {
     set: FnvHashSet<VertexKey>,

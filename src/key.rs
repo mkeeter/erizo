@@ -1,3 +1,5 @@
+use nom::{le_f32, named, do_parse, call};
+
 use std::hash::{Hash, Hasher};
 
 #[derive(Copy, Clone)]
@@ -34,3 +36,10 @@ pub trait Keyed {
     /// Returns the number of vertices in this buffer
     fn len(&self) -> u32;
 }
+
+named!(pub parse_vec<&[u8], [f32; 3]>,
+    do_parse!(
+        x: le_f32 >>
+        y: le_f32 >>
+        z: le_f32 >>
+        ([x, y, z])));
