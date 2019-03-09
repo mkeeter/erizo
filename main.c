@@ -185,8 +185,8 @@ void loader_wait(loader_t* loader, loader_state_t target) {
 
 void loader_next(loader_t* loader, loader_state_t target) {
     platform_mutex_lock(&loader->mutex);
-        loader->state = target;
-        platform_cond_broadcast(&loader->cond);
+    loader->state = target;
+    platform_cond_broadcast(&loader->cond);
     platform_mutex_unlock(&loader->mutex);
 }
 
