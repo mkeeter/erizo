@@ -15,37 +15,27 @@
 #define GLSL(version, shader)  "#version " #version "\n" #shader
 
 const GLchar* RAW_VS_SRC = GLSL(330,
-layout(location=0) in vec3 a;
-layout(location=1) in vec3 b;
-layout(location=2) in vec3 c;
-
-out vec4 vb;
-out vec4 vc;
+layout(location=0) in vec3 pos;
 
 void main() {
-    gl_Position = vec4(b, 1.0);
-    vb = vec4(c, 1.0);
-    vc = vec4(a, 1.0);
+    gl_Position = vec4(pos, 1.0);
 }
 );
 
 const GLchar* RAW_GS_SRC = GLSL(330,
-layout (points) in;
+layout (triangles) in;
 layout (triangle_strip, max_vertices=3) out;
 
 uniform mat4 proj;
 uniform mat4 model;
-
-in vec4 vb[1];
-in vec4 vc[1];
 
 out vec3 vert_norm;
 out vec3 pos_bary;
 
 void main() {
     vec3 a = gl_in[0].gl_Position.xyz;
-    vec3 b = vb[0].xyz;
-    vec3 c = vc[0].xyz;
+    vec3 b = gl_in[1].gl_Position.xyz;
+    vec3 c = gl_in[2].gl_Position.xyz;
 
     vec3 na = cross(a - b, c - b);
     vec3 nb = cross(b - c, a - c);
@@ -58,11 +48,11 @@ void main() {
     EmitVertex();
 
     pos_bary = vec3(0.0, 1.0, 0.0);
-    gl_Position = proj * model * vb[0];
+    gl_Position = proj * model * gl_in[1].gl_Position;
     EmitVertex();
 
     pos_bary = vec3(0.0, 0.0, 1.0);
-    gl_Position = proj * model * vc[0];
+    gl_Position = proj * model * gl_in[2].gl_Position;
     EmitVertex();
 }
 );
@@ -343,11 +333,8 @@ int main(int argc, char** argv) {
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    for (unsigned i=0; i < 3; ++i) {
-        glEnableVertexAttribArray(i);
-        glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, 36,
-                              (const void*)(12UL * i));
-    }
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     trace("Assigned attribute pointers");
 
     int first = 1;
@@ -375,7 +362,7 @@ int main(int argc, char** argv) {
 
         glUniformMatrix4fv(loc_model, 1, GL_FALSE, model.mat);
 
-        glDrawArrays(GL_POINTS, 0, model.num_triangles);
+        glDrawArrays(GL_TRIANGLES, 0, model.num_triangles * 3);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
