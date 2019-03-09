@@ -13,7 +13,7 @@
 
 #define GLSL(version, shader)  "#version " #version "\n" #shader
 
-const GLchar* RAW_VS_SRC = GLSL(330,
+const GLchar* MODEL_VS_SRC = GLSL(330,
 layout(location=0) in vec3 pos;
 
 void main() {
@@ -21,7 +21,7 @@ void main() {
 }
 );
 
-const GLchar* RAW_GS_SRC = GLSL(330,
+const GLchar* MODEL_GS_SRC = GLSL(330,
 layout (triangles) in;
 layout (triangle_strip, max_vertices=3) out;
 
@@ -56,7 +56,7 @@ void main() {
 }
 );
 
-const GLchar* RAW_FS_SRC = GLSL(330,
+const GLchar* MODEL_FS_SRC = GLSL(330,
 in vec3 vert_norm;
 in vec3 pos_bary;
 
@@ -389,9 +389,9 @@ int main(int argc, char** argv) {
 
     glfwSetKeyCallback(window, key_callback);
 
-    GLuint vs = compile_shader(RAW_VS_SRC, GL_VERTEX_SHADER);
-    GLuint gs = compile_shader(RAW_GS_SRC, GL_GEOMETRY_SHADER);
-    GLuint fs = compile_shader(RAW_FS_SRC, GL_FRAGMENT_SHADER);
+    GLuint vs = compile_shader(MODEL_VS_SRC, GL_VERTEX_SHADER);
+    GLuint gs = compile_shader(MODEL_GS_SRC, GL_GEOMETRY_SHADER);
+    GLuint fs = compile_shader(MODEL_FS_SRC, GL_FRAGMENT_SHADER);
     GLuint prog = link_program(vs, gs, fs);
 
     glUseProgram(prog);
