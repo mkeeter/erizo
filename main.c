@@ -3,14 +3,12 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
 #include <pthread.h>
-#include <fcntl.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+
+#include "platform.h"
 
 /******************************************************************************/
 
@@ -137,13 +135,7 @@ typedef struct {
 void* load_model(void* m_) {
     model_t* const m = (model_t*)m_;
 
-    int stl_fd = open(m->filename, O_RDONLY);
-    struct stat s;
-    fstat(stl_fd, &s);
-    size_t size = s.st_size;
-
-    m->mapped = mmap(0, size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
-
+    m->mapped = platform_mmap(m->filename);
     memcpy(&m->num_triangles, m->mapped + 80, sizeof(m->num_triangles));
 
     size_t index = 80 + 4 + 3 * sizeof(float);
@@ -196,16 +188,19 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void trace(const char *fmt, ...)
 {
-    static struct timeval start = {-1, -1};
+    static int64_t start_sec = -1;
+    static int32_t start_usec = -1;
 
-    if (start.tv_sec == -1) {
-        gettimeofday(&start, NULL);
+    if (start_sec == -1) {
+        platform_get_time(&start_sec, &start_usec);
     }
 
-    struct timeval now;
-    gettimeofday(&now, NULL);
-    long int dt_sec = now.tv_sec - start.tv_sec;\
-    int dt_usec = now.tv_usec - start.tv_usec;\
+    int64_t now_sec;
+    int32_t now_usec;
+    platform_get_time(&now_sec, &now_usec);
+
+    long int dt_sec = now_sec - start_sec;
+    int dt_usec = now_usec - start_usec;
     if (dt_usec < 0) {
         dt_usec += 1000000;
         dt_sec -= 1;
