@@ -1,12 +1,9 @@
-#include <stdio.h>
-
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 
 #include "platform.h"
-#include "platform_unix.h"
 
 const char* platform_mmap(const char* filename) {
     int stl_fd = open(filename, O_RDONLY);
