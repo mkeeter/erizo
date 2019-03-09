@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <string.h>
+#include <stdarg.h>
 
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -127,36 +132,62 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
+void trace(const char *fmt, ...)
+{
+    static struct timeval start = {-1, -1};
+
+    if (start.tv_sec == -1) {
+        gettimeofday(&start, NULL);
+    }
+
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    long int dt_sec = now.tv_sec - start.tv_sec;\
+    int dt_usec = now.tv_usec - start.tv_usec;\
+    if (dt_usec < 0) {
+        dt_usec += 1000000;
+        dt_sec -= 1;
+    }
+    printf("[hedgehog] (%li.%06i) ", dt_sec, dt_usec);
+
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+
+    printf("\n");
+}
+
 int main(int argc, char** argv) {
-    struct timeval stop, start;
-    gettimeofday(&start, NULL);
+    trace("Startup!");
 
     if (argc != 2) {
         fprintf(stderr, "[hedgehog]    No input file\n");
         return -1;
     }
 
-    FILE* stl = fopen(argv[1], "r");
-    fseek(stl, 80, SEEK_SET);
-    uint32_t num_triangles;
-    fread(&num_triangles, sizeof(num_triangles), 1, stl);
-    fseek(stl, 3 * sizeof(float), SEEK_CUR);
+    int stl_fd = open(argv[1], O_RDONLY);
+    struct stat s;
+    fstat(stl_fd, &s);
+    size_t size = s.st_size;
 
-    float* triangles = malloc(sizeof(float) * 3 * 3 * num_triangles);
+    const char* mapped = mmap(0, size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
+
+    uint32_t num_triangles;
+    memcpy(&num_triangles, mapped + 80, sizeof(num_triangles));
+    trace("Got %i triangles", num_triangles);
+
     float min[3];
     float max[3];
-    for (uint32_t t=0; t < num_triangles; ++t) {
-        fread(&triangles[t * 9], sizeof(float), 9, stl);
-        fseek(stl, sizeof(uint16_t) + 3 * sizeof(float), SEEK_CUR);
-        if (t == 0) {
-            for (unsigned a=0; a < 3; ++a) {
-                min[a] = triangles[a];
-                max[a] = triangles[a];
-            }
-        }
+    size_t index = 80 + 4 + 3 * sizeof(float);
+    memcpy(min, &mapped[index], sizeof(min));
+    memcpy(max, &mapped[index], sizeof(max));
+    for (uint32_t t=0; t < num_triangles; t += 1) {
+        float xyz[9];
+        memcpy(xyz, &mapped[index], 9 * sizeof(float));
         for (unsigned i=0; i < 3; ++i) {
             for (unsigned a=0; a < 3; ++a) {
-                const float v = triangles[3 * i + a + 9 * t];
+                const float v = xyz[3 * i + a];
                 if (v < min[a]) {
                     min[a] = v;
                 }
@@ -165,7 +196,11 @@ int main(int argc, char** argv) {
                 }
             }
         }
+        index += 12 * sizeof(float) + sizeof(uint16_t);
     }
+    trace("Got bounds [%f %f %f] [%f %f %f]",
+          min[0], min[1], min[2],
+          max[0], max[1], max[2]);
 
     if (!glfwInit())    return -1;
 
@@ -182,8 +217,10 @@ int main(int argc, char** argv) {
         glfwTerminate();
         return -1;
     }
+    trace("Created window");
 
     glfwMakeContextCurrent(window);
+    trace("Made context current");
 
     {
         const GLenum err = glewInit();
@@ -193,6 +230,7 @@ int main(int argc, char** argv) {
             return -1;
         }
     }
+    trace("Initialized GLEW");
 
     glfwSetKeyCallback(window, key_callback);
 
@@ -202,24 +240,52 @@ int main(int argc, char** argv) {
     GLuint prog = link_program(vs, gs, fs);
 
     glUseProgram(prog);
+    GLuint loc_proj = glGetUniformLocation(prog, "proj");
+    GLuint loc_model = glGetUniformLocation(prog, "model");
+    trace("Compiled shaders");
+
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, num_triangles * 50,
+                 &mapped[84], GL_STATIC_DRAW);
+    trace("Loaded buffer data");
+
+    for (unsigned i=0; i < 3; ++i) {
+        glEnableVertexAttribArray(i);
+        glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, 50,
+                              (const void*)(12UL * (i + 1)));
+    }
+    trace("Assigned attribute pointers");
 
     int first = 1;
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.3, 0.3, 0.3, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClearDepth(1.0);
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glDrawArrays(GL_POINTS, 0, num_triangles);
+
+        float M[16] = {1.0f, 0.0f, 0.0f, 0.0f,
+                       0.0f, 1.0f, 0.0f, 0.0f,
+                       0.0f, 0.0f, 1.0f, 0.0f,
+                       0.0f, 0.0f, 0.0f, 1.0f};
+        glUniformMatrix4fv(loc_proj, 1, GL_FALSE, M);
+        glUniformMatrix4fv(loc_model, 1, GL_FALSE, M);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
+        if (first) { trace("First draw complete"); }
 
         /* Poll for and process events */
         glfwPollEvents();
 
-        if (first) {
-            first = 0;
-            gettimeofday(&stop, NULL);
-            printf("took %i\n", stop.tv_usec - start.tv_usec);
-        }
+        first = 0;
     }
 
     return 0;
