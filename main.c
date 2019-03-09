@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <pthread.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -126,6 +127,67 @@ GLuint link_program(GLuint vs, GLuint gs, GLuint fs) {
     return program;
 }
 
+typedef struct {
+    const char* filename;
+    const char* mapped;
+    GLuint num_triangles;
+    float mat[16];
+} model_t;
+
+void* load_model(void* m_) {
+    model_t* const m = (model_t*)m_;
+
+    int stl_fd = open(m->filename, O_RDONLY);
+    struct stat s;
+    fstat(stl_fd, &s);
+    size_t size = s.st_size;
+
+    m->mapped = mmap(0, size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
+
+    memcpy(&m->num_triangles, m->mapped + 80, sizeof(m->num_triangles));
+
+    size_t index = 80 + 4 + 3 * sizeof(float);
+
+    float min[3];
+    float max[3];
+    memcpy(min, &m->mapped[index], sizeof(min));
+    memcpy(min, &m->mapped[index], sizeof(max));
+    for (uint32_t t=0; t < m->num_triangles; t += 1) {
+        float xyz[9];
+        memcpy(xyz, &m->mapped[index], 9 * sizeof(float));
+        for (unsigned i=0; i < 3; ++i) {
+            for (unsigned a=0; a < 3; ++a) {
+                const float v = xyz[3 * i + a];
+                if (v < min[a]) {
+                    min[a] = v;
+                }
+                if (v > max[a]) {
+                    max[a] = v;
+                }
+            }
+        }
+        index += 12 * sizeof(float) + sizeof(uint16_t);
+    }
+
+    float center[3];
+    float scale = 0;
+    for (unsigned i=0; i < 3; ++i) {
+        center[i] = (min[i] + max[i]) / 2.0f;
+        const float d = max[i] - min[i];
+        if (d > scale) {
+            scale = d;
+        }
+    }
+
+    memset(m->mat, 0, sizeof(m->mat));
+    m->mat[0] = 1.0f / scale;
+    m->mat[5] = 1.0f / scale;
+    m->mat[10] = 1.0f / scale;
+    m->mat[15] = 1.0f;
+
+    return NULL;
+}
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -166,50 +228,12 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    int stl_fd = open(argv[1], O_RDONLY);
-    struct stat s;
-    fstat(stl_fd, &s);
-    size_t size = s.st_size;
-
-    const char* mapped = mmap(0, size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
-
-    uint32_t num_triangles;
-    memcpy(&num_triangles, mapped + 80, sizeof(num_triangles));
-    trace("Got %i triangles", num_triangles);
-
-    float min[3];
-    float max[3];
-    size_t index = 80 + 4 + 3 * sizeof(float);
-    memcpy(min, &mapped[index], sizeof(min));
-    memcpy(max, &mapped[index], sizeof(max));
-    for (uint32_t t=0; t < num_triangles; t += 1) {
-        float xyz[9];
-        memcpy(xyz, &mapped[index], 9 * sizeof(float));
-        for (unsigned i=0; i < 3; ++i) {
-            for (unsigned a=0; a < 3; ++a) {
-                const float v = xyz[3 * i + a];
-                if (v < min[a]) {
-                    min[a] = v;
-                }
-                if (v > max[a]) {
-                    max[a] = v;
-                }
-            }
-        }
-        index += 12 * sizeof(float) + sizeof(uint16_t);
-    }
-    trace("Got bounds [%f %f %f] [%f %f %f]",
-          min[0], min[1], min[2],
-          max[0], max[1], max[2]);
-    float center[3];
-    float scale = 0;
-    unsigned i;
-    for (i=0; i < 3; ++i) {
-        center[i] = (min[i] + max[i]) / 2.0f;
-        const float d = max[i] - min[i];
-        if (d > scale) {
-            scale = d;
-        }
+    model_t model;
+    model.filename = argv[1];
+    pthread_t loader_thread;
+    if (pthread_create(&loader_thread, NULL, load_model, &model)) {
+        fprintf(stderr, "[hedgehog]    Error creating thread\n");
+        return 1;
     }
 
     if (!glfwInit())    return -1;
@@ -261,11 +285,18 @@ int main(int argc, char** argv) {
     GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, num_triangles * 50,
-                 &mapped[84], GL_STATIC_DRAW);
+
+    if (pthread_join(loader_thread, NULL)) {
+        fprintf(stderr, "[hedgehog]    Error joining thread\n");
+        return 2;
+    }
+    trace("Joined thread");
+
+    glBufferData(GL_ARRAY_BUFFER, model.num_triangles * 50,
+                 &model.mapped[84], GL_STATIC_DRAW);
     trace("Loaded buffer data");
 
-    for (i=0; i < 3; ++i) {
+    for (unsigned i=0; i < 3; ++i) {
         glEnableVertexAttribArray(i);
         glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, 50,
                               (const void*)(12UL * (i + 1)));
@@ -286,13 +317,9 @@ int main(int argc, char** argv) {
                                 0.0f, 0.0f, 0.0f, 1.0f};
         glUniformMatrix4fv(loc_proj, 1, GL_FALSE, proj);
 
-        const float model[16] = {1.0f / scale, 0.0f, 0.0f, 0.0f,
-                                0.0f, 1.0f / scale, 0.0f, 0.0f,
-                                0.0f, 0.0f, 1.0f / scale, 0.0f,
-                                0.0f, 0.0f, 0.0f, 1.0f};
-        glUniformMatrix4fv(loc_model, 1, GL_FALSE, model);
+        glUniformMatrix4fv(loc_model, 1, GL_FALSE, model.mat);
 
-        glDrawArrays(GL_POINTS, 0, num_triangles);
+        glDrawArrays(GL_POINTS, 0, model.num_triangles);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
