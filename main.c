@@ -201,6 +201,16 @@ int main(int argc, char** argv) {
     trace("Got bounds [%f %f %f] [%f %f %f]",
           min[0], min[1], min[2],
           max[0], max[1], max[2]);
+    float center[3];
+    float scale = 0;
+    unsigned i;
+    for (i=0; i < 3; ++i) {
+        center[i] = (min[i] + max[i]) / 2.0f;
+        const float d = max[i] - min[i];
+        if (d > scale) {
+            scale = d;
+        }
+    }
 
     if (!glfwInit())    return -1;
 
@@ -210,7 +220,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     GLFWwindow* const window = glfwCreateWindow(
-            640, 480, "hedgehog", NULL, NULL);
+            500, 500, "hedgehog", NULL, NULL);
 
     if (!window) {
         fprintf(stderr, "[hedgehog]    Error: failed to create window!\n");
@@ -255,7 +265,7 @@ int main(int argc, char** argv) {
                  &mapped[84], GL_STATIC_DRAW);
     trace("Loaded buffer data");
 
-    for (unsigned i=0; i < 3; ++i) {
+    for (i=0; i < 3; ++i) {
         glEnableVertexAttribArray(i);
         glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, 50,
                               (const void*)(12UL * (i + 1)));
@@ -269,14 +279,20 @@ int main(int argc, char** argv) {
         glClearDepth(1.0);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
-        glDrawArrays(GL_POINTS, 0, num_triangles);
 
-        float M[16] = {1.0f, 0.0f, 0.0f, 0.0f,
-                       0.0f, 1.0f, 0.0f, 0.0f,
-                       0.0f, 0.0f, 1.0f, 0.0f,
-                       0.0f, 0.0f, 0.0f, 1.0f};
-        glUniformMatrix4fv(loc_proj, 1, GL_FALSE, M);
-        glUniformMatrix4fv(loc_model, 1, GL_FALSE, M);
+        const float proj[16] = {1.0f, 0.0f, 0.0f, 0.0f,
+                                0.0f, 1.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 1.0f, 0.0f,
+                                0.0f, 0.0f, 0.0f, 1.0f};
+        glUniformMatrix4fv(loc_proj, 1, GL_FALSE, proj);
+
+        const float model[16] = {1.0f / scale, 0.0f, 0.0f, 0.0f,
+                                0.0f, 1.0f / scale, 0.0f, 0.0f,
+                                0.0f, 0.0f, 1.0f / scale, 0.0f,
+                                0.0f, 0.0f, 0.0f, 1.0f};
+        glUniformMatrix4fv(loc_model, 1, GL_FALSE, model);
+
+        glDrawArrays(GL_POINTS, 0, num_triangles);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
