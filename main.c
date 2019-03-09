@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
 #include <string.h>
 #include <stdarg.h>
 
@@ -8,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -241,6 +241,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_SAMPLES, 8);    /* multisampling! */
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     GLFWwindow* const window = glfwCreateWindow(
@@ -304,12 +305,15 @@ int main(int argc, char** argv) {
     trace("Assigned attribute pointers");
 
     int first = 1;
+    glfwShowWindow(window);
+    trace("Showed window");
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.3, 0.3, 0.3, 1.0);
         glClearDepth(1.0);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
+        if (first) { trace("About to do first draw"); }
 
         const float proj[16] = {1.0f, 0.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f, 0.0f,
