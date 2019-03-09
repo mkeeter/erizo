@@ -161,17 +161,38 @@ typedef struct {
     float mat[16];
 } model_t;
 
+typedef enum {
+    LOADER_START,
+    LOADER_GOT_SIZE,
+    LOADER_GOT_BUFFER,
+} loader_state_t;
+
 typedef struct {
     const char* filename;
     float* buffer; /* Mapped by OpenGL */
 
     /*  Synchronization system with the main thread */
-    enum { START, GOT_SIZE, GOT_BUF } state;
+    loader_state_t state;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 
     model_t* model;
 } loader_t;
+
+void loader_wait(loader_t* loader, loader_state_t target) {
+    while (loader->state != target) {
+        pthread_mutex_lock(&loader->mutex);
+        pthread_cond_wait(&loader->cond, &loader->mutex);
+        pthread_mutex_unlock(&loader->mutex);
+    }
+}
+
+void loader_next(loader_t* loader, loader_state_t target) {
+    pthread_mutex_lock(&loader->mutex);
+        loader->state = target;
+        pthread_cond_signal(&loader->cond);
+    pthread_mutex_unlock(&loader->mutex);
+}
 
 void* load_model(void* loader_) {
     loader_t* const loader = (loader_t*)loader_;
@@ -179,10 +200,7 @@ void* load_model(void* loader_) {
 
     const char* mapped = platform_mmap(loader->filename);
     memcpy(&m->num_triangles, mapped + 80, sizeof(m->num_triangles));
-    pthread_mutex_lock(&loader->mutex);
-        loader->state = GOT_SIZE;
-        pthread_cond_signal(&loader->cond);
-    pthread_mutex_unlock(&loader->mutex);
+    loader_next(loader, LOADER_GOT_SIZE);
 
     size_t index = 80 + 4 + 3 * sizeof(float);
     float min[3];
@@ -223,11 +241,7 @@ void* load_model(void* loader_) {
     m->mat[10] = 1.0f / scale;
     m->mat[15] = 1.0f;
 
-    while (loader->state != GOT_BUF) {
-        pthread_mutex_lock(&loader->mutex);
-        pthread_cond_wait(&loader->cond, &loader->mutex);
-        pthread_mutex_unlock(&loader->mutex);
-    }
+    loader_wait(loader, LOADER_GOT_BUFFER);
     trace("Got buffer in loader thread");
 
     /*  Copy data to the GPU buffer */
@@ -236,6 +250,7 @@ void* load_model(void* loader_) {
         memcpy(&loader->buffer[t * 9], &mapped[index], 9 * sizeof(float));
         index += 12 * sizeof(float) + sizeof(uint16_t);
     }
+
     trace("Loader thread done");
     return NULL;
 }
@@ -259,7 +274,7 @@ int main(int argc, char** argv) {
     loader.filename = argv[1];
     loader.buffer = NULL;
     loader.model = &model;
-    loader.state = START;
+    loader.state = LOADER_START;
     pthread_mutex_init(&loader.mutex, NULL);
     pthread_cond_init(&loader.cond, NULL);
 
@@ -305,18 +320,11 @@ int main(int argc, char** argv) {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
     /*  Allocate data for the model, then send it to the loader thread */
-    while (loader.state != GOT_SIZE) {
-        pthread_mutex_lock(&loader.mutex);
-        pthread_cond_wait(&loader.cond, &loader.mutex);
-        pthread_mutex_unlock(&loader.mutex);
-    }
+    loader_wait(&loader, LOADER_GOT_SIZE);
     glBufferData(GL_ARRAY_BUFFER, model.num_triangles * 36,
                  NULL, GL_STATIC_DRAW);
     loader.buffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    pthread_mutex_lock(&loader.mutex);
-        loader.state = GOT_BUF;
-        pthread_cond_signal(&loader.cond);
-    pthread_mutex_unlock(&loader.mutex);
+    loader_next(&loader, LOADER_GOT_BUFFER);
     trace("Allocated buffer");
 
     glfwSetKeyCallback(window, key_callback);
@@ -357,7 +365,6 @@ int main(int argc, char** argv) {
                 return 2;
             }
             glUnmapBuffer(GL_ARRAY_BUFFER);
-            trace("Joined thread");
         }
 
         const float proj[16] = {1.0f, 0.0f, 0.0f, 0.0f,
@@ -372,7 +379,9 @@ int main(int argc, char** argv) {
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
-        if (first) { trace("First draw complete"); }
+        if (first) {
+            trace("First draw complete");
+        }
 
         /* Poll for and process events */
         glfwPollEvents();
