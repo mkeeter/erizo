@@ -79,8 +79,11 @@ void* loader_run(void* loader_) {
 
     memset(m->mat, 0, sizeof(m->mat));
     m->mat[0] = 1.0f / scale;
+    m->mat[12] = -center[0] / scale;
     m->mat[5] = 1.0f / scale;
+    m->mat[13] = -center[1] / scale;
     m->mat[10] = 1.0f / scale;
+    m->mat[14] = -center[2] / scale;
     m->mat[15] = 1.0f;
 
     log_trace("Waiting for buffer...");
