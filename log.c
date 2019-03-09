@@ -14,7 +14,7 @@ platform_terminal_color_t log_message_color(log_type_t t) {
     }
 }
 
-void log_print(log_type_t t, const char *fmt, ...)
+void log_print(log_type_t t, const char *fmt, va_list args)
 {
     static int64_t start_sec = -1;
     static int32_t start_usec = -1;
@@ -45,24 +45,30 @@ void log_print(log_type_t t, const char *fmt, ...)
         fprintf(out, " (%li.%06i) ", dt_sec, dt_usec);
 
         platform_clear_terminal_color();
-        va_list args;
-        va_start(args, fmt);
         vfprintf(out, fmt, args);
-        va_end(args);
         fprintf(out, "\n");
     platform_mutex_unlock(&mut);
 }
 
 void log_trace(const char *fmt, ...) {
-    log_print(LOG_TRACE, fmt);
+    va_list args;
+    va_start(args, fmt);
+    log_print(LOG_TRACE, fmt, args);
+    va_end(args);
 }
 
 void log_info(const char *fmt, ...) {
-    log_print(LOG_INFO, fmt);
+    va_list args;
+    va_start(args, fmt);
+    log_print(LOG_INFO, fmt, args);
+    va_end(args);
 }
 
 void log_error_and_abort(const char *fmt, ...) {
-    log_print(LOG_ERROR, fmt);
+    va_list args;
+    va_start(args, fmt);
+    log_print(LOG_ERROR, fmt, args);
+    va_end(args);
     exit(-1);
 }
 
