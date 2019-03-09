@@ -3,9 +3,9 @@
 
 #include "platform.h"
 
-struct loader;
+struct loader_;
 
-typedef struct {
+typedef struct worker_ {
     struct loader_* loader;
     uint32_t start;
     uint32_t end;
