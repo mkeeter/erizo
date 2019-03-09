@@ -22,7 +22,8 @@ void* loader_run(void* loader_) {
     loader_t* const loader = (loader_t*)loader_;
     model_t* const m = loader->model;
 
-    loader->mapped = platform_mmap(loader->filename);
+    size_t size;
+    loader->mapped = platform_mmap(loader->filename, &size);
     memcpy(&m->num_triangles, &loader->mapped[80], sizeof(m->num_triangles));
     loader_next(loader, LOADER_GOT_SIZE);
 
@@ -91,6 +92,8 @@ void* loader_run(void* loader_) {
             log_error_and_abort("Error joining worker thread");
         }
     }
+    platform_munmap(loader->mapped, size);
+    loader->mapped = NULL;
 
     log_trace("Loader thread done");
     return NULL;

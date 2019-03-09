@@ -5,13 +5,17 @@
 
 #include "platform.h"
 
-const char* platform_mmap(const char* filename) {
+const char* platform_mmap(const char* filename, size_t* size) {
     int stl_fd = open(filename, O_RDONLY);
     struct stat s;
     fstat(stl_fd, &s);
-    size_t size = s.st_size;
+    *size = s.st_size;
 
-    return mmap(0, size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
+    return mmap(0, *size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
+}
+
+void platform_munmap(const char* data, size_t size) {
+    munmap((void*)data, size);
 }
 
 void platform_get_time(int64_t* sec, int32_t* usec) {

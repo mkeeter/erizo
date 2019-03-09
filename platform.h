@@ -9,7 +9,9 @@
 
 #include "platform_unix.h"
 
-const char* platform_mmap(const char* filename);
+const char* platform_mmap(const char* filename, size_t* size);
+void platform_munmap(const char* data, size_t size);
+
 void platform_get_time(int64_t* sec, int32_t* usec);
 
 /*  Based on 8-color ANSI terminals */
