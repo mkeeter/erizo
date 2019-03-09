@@ -81,6 +81,37 @@ void main() {
 
 /******************************************************************************/
 
+void trace(const char *fmt, ...)
+{
+    static int64_t start_sec = -1;
+    static int32_t start_usec = -1;
+
+    if (start_sec == -1) {
+        platform_get_time(&start_sec, &start_usec);
+    }
+
+    int64_t now_sec;
+    int32_t now_usec;
+    platform_get_time(&now_sec, &now_usec);
+
+    long int dt_sec = now_sec - start_sec;
+    int dt_usec = now_usec - start_usec;
+    if (dt_usec < 0) {
+        dt_usec += 1000000;
+        dt_sec -= 1;
+    }
+    printf("[hedgehog] (%li.%06i) ", dt_sec, dt_usec);
+
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+
+    printf("\n");
+}
+
+/******************************************************************************/
+
 GLuint compile_shader(const GLchar* src, GLenum type) {
     const GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, &src, NULL);
@@ -126,27 +157,42 @@ GLuint link_program(GLuint vs, GLuint gs, GLuint fs) {
 }
 
 typedef struct {
-    const char* filename;
-    const char* mapped;
     GLuint num_triangles;
     float mat[16];
 } model_t;
 
-void* load_model(void* m_) {
-    model_t* const m = (model_t*)m_;
+typedef struct {
+    const char* filename;
+    float* buffer; /* Mapped by OpenGL */
 
-    m->mapped = platform_mmap(m->filename);
-    memcpy(&m->num_triangles, m->mapped + 80, sizeof(m->num_triangles));
+    /*  Synchronization system with the main thread */
+    enum { START, GOT_SIZE, GOT_BUF } state;
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+
+    model_t* model;
+} loader_t;
+
+void* load_model(void* loader_) {
+    loader_t* const loader = (loader_t*)loader_;
+    model_t* const m = loader->model;
+
+    const char* mapped = platform_mmap(loader->filename);
+    memcpy(&m->num_triangles, mapped + 80, sizeof(m->num_triangles));
+    pthread_mutex_lock(&loader->mutex);
+        loader->state = GOT_SIZE;
+        pthread_cond_signal(&loader->cond);
+    pthread_mutex_unlock(&loader->mutex);
 
     size_t index = 80 + 4 + 3 * sizeof(float);
-
     float min[3];
     float max[3];
-    memcpy(min, &m->mapped[index], sizeof(min));
-    memcpy(min, &m->mapped[index], sizeof(max));
+    memcpy(min, &mapped[index], sizeof(min));
+    memcpy(min, &mapped[index], sizeof(max));
+
     for (uint32_t t=0; t < m->num_triangles; t += 1) {
         float xyz[9];
-        memcpy(xyz, &m->mapped[index], 9 * sizeof(float));
+        memcpy(xyz, &mapped[index], 9 * sizeof(float));
         for (unsigned i=0; i < 3; ++i) {
             for (unsigned a=0; a < 3; ++a) {
                 const float v = xyz[3 * i + a];
@@ -177,6 +223,20 @@ void* load_model(void* m_) {
     m->mat[10] = 1.0f / scale;
     m->mat[15] = 1.0f;
 
+    while (loader->state != GOT_BUF) {
+        pthread_mutex_lock(&loader->mutex);
+        pthread_cond_wait(&loader->cond, &loader->mutex);
+        pthread_mutex_unlock(&loader->mutex);
+    }
+    trace("Got buffer in loader thread");
+
+    /*  Copy data to the GPU buffer */
+    index = 80 + 4 + 3 * sizeof(float);
+    for (t=0; t < m->num_triangles; t += 1) {
+        memcpy(&loader->buffer[t * 9], &mapped[index], 9 * sizeof(float));
+        index += 12 * sizeof(float) + sizeof(uint16_t);
+    }
+    trace("Loader thread done");
     return NULL;
 }
 
@@ -184,35 +244,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-}
-
-void trace(const char *fmt, ...)
-{
-    static int64_t start_sec = -1;
-    static int32_t start_usec = -1;
-
-    if (start_sec == -1) {
-        platform_get_time(&start_sec, &start_usec);
-    }
-
-    int64_t now_sec;
-    int32_t now_usec;
-    platform_get_time(&now_sec, &now_usec);
-
-    long int dt_sec = now_sec - start_sec;
-    int dt_usec = now_usec - start_usec;
-    if (dt_usec < 0) {
-        dt_usec += 1000000;
-        dt_sec -= 1;
-    }
-    printf("[hedgehog] (%li.%06i) ", dt_sec, dt_usec);
-
-    va_list args;
-    va_start(args, fmt);
-    vprintf(fmt, args);
-    va_end(args);
-
-    printf("\n");
 }
 
 int main(int argc, char** argv) {
@@ -224,9 +255,16 @@ int main(int argc, char** argv) {
     }
 
     model_t model;
-    model.filename = argv[1];
+    loader_t loader;
+    loader.filename = argv[1];
+    loader.buffer = NULL;
+    loader.model = &model;
+    loader.state = START;
+    pthread_mutex_init(&loader.mutex, NULL);
+    pthread_cond_init(&loader.cond, NULL);
+
     pthread_t loader_thread;
-    if (pthread_create(&loader_thread, NULL, load_model, &model)) {
+    if (pthread_create(&loader_thread, NULL, load_model, &loader)) {
         fprintf(stderr, "[hedgehog]    Error creating thread\n");
         return 1;
     }
@@ -262,6 +300,25 @@ int main(int argc, char** argv) {
     }
     trace("Initialized GLEW");
 
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+    /*  Allocate data for the model, then send it to the loader thread */
+    while (loader.state != GOT_SIZE) {
+        pthread_mutex_lock(&loader.mutex);
+        pthread_cond_wait(&loader.cond, &loader.mutex);
+        pthread_mutex_unlock(&loader.mutex);
+    }
+    glBufferData(GL_ARRAY_BUFFER, model.num_triangles * 36,
+                 NULL, GL_STATIC_DRAW);
+    loader.buffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    pthread_mutex_lock(&loader.mutex);
+        loader.state = GOT_BUF;
+        pthread_cond_signal(&loader.cond);
+    pthread_mutex_unlock(&loader.mutex);
+    trace("Allocated buffer");
+
     glfwSetKeyCallback(window, key_callback);
 
     GLuint vs = compile_shader(RAW_VS_SRC, GL_VERTEX_SHADER);
@@ -278,24 +335,10 @@ int main(int argc, char** argv) {
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-    if (pthread_join(loader_thread, NULL)) {
-        fprintf(stderr, "[hedgehog]    Error joining thread\n");
-        return 2;
-    }
-    trace("Joined thread");
-
-    glBufferData(GL_ARRAY_BUFFER, model.num_triangles * 50,
-                 &model.mapped[84], GL_STATIC_DRAW);
-    trace("Loaded buffer data");
-
     for (unsigned i=0; i < 3; ++i) {
         glEnableVertexAttribArray(i);
-        glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, 50,
-                              (const void*)(12UL * (i + 1)));
+        glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, 36,
+                              (const void*)(12UL * i));
     }
     trace("Assigned attribute pointers");
 
@@ -308,7 +351,14 @@ int main(int argc, char** argv) {
         glClearDepth(1.0);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
-        if (first) { trace("About to do first draw"); }
+        if (first) {
+            if (pthread_join(loader_thread, NULL)) {
+                fprintf(stderr, "[hedgehog]    Error joining thread\n");
+                return 2;
+            }
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+            trace("Joined thread");
+        }
 
         const float proj[16] = {1.0f, 0.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f, 0.0f,
