@@ -70,13 +70,24 @@ void main() {
 
 /******************************************************************************/
 
-void trace(const char *fmt, ...)
+typedef enum { LOG_TRACE, LOG_INFO, LOG_ERROR } message_type_t;
+platform_terminal_color_t log_message_color(message_type_t t) {
+    switch (t) {
+        case LOG_TRACE: return TERM_COLOR_BLUE;
+        case LOG_INFO: return TERM_COLOR_GREEN;
+        case LOG_ERROR: return TERM_COLOR_RED;
+    }
+}
+
+void print_log_message(message_type_t t, const char *fmt, ...)
 {
     static int64_t start_sec = -1;
     static int32_t start_usec = -1;
+    static platform_mutex_t mut;
 
     if (start_sec == -1) {
         platform_get_time(&start_sec, &start_usec);
+        platform_mutex_init(&mut);
     }
 
     int64_t now_sec;
@@ -90,13 +101,34 @@ void trace(const char *fmt, ...)
         dt_sec -= 1;
     }
 
-    va_list args;
-    va_start(args, fmt);
-    printf("[hedgehog] (%li.%06i) ", dt_sec, dt_usec);
-    vprintf(fmt, args);
-    va_end(args);
+    FILE* out = (t == LOG_ERROR) ? stderr : stdout;
+    platform_mutex_lock(&mut);
+        platform_set_terminal_color(log_message_color(t));
+        fprintf(out, "[hedgehog]");
 
-    printf("\n");
+        platform_set_terminal_color(TERM_COLOR_WHITE);
+        fprintf(out, " (%li.%06i) ", dt_sec, dt_usec);
+
+        platform_clear_terminal_color();
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(out, fmt, args);
+        va_end(args);
+        fprintf(out, "\n");
+    platform_mutex_unlock(&mut);
+}
+
+void log_trace(const char *fmt, ...) {
+    print_log_message(LOG_TRACE, fmt);
+}
+
+void log_info(const char *fmt, ...) {
+    print_log_message(LOG_INFO, fmt);
+}
+
+void log_error_and_abort(const char *fmt, ...) {
+    print_log_message(LOG_ERROR, fmt);
+    exit(-1);
 }
 
 /******************************************************************************/
@@ -229,8 +261,7 @@ void* load_model(void* loader_) {
         if (platform_thread_create(&worker_threads[i], worker_run,
                                    &workers[i]))
         {
-            fprintf(stderr, "[hedgehog]    Error creating worker thread\n");
-            exit(1);
+            log_error_and_abort("Error creating worker thread");
         }
     }
 
@@ -273,17 +304,17 @@ void* load_model(void* loader_) {
     m->mat[10] = 1.0f / scale;
     m->mat[15] = 1.0f;
 
-    trace("Waiting for buffer...");
+    log_trace("Waiting for buffer...");
     loader_wait(loader, LOADER_GOT_BUFFER);
-    trace("Got buffer in loader thread");
+    log_trace("Got buffer in loader thread");
 
     for (i = 0; i < NUM_WORKERS; ++i) {
         if (platform_thread_join(&worker_threads[i])) {
-            fprintf(stderr, "[hedgehog]    Error joining worker thread\n");
+            log_error_and_abort("Error joining worker thread");
         }
     }
 
-    trace("Loader thread done");
+    log_trace("Loader thread done");
     return NULL;
 }
 
@@ -294,11 +325,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 
 int main(int argc, char** argv) {
-    trace("Startup!");
+    log_info("Startup!");
 
     if (argc != 2) {
-        fprintf(stderr, "[hedgehog]    No input file\n");
-        return -1;
+        log_error_and_abort("No input file");
     }
 
     model_t model;
@@ -312,11 +342,12 @@ int main(int argc, char** argv) {
 
     platform_thread_t loader_thread;
     if (platform_thread_create(&loader_thread, load_model, &loader)) {
-        fprintf(stderr, "[hedgehog]    Error creating thread\n");
-        return 1;
+        log_error_and_abort("Error creating thread");
     }
 
-    if (!glfwInit())    return -1;
+    if (!glfwInit()) {
+        log_error_and_abort("Failed to initialize glfw");
+    }
 
     glfwWindowHint(GLFW_SAMPLES, 8);    /* multisampling! */
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -328,24 +359,21 @@ int main(int argc, char** argv) {
             500, 500, "hedgehog", NULL, NULL);
 
     if (!window) {
-        fprintf(stderr, "[hedgehog]    Error: failed to create window!\n");
-        glfwTerminate();
-        return -1;
+        log_error_and_abort("Failed to create window");
     }
-    trace("Created window");
+    log_trace("Created window");
 
     glfwMakeContextCurrent(window);
-    trace("Made context current");
+    log_trace("Made context current");
 
     {
         const GLenum err = glewInit();
         if (GLEW_OK != err) {
-            fprintf(stderr, "GLEW initialization failed: %s\n",
-                    glewGetErrorString(err));
-            return -1;
+            log_error_and_abort("GLEW initialization failed: %s\n",
+                                glewGetErrorString(err));
         }
     }
-    trace("Initialized GLEW");
+    log_trace("Initialized GLEW");
 
     GLuint vbo;
     glGenBuffers(1, &vbo);
@@ -357,7 +385,7 @@ int main(int argc, char** argv) {
                  NULL, GL_STATIC_DRAW);
     loader.buffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
     loader_next(&loader, LOADER_GOT_BUFFER);
-    trace("Allocated buffer");
+    log_trace("Allocated buffer");
 
     glfwSetKeyCallback(window, key_callback);
 
@@ -369,7 +397,7 @@ int main(int argc, char** argv) {
     glUseProgram(prog);
     GLuint loc_proj = glGetUniformLocation(prog, "proj");
     GLuint loc_model = glGetUniformLocation(prog, "model");
-    trace("Compiled shaders");
+    log_trace("Compiled shaders");
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -377,11 +405,11 @@ int main(int argc, char** argv) {
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    trace("Assigned attribute pointers");
+    log_trace("Assigned attribute pointers");
 
     int first = 1;
     glfwShowWindow(window);
-    trace("Showed window");
+    log_trace("Showed window");
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.3, 0.3, 0.3, 1.0);
@@ -390,8 +418,7 @@ int main(int argc, char** argv) {
         glEnable(GL_DEPTH_TEST);
         if (first) {
             if (platform_thread_join(&loader_thread)) {
-                fprintf(stderr, "[hedgehog]    Error joining thread\n");
-                return 2;
+                log_error_and_abort("Failed to join loader thread");
             }
             glUnmapBuffer(GL_ARRAY_BUFFER);
         }
@@ -409,7 +436,7 @@ int main(int argc, char** argv) {
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
         if (first) {
-            trace("First draw complete");
+            log_info("First draw complete");
         }
 
         /* Poll for and process events */

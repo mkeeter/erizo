@@ -1,8 +1,11 @@
+#include <stdio.h>
+
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 
+#include "platform.h"
 #include "platform_unix.h"
 
 const char* platform_mmap(const char* filename) {
@@ -20,6 +23,14 @@ void platform_get_time(int64_t* sec, int32_t* usec) {
 
     *sec = t.tv_sec;
     *usec = t.tv_usec;
+}
+
+void platform_set_terminal_color(platform_terminal_color_t c) {
+    printf("\x1b[3%im", c - TERM_COLOR_BLACK);
+}
+
+void platform_clear_terminal_color() {
+    printf("\x1b[0m");
 }
 
 int platform_mutex_init(platform_mutex_t* mutex) {
