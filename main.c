@@ -3,12 +3,11 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <pthread.h>
-
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include "platform.h"
+#include "platform_unix.h"
 
 /******************************************************************************/
 
@@ -164,8 +163,8 @@ typedef struct {
 
     /*  Synchronization system with the main thread */
     loader_state_t state;
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
+    platform_mutex_t mutex;
+    platform_cond_t cond;
 
     model_t* model;
 } loader_t;
@@ -178,17 +177,17 @@ typedef struct {
 
 void loader_wait(loader_t* loader, loader_state_t target) {
     while (loader->state != target) {
-        pthread_mutex_lock(&loader->mutex);
-        pthread_cond_wait(&loader->cond, &loader->mutex);
-        pthread_mutex_unlock(&loader->mutex);
+        platform_mutex_lock(&loader->mutex);
+        platform_cond_wait(&loader->cond, &loader->mutex);
+        platform_mutex_unlock(&loader->mutex);
     }
 }
 
 void loader_next(loader_t* loader, loader_state_t target) {
-    pthread_mutex_lock(&loader->mutex);
+    platform_mutex_lock(&loader->mutex);
         loader->state = target;
-        pthread_cond_broadcast(&loader->cond);
-    pthread_mutex_unlock(&loader->mutex);
+        platform_cond_broadcast(&loader->cond);
+    platform_mutex_unlock(&loader->mutex);
 }
 
 void* worker_run(void* worker_) {
@@ -222,12 +221,14 @@ void* load_model(void* loader_) {
      *  as the buffer is ready, they'll start! */
     const size_t NUM_WORKERS = 8;
     worker_t workers[NUM_WORKERS];
-    pthread_t worker_threads[NUM_WORKERS];
+    platform_thread_t worker_threads[NUM_WORKERS];
     for (unsigned i=0; i < NUM_WORKERS; ++i) {
         workers[i].loader = loader;
         workers[i].start = i * m->num_triangles / NUM_WORKERS;
         workers[i].end = (i + 1) * m->num_triangles / NUM_WORKERS;
-        if (pthread_create(&worker_threads[i], NULL, worker_run, &workers[i])) {
+        if (platform_thread_create(&worker_threads[i], worker_run,
+                                   &workers[i]))
+        {
             fprintf(stderr, "[hedgehog]    Error creating worker thread\n");
             exit(1);
         }
@@ -277,7 +278,7 @@ void* load_model(void* loader_) {
     trace("Got buffer in loader thread");
 
     for (i = 0; i < NUM_WORKERS; ++i) {
-        if (pthread_join(worker_threads[i], NULL)) {
+        if (platform_thread_join(&worker_threads[i])) {
             fprintf(stderr, "[hedgehog]    Error joining worker thread\n");
         }
     }
@@ -306,11 +307,11 @@ int main(int argc, char** argv) {
     loader.buffer = NULL;
     loader.model = &model;
     loader.state = LOADER_START;
-    pthread_mutex_init(&loader.mutex, NULL);
-    pthread_cond_init(&loader.cond, NULL);
+    platform_mutex_init(&loader.mutex);
+    platform_cond_init(&loader.cond);
 
-    pthread_t loader_thread;
-    if (pthread_create(&loader_thread, NULL, load_model, &loader)) {
+    platform_thread_t loader_thread;
+    if (platform_thread_create(&loader_thread, load_model, &loader)) {
         fprintf(stderr, "[hedgehog]    Error creating thread\n");
         return 1;
     }
@@ -388,7 +389,7 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
         if (first) {
-            if (pthread_join(loader_thread, NULL)) {
+            if (platform_thread_join(&loader_thread)) {
                 fprintf(stderr, "[hedgehog]    Error joining thread\n");
                 return 2;
             }
