@@ -13,8 +13,8 @@ typedef enum loader_state_ {
 
 typedef struct loader_ {
     const char* filename;
-    const char* mapped;
-    float* buffer; /* Mapped by OpenGL */
+    const char* mapped; /* mmapped file */
+    float* buffer;      /* Mapped by OpenGL */
 
     /*  Synchronization system with the main thread */
     loader_state_t state;

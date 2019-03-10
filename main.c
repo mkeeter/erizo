@@ -1,6 +1,5 @@
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
+#include "app.h"
+#include "camera.h"
 #include "log.h"
 #include "loader.h"
 #include "worker.h"
@@ -120,6 +119,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 int main(int argc, char** argv) {
     log_info("Startup!");
 
+    camera_t camera;
+    app_t app = { &camera };
+
     if (argc != 2) {
         log_error_and_abort("No input file");
     }
@@ -168,9 +170,8 @@ int main(int argc, char** argv) {
     }
     log_trace("Initialized GLEW");
 
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glGenBuffers(1, &model.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
 
     /*  Allocate data for the model, then send it to the loader thread */
     loader_wait(&loader, LOADER_GOT_SIZE);
@@ -180,6 +181,7 @@ int main(int argc, char** argv) {
     loader_next(&loader, LOADER_GOT_BUFFER);
     log_trace("Allocated buffer");
 
+    glfwSetWindowUserPointer(window, &app);
     glfwSetKeyCallback(window, key_callback);
 
     GLuint vs = compile_shader(MODEL_VS_SRC, GL_VERTEX_SHADER);
@@ -192,9 +194,8 @@ int main(int argc, char** argv) {
     GLuint loc_model = glGetUniformLocation(prog, "model");
     log_trace("Compiled shaders");
 
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    glGenVertexArrays(1, &model.vao);
+    glBindVertexArray(model.vao);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
