@@ -2,8 +2,8 @@
 #include "camera.h"
 #include "log.h"
 #include "loader.h"
-#include "worker.h"
 #include "model.h"
+#include "shader.h"
 
 /******************************************************************************/
 
@@ -65,50 +65,6 @@ void main() {
 );
 
 /******************************************************************************/
-
-GLuint compile_shader(const GLchar* src, GLenum type) {
-    const GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &src, NULL);
-    glCompileShader(shader);
-
-    GLint status;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-    if (status != GL_TRUE) {
-        GLint len = 0;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
-
-        GLchar* buf = malloc(len + 1);
-        glGetShaderInfoLog(shader, len, NULL, buf);
-        fprintf(stderr, "Failed to build shader: %s\n", buf);
-        free(buf);
-    }
-
-    return shader;
-}
-
-GLuint link_program(GLuint vs, GLuint gs, GLuint fs) {
-    GLuint program = glCreateProgram();
-
-    glAttachShader(program, vs);
-    glAttachShader(program, gs);
-    glAttachShader(program, fs);
-
-    glLinkProgram(program);
-
-    GLint status;
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
-    if (status != GL_TRUE) {
-        GLint len = 0;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &len);
-
-        GLchar* buf = malloc(len + 1);
-        glGetProgramInfoLog(program, len, NULL, buf);
-        fprintf(stderr, "Failed to link program: %s\n", buf);
-        free(buf);
-    }
-
-    return program;
-}
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -184,10 +140,10 @@ int main(int argc, char** argv) {
     glfwSetWindowUserPointer(window, &app);
     glfwSetKeyCallback(window, key_callback);
 
-    GLuint vs = compile_shader(MODEL_VS_SRC, GL_VERTEX_SHADER);
-    GLuint gs = compile_shader(MODEL_GS_SRC, GL_GEOMETRY_SHADER);
-    GLuint fs = compile_shader(MODEL_FS_SRC, GL_FRAGMENT_SHADER);
-    GLuint prog = link_program(vs, gs, fs);
+    GLuint vs = shader_build(MODEL_VS_SRC, GL_VERTEX_SHADER);
+    GLuint gs = shader_build(MODEL_GS_SRC, GL_GEOMETRY_SHADER);
+    GLuint fs = shader_build(MODEL_FS_SRC, GL_FRAGMENT_SHADER);
+    GLuint prog = shader_link(vs, gs, fs);
 
     glUseProgram(prog);
     GLuint loc_proj = glGetUniformLocation(prog, "proj");
