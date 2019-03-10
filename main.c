@@ -7,8 +7,6 @@
 
 /******************************************************************************/
 
-#define GLSL(version, shader)  "#version " #version "\n" #shader
-
 const GLchar* MODEL_VS_SRC = GLSL(330,
 layout(location=0) in vec3 pos;
 
