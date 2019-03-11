@@ -20,11 +20,11 @@ void loader_next(loader_t* loader, loader_state_t target) {
 
 void* loader_run(void* loader_) {
     loader_t* const loader = (loader_t*)loader_;
-    model_t* const m = loader->model;
 
     size_t size;
     loader->mapped = platform_mmap(loader->filename, &size);
-    memcpy(&m->num_triangles, &loader->mapped[80], sizeof(m->num_triangles));
+    memcpy(&loader->num_triangles, &loader->mapped[80],
+           sizeof(loader->num_triangles));
     loader_next(loader, LOADER_GOT_SIZE);
 
     /*  We kick off our mmap-to-OpenGL copying workers here, even though the
@@ -35,8 +35,8 @@ void* loader_run(void* loader_) {
     platform_thread_t worker_threads[NUM_WORKERS];
     for (unsigned i=0; i < NUM_WORKERS; ++i) {
         workers[i].loader = loader;
-        workers[i].start = i * m->num_triangles / NUM_WORKERS;
-        workers[i].end = (i + 1) * m->num_triangles / NUM_WORKERS;
+        workers[i].start = i * loader->num_triangles / NUM_WORKERS;
+        workers[i].end = (i + 1) * loader->num_triangles / NUM_WORKERS;
         if (platform_thread_create(&worker_threads[i], worker_run,
                                    &workers[i]))
         {
@@ -50,7 +50,7 @@ void* loader_run(void* loader_) {
     memcpy(min, &loader->mapped[index], sizeof(min));
     memcpy(min, &loader->mapped[index], sizeof(max));
 
-    for (uint32_t t=0; t < m->num_triangles; t += 1) {
+    for (uint32_t t=0; t < loader->num_triangles; t += 1) {
         float xyz[9];
         memcpy(xyz, &loader->mapped[index], 9 * sizeof(float));
         for (unsigned i=0; i < 3; ++i) {
@@ -77,14 +77,14 @@ void* loader_run(void* loader_) {
         }
     }
 
-    memset(m->mat, 0, sizeof(m->mat));
-    m->mat[0] = 1.0f / scale;
-    m->mat[12] = -center[0] / scale;
-    m->mat[5] = 1.0f / scale;
-    m->mat[13] = -center[1] / scale;
-    m->mat[10] = 1.0f / scale;
-    m->mat[14] = -center[2] / scale;
-    m->mat[15] = 1.0f;
+    memset(loader->mat, 0, sizeof(loader->mat));
+    loader->mat[0] = 1.0f / scale;
+    loader->mat[12] = -center[0] / scale;
+    loader->mat[5] = 1.0f / scale;
+    loader->mat[13] = -center[1] / scale;
+    loader->mat[10] = 1.0f / scale;
+    loader->mat[14] = -center[2] / scale;
+    loader->mat[15] = 1.0f;
 
     log_trace("Waiting for buffer...");
     loader_wait(loader, LOADER_GOT_BUFFER);
@@ -100,5 +100,41 @@ void* loader_run(void* loader_) {
 
     log_trace("Loader thread done");
     return NULL;
+}
+
+void loader_allocate_vbo(loader_t* loader) {
+    glGenBuffers(1, &loader->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, loader->vbo);
+    loader_wait(loader, LOADER_GOT_SIZE);
+
+    glBufferData(GL_ARRAY_BUFFER, loader->num_triangles * 36,
+                 NULL, GL_STATIC_DRAW);
+    loader->buffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    loader_next(loader, LOADER_GOT_BUFFER);
+
+    log_trace("Allocated buffer");
+}
+
+void loader_finish(loader_t* loader, model_t* model) {
+    if (!loader->vbo) {
+        log_error_and_abort("Invalid loader VBO");
+    } else if (!model->vao) {
+        log_error_and_abort("Invalid model VAO");
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, loader->vbo);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindVertexArray(model->vao);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glDeleteBuffers(1, &model->vbo);
+    model->vbo = loader->vbo;
+    loader->vbo = 0;
+
+    model->num_triangles = loader->num_triangles;
+    memcpy(model->mat, loader->mat, sizeof(model->mat));
+
+    log_trace("Copied model from loader");
 }
 

@@ -1,3 +1,4 @@
+#include "log.h"
 #include "model.h"
 #include "shader.h"
 
@@ -56,9 +57,25 @@ void main() {
 }
 );
 
-GLuint model_build_shader() {
+void model_init(model_t* model) {
+    model->num_triangles = 0;
+    model->vbo = 0;
+    glGenVertexArrays(1, &model->vao);
+
     GLuint vs = shader_build(MODEL_VS_SRC, GL_VERTEX_SHADER);
     GLuint gs = shader_build(MODEL_GS_SRC, GL_GEOMETRY_SHADER);
     GLuint fs = shader_build(MODEL_FS_SRC, GL_FRAGMENT_SHADER);
-    return shader_link(vs, gs, fs);
+    model->prog = shader_link(vs, gs, fs);
+    model->u_proj = glGetUniformLocation(model->prog, "proj");
+    model->u_model = glGetUniformLocation(model->prog, "model");
+
+    log_trace("Initialized model");
+}
+
+void model_draw(model_t* model, const float* proj) {
+    glUseProgram(model->prog);
+    glBindVertexArray(model->vao);
+    glUniformMatrix4fv(model->u_proj, 1, GL_FALSE, proj);
+    glUniformMatrix4fv(model->u_model, 1, GL_FALSE, model->mat);
+    glDrawArrays(GL_TRIANGLES, 0, model->num_triangles * 3);
 }

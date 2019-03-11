@@ -7,14 +7,15 @@ typedef struct model_ {
     uint32_t num_triangles;
     float mat[16];
 
-    /*  Specific to each model */
     GLuint vao;
     GLuint vbo;
 
-    /*  Common to every model */
     GLuint prog;
+    GLuint u_proj;
+    GLuint u_model;
 } model_t;
 
-GLuint model_build_shader();
+void model_init(model_t* model);
+void model_draw(model_t* model, const float* proj);
 
 #endif

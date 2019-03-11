@@ -21,11 +21,9 @@ int main(int argc, char** argv) {
         log_error_and_abort("No input file");
     }
 
-    model_t model;
     loader_t loader;
     loader.filename = argv[1];
     loader.buffer = NULL;
-    loader.model = &model;
     loader.state = LOADER_START;
     platform_mutex_init(&loader.mutex);
     platform_cond_init(&loader.cond);
@@ -47,7 +45,6 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     GLFWwindow* const window = glfwCreateWindow(
             500, 500, "hedgehog", NULL, NULL);
-
     if (!window) {
         log_error_and_abort("Failed to create window");
     }
@@ -56,46 +53,23 @@ int main(int argc, char** argv) {
     glfwMakeContextCurrent(window);
     log_trace("Made context current");
 
-    {
-        const GLenum err = glewInit();
-        if (GLEW_OK != err) {
-            log_error_and_abort("GLEW initialization failed: %s\n",
-                                glewGetErrorString(err));
-        }
+    const GLenum glew_err = glewInit();
+    if (GLEW_OK != glew_err) {
+        log_error_and_abort("GLEW initialization failed: %s\n",
+                            glewGetErrorString(glew_err));
     }
     log_trace("Initialized GLEW");
 
-    glGenBuffers(1, &model.vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
-
-    /*  Allocate data for the model, then send it to the loader thread */
-    loader_wait(&loader, LOADER_GOT_SIZE);
-    glBufferData(GL_ARRAY_BUFFER, model.num_triangles * 36,
-                 NULL, GL_STATIC_DRAW);
-    loader.buffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    loader_next(&loader, LOADER_GOT_BUFFER);
-    log_trace("Allocated buffer");
-
-    glfwSetWindowUserPointer(window, &app);
-    glfwSetKeyCallback(window, key_callback);
-
-    GLuint prog = model_build_shader();
-
-    glUseProgram(prog);
-    GLuint loc_proj = glGetUniformLocation(prog, "proj");
-    GLuint loc_model = glGetUniformLocation(prog, "model");
-    log_trace("Compiled shaders");
-
-    glGenVertexArrays(1, &model.vao);
-    glBindVertexArray(model.vao);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    log_trace("Assigned attribute pointers");
+    loader_allocate_vbo(&loader);
+    model_t model;
+    model_init(&model);
 
     int first = 1;
     glfwShowWindow(window);
+    glfwSetWindowUserPointer(window, &app);
+    glfwSetKeyCallback(window, key_callback);
     log_trace("Showed window");
+
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.3, 0.3, 0.3, 1.0);
@@ -106,18 +80,14 @@ int main(int argc, char** argv) {
             if (platform_thread_join(&loader_thread)) {
                 log_error_and_abort("Failed to join loader thread");
             }
-            glUnmapBuffer(GL_ARRAY_BUFFER);
+            loader_finish(&loader, &model);
         }
 
         const float proj[16] = {1.0f, 0.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f, 0.0f,
                                 0.0f, 0.0f, 0.0f, 1.0f};
-        glUniformMatrix4fv(loc_proj, 1, GL_FALSE, proj);
-
-        glUniformMatrix4fv(loc_model, 1, GL_FALSE, model.mat);
-
-        glDrawArrays(GL_TRIANGLES, 0, model.num_triangles * 3);
+        model_draw(&model, proj);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
