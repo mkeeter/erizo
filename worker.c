@@ -29,9 +29,7 @@ void* worker_run(void* worker_) {
 
     /*  Wait for GPU buffer pointers to be assigned, then deploy data */
     loader_wait(loader, LOADER_WORKER_GPU);
-    for (i=0; i < worker->count; ++i) {
-        memcpy(&worker->gpu[i], &worker->ram[i], 36);
-    }
+    memcpy(worker->gpu, worker->ram, 36 * worker->count);
 
     return NULL;
 }
