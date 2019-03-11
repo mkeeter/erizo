@@ -6,7 +6,7 @@ const GLchar* MODEL_VS_SRC = GLSL(330,
 layout(location=0) in vec3 pos;
 
 void main() {
-    gl_Position = vec4(pos, 1.0);
+    gl_Position = vec4(pos, 1.0f);
 }
 );
 
@@ -31,15 +31,15 @@ void main() {
 
     vert_norm = normalize(na + nb + nc);
 
-    pos_bary = vec3(1.0, 0.0, 0.0);
+    pos_bary = vec3(1.0f, 0.0f, 0.0f);
     gl_Position = proj * model * gl_in[0].gl_Position;
     EmitVertex();
 
-    pos_bary = vec3(0.0, 1.0, 0.0);
+    pos_bary = vec3(0.0f, 1.0f, 0.0f);
     gl_Position = proj * model * gl_in[1].gl_Position;
     EmitVertex();
 
-    pos_bary = vec3(0.0, 0.0, 1.0);
+    pos_bary = vec3(0.0f, 0.0f, 1.0f);
     gl_Position = proj * model * gl_in[2].gl_Position;
     EmitVertex();
 }
@@ -52,8 +52,8 @@ in vec3 pos_bary;
 out vec4 out_color;
 
 void main() {
-    out_color = vec4(abs(vert_norm), 1.0) * 0.8
-              + vec4(pos_bary, 1.0) * 0.2;
+    out_color = vec4(abs(vert_norm), 1.0f) * 0.8f
+              + vec4(pos_bary, 1.0f) * 0.2f;
 }
 );
 
@@ -73,6 +73,7 @@ void model_init(model_t* model) {
 }
 
 void model_draw(model_t* model, const float* proj) {
+    glEnable(GL_DEPTH_TEST);
     glUseProgram(model->prog);
     glBindVertexArray(model->vao);
     glUniformMatrix4fv(model->u_proj, 1, GL_FALSE, proj);

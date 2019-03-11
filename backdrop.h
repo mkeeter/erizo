@@ -3,10 +3,10 @@
 
 #include "platform.h"
 
-typedef struct view_ {
+typedef struct backdrop_ {
     GLuint vao;
     GLuint vbo;
-    GLuint program;
+    GLuint prog;
 } backdrop_t;
 
 void backdrop_init(backdrop_t* backdrop);

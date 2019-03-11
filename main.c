@@ -1,4 +1,5 @@
 #include "app.h"
+#include "backdrop.h"
 #include "camera.h"
 #include "log.h"
 #include "loader.h"
@@ -64,6 +65,9 @@ int main(int argc, char** argv) {
     model_t model;
     model_init(&model);
 
+    backdrop_t backdrop;
+    backdrop_init(&backdrop);
+
     int first = 1;
     glfwShowWindow(window);
     glfwSetWindowUserPointer(window, &app);
@@ -75,7 +79,6 @@ int main(int argc, char** argv) {
         glClearColor(0.3, 0.3, 0.3, 1.0);
         glClearDepth(1.0);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
         if (first) {
             if (platform_thread_join(&loader_thread)) {
                 log_error_and_abort("Failed to join loader thread");
@@ -83,6 +86,7 @@ int main(int argc, char** argv) {
             loader_finish(&loader, &model);
         }
 
+        backdrop_draw(&backdrop);
         const float proj[16] = {1.0f, 0.0f, 0.0f, 0.0f,
                                 0.0f, 1.0f, 0.0f, 0.0f,
                                 0.0f, 0.0f, 1.0f, 0.0f,
