@@ -1,3 +1,4 @@
+#include "log.h"
 #include "shader.h"
 
 GLuint shader_build(const GLchar* src, GLenum type) {
@@ -20,15 +21,7 @@ GLuint shader_build(const GLchar* src, GLenum type) {
     return shader;
 }
 
-GLuint shader_link(GLuint vs, GLuint gs, GLuint fs) {
-    GLuint program = glCreateProgram();
-
-    glAttachShader(program, vs);
-    glAttachShader(program, gs);
-    glAttachShader(program, fs);
-
-    glLinkProgram(program);
-
+void shader_check_link(GLuint program) {
     GLint status;
     glGetProgramiv(program, GL_LINK_STATUS, &status);
     if (status != GL_TRUE) {
@@ -37,9 +30,32 @@ GLuint shader_link(GLuint vs, GLuint gs, GLuint fs) {
 
         GLchar* buf = malloc(len + 1);
         glGetProgramInfoLog(program, len, NULL, buf);
-        fprintf(stderr, "Failed to link program: %s\n", buf);
-        free(buf);
+        log_error_and_abort("Failed to link program: %s\n", buf);
     }
+}
+
+
+GLuint shader_link_vf(GLuint vs, GLuint fs) {
+    GLuint program = glCreateProgram();
+
+    glAttachShader(program, vs);
+    glAttachShader(program, fs);
+
+    glLinkProgram(program);
+    shader_check_link(program);
+
+    return program;
+}
+
+GLuint shader_link_vgf(GLuint vs, GLuint gs, GLuint fs) {
+    GLuint program = glCreateProgram();
+
+    glAttachShader(program, vs);
+    glAttachShader(program, gs);
+    glAttachShader(program, fs);
+
+    glLinkProgram(program);
+    shader_check_link(program);
 
     return program;
 }

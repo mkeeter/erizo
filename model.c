@@ -65,7 +65,7 @@ void model_init(model_t* model) {
     GLuint vs = shader_build(MODEL_VS_SRC, GL_VERTEX_SHADER);
     GLuint gs = shader_build(MODEL_GS_SRC, GL_GEOMETRY_SHADER);
     GLuint fs = shader_build(MODEL_FS_SRC, GL_FRAGMENT_SHADER);
-    model->prog = shader_link(vs, gs, fs);
+    model->prog = shader_link_vgf(vs, gs, fs);
     model->u_proj = glGetUniformLocation(model->prog, "proj");
     model->u_model = glGetUniformLocation(model->prog, "model");
 
