@@ -7,20 +7,24 @@ struct model_;
 
 typedef enum loader_state_ {
     LOADER_START,
-    LOADER_GOT_SIZE,
-    LOADER_GOT_BUFFER,
+    LOADER_TRIANGLE_COUNT,
+    LOADER_RAM_BUFFER,
+    LOADER_GPU_BUFFER,
+    LOADER_WORKER_GPU,
 } loader_state_t;
 
 typedef struct loader_ {
     const char* filename;
-    const char* mapped; /* mmapped file */
-    float* buffer;      /* Mapped by OpenGL */
 
+    /*  Model parameters */
     GLuint vbo;
     uint32_t num_triangles;
     float mat[16];
 
-    /*  Synchronization system with the main thread */
+    /*  GPU-mapped buffer, populated by main thread */
+    float* buffer;
+
+    /*  Synchronization system */
     loader_state_t state;
     platform_mutex_t mutex;
     platform_cond_t cond;

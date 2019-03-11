@@ -7,8 +7,15 @@ struct loader_;
 
 typedef struct worker_ {
     struct loader_* loader;
-    uint32_t start;
-    uint32_t end;
+
+    /*  Inputs from loader */
+    const char (*stl)[50];
+    float (*ram)[9];
+    float (*gpu)[9];
+    size_t count;
+
+    float min[3];
+    float max[3];
 } worker_t;
 
 void* worker_run(void* worker_);

@@ -4,11 +4,11 @@
 #include "worker.h"
 
 void loader_wait(loader_t* loader, loader_state_t target) {
-    while (loader->state != target) {
-        platform_mutex_lock(&loader->mutex);
+    platform_mutex_lock(&loader->mutex);
+    while (loader->state < target) {
         platform_cond_wait(&loader->cond, &loader->mutex);
-        platform_mutex_unlock(&loader->mutex);
     }
+    platform_mutex_unlock(&loader->mutex);
 }
 
 void loader_next(loader_t* loader, loader_state_t target) {
@@ -22,10 +22,13 @@ void* loader_run(void* loader_) {
     loader_t* const loader = (loader_t*)loader_;
 
     size_t size;
-    loader->mapped = platform_mmap(loader->filename, &size);
-    memcpy(&loader->num_triangles, &loader->mapped[80],
+    const char* mapped = platform_mmap(loader->filename, &size);
+    memcpy(&loader->num_triangles, &mapped[80],
            sizeof(loader->num_triangles));
-    loader_next(loader, LOADER_GOT_SIZE);
+    loader_next(loader, LOADER_TRIANGLE_COUNT);
+
+    float* ram = malloc(loader->num_triangles * 3 * 3 * sizeof(float));
+    loader_next(loader, LOADER_RAM_BUFFER);
 
     /*  We kick off our mmap-to-OpenGL copying workers here, even though the
      *  buffer won't be ready for a little while.  This means that as soon
@@ -34,9 +37,14 @@ void* loader_run(void* loader_) {
     worker_t workers[NUM_WORKERS];
     platform_thread_t worker_threads[NUM_WORKERS];
     for (unsigned i=0; i < NUM_WORKERS; ++i) {
+        const size_t start = i * loader->num_triangles / NUM_WORKERS;
+        const size_t end = (i + 1) * loader->num_triangles / NUM_WORKERS;
+
         workers[i].loader = loader;
-        workers[i].start = i * loader->num_triangles / NUM_WORKERS;
-        workers[i].end = (i + 1) * loader->num_triangles / NUM_WORKERS;
+        workers[i].count = end - start;
+        workers[i].stl = (const char (*)[50])&mapped[80 + 4 + 12 + 50 * start];
+        workers[i].ram = (float (*)[9])&ram[start * 9];
+        workers[i].gpu = NULL;
         if (platform_thread_create(&worker_threads[i], worker_run,
                                    &workers[i]))
         {
@@ -44,34 +52,37 @@ void* loader_run(void* loader_) {
         }
     }
 
-    size_t index = 80 + 4 + 3 * sizeof(float);
-    float min[3];
-    float max[3];
-    memcpy(min, &loader->mapped[index], sizeof(min));
-    memcpy(min, &loader->mapped[index], sizeof(max));
+    log_trace("Waiting for buffer...");
+    loader_wait(loader, LOADER_GPU_BUFFER);
 
-    for (uint32_t t=0; t < loader->num_triangles; t += 1) {
-        float xyz[9];
-        memcpy(xyz, &loader->mapped[index], 9 * sizeof(float));
-        for (unsigned i=0; i < 3; ++i) {
-            for (unsigned a=0; a < 3; ++a) {
-                const float v = xyz[3 * i + a];
-                if (v < min[a]) {
-                    min[a] = v;
-                }
-                if (v > max[a]) {
-                    max[a] = v;
-                }
-            }
+    /*  Populate GPU pointers, then kick off workers copying triangles */
+    for (i=0; i < NUM_WORKERS; ++i) {
+        const size_t start = i * loader->num_triangles / NUM_WORKERS;
+        workers[i].gpu = (float (*)[9])&loader->buffer[start * 9];
+    }
+    loader_next(loader, LOADER_WORKER_GPU);
+    log_trace("Sent buffers to worker threads");
+
+    for (i = 0; i < NUM_WORKERS; ++i) {
+        if (platform_thread_join(&worker_threads[i])) {
+            log_error_and_abort("Error joining worker thread");
         }
-        index += 12 * sizeof(float) + sizeof(uint16_t);
     }
 
+    /*  Reduce min / max arrays from worker subprocesses */
     float center[3];
     float scale = 0;
-    for (i=0; i < 3; ++i) {
-        center[i] = (min[i] + max[i]) / 2.0f;
-        const float d = max[i] - min[i];
+    for (unsigned v=0; v < 3; ++v) {
+        for (i=1; i < NUM_WORKERS; ++i) {
+            if (workers[i].max[v] > workers[0].max[v]) {
+                workers[0].max[v] = workers[i].max[v];
+            }
+            if (workers[i].min[v] < workers[0].min[v]) {
+                workers[0].min[v] = workers[i].min[v];
+            }
+        }
+        center[v] = (workers[0].max[v] + workers[0].min[v]) / 2.0f;
+        const float d = workers[0].max[v] - workers[0].min[v];
         if (d > scale) {
             scale = d;
         }
@@ -86,17 +97,8 @@ void* loader_run(void* loader_) {
     loader->mat[14] = -center[2] / scale;
     loader->mat[15] = 1.0f;
 
-    log_trace("Waiting for buffer...");
-    loader_wait(loader, LOADER_GOT_BUFFER);
-    log_trace("Got buffer in loader thread");
-
-    for (i = 0; i < NUM_WORKERS; ++i) {
-        if (platform_thread_join(&worker_threads[i])) {
-            log_error_and_abort("Error joining worker thread");
-        }
-    }
-    platform_munmap(loader->mapped, size);
-    loader->mapped = NULL;
+    platform_munmap(mapped, size);
+    free(ram);
 
     log_trace("Loader thread done");
     return NULL;
@@ -105,12 +107,12 @@ void* loader_run(void* loader_) {
 void loader_allocate_vbo(loader_t* loader) {
     glGenBuffers(1, &loader->vbo);
     glBindBuffer(GL_ARRAY_BUFFER, loader->vbo);
-    loader_wait(loader, LOADER_GOT_SIZE);
+    loader_wait(loader, LOADER_TRIANGLE_COUNT);
 
     glBufferData(GL_ARRAY_BUFFER, loader->num_triangles * 36,
                  NULL, GL_STATIC_DRAW);
     loader->buffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    loader_next(loader, LOADER_GOT_BUFFER);
+    loader_next(loader, LOADER_GPU_BUFFER);
 
     log_trace("Allocated buffer");
 }
