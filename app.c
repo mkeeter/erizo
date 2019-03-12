@@ -63,6 +63,7 @@ void app_run(app_t* app) {
         int height;
         glfwGetFramebufferSize(app->window, &width, &height);
         camera_update_proj(app->camera, width, height);
+        log_trace("Got framebuffer size %i x %i", width, height);
 
         app->state = APP_RUNNING;
     }
