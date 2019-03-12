@@ -6,12 +6,6 @@
 #include "model.h"
 #include "shader.h"
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-}
-
 int main(int argc, char** argv) {
     log_info("Startup!");
 
@@ -65,46 +59,19 @@ int main(int argc, char** argv) {
     backdrop_t backdrop;
     backdrop_init(&backdrop);
 
-    int first = 1;
     glfwShowWindow(window);
-
-    app_t app = {
-        &backdrop,
-        &camera,
-        &loader,
-        &model,
-    };
-
-    glfwSetWindowUserPointer(window, &app);
-    glfwSetKeyCallback(window, key_callback);
     log_trace("Showed window");
 
-    glClearDepth(1.0);
+    /*  Build the app by stitching together our other objects */
+    app_t app = { &backdrop, &camera, &loader, &model, window };
+    app_init(&app);
+
     while (!glfwWindowShouldClose(window))
     {
-        glClear(GL_DEPTH_BUFFER_BIT);
+        app_check_loader(&app);
+        app_draw(&app);
 
-        /*  On first opening the window, hold until the model is
-         *  ready (rather than continuing to render the empty backdrop */
-        if (first) {
-            loader_wait(&loader, LOADER_DONE);
-        }
-        if (loader_state(&loader) == LOADER_DONE) {
-            loader_finish(&loader, &model);
-        }
-
-        backdrop_draw(&backdrop);
-        model_draw(&model, camera.proj);
-
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
-        if (first) {
-            log_info("First draw complete");
-        }
-
-        /* Poll for and process events */
         glfwWaitEvents();
-        first = 0;
     }
 
     return 0;
