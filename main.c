@@ -15,9 +15,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 int main(int argc, char** argv) {
     log_info("Startup!");
 
-    camera_t camera;
-    app_t app = { &camera };
-
     if (argc != 2) {
         log_error_and_abort("No input file");
     }
@@ -25,6 +22,10 @@ int main(int argc, char** argv) {
     loader_t loader;
     loader_init(&loader);
     loader_start(&loader, argv[1]);
+
+    /*  Initialize our camera to store width and height */
+    camera_t camera;
+    camera_update_proj(&camera, 500, 500);
 
     if (!glfwInit()) {
         log_error_and_abort("Failed to initialize glfw");
@@ -37,7 +38,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     GLFWwindow* const window = glfwCreateWindow(
-            500, 500, "hedgehog", NULL, NULL);
+            camera.width, camera.height, "hedgehog", NULL, NULL);
     if (!window) {
         log_error_and_abort("Failed to create window");
     }
@@ -53,7 +54,11 @@ int main(int argc, char** argv) {
     }
     log_trace("Initialized GLEW");
 
+    /*  Highest priority once OpenGL is running: allocate the VBO
+     *  and pass it to the loader thread.  */
     loader_allocate_vbo(&loader);
+
+    /*  Next, build the OpenGL-dependent objects */
     model_t model;
     model_init(&model);
 
@@ -62,16 +67,25 @@ int main(int argc, char** argv) {
 
     int first = 1;
     glfwShowWindow(window);
+
+    app_t app = {
+        &backdrop,
+        &camera,
+        &loader,
+        &model,
+    };
+
     glfwSetWindowUserPointer(window, &app);
     glfwSetKeyCallback(window, key_callback);
     log_trace("Showed window");
 
+    glClearDepth(1.0);
     while (!glfwWindowShouldClose(window))
     {
-        glClearColor(0.3, 0.3, 0.3, 1.0);
-        glClearDepth(1.0);
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+        glClear(GL_DEPTH_BUFFER_BIT);
 
+        /*  On first opening the window, hold until the model is
+         *  ready (rather than continuing to render the empty backdrop */
         if (first) {
             loader_wait(&loader, LOADER_DONE);
         }
@@ -80,11 +94,7 @@ int main(int argc, char** argv) {
         }
 
         backdrop_draw(&backdrop);
-        const float proj[16] = {1.0f, 0.0f, 0.0f, 0.0f,
-                                0.0f, 1.0f, 0.0f, 0.0f,
-                                0.0f, 0.0f, 1.0f, 0.0f,
-                                0.0f, 0.0f, 0.0f, 1.0f};
-        model_draw(&model, proj);
+        model_draw(&model, camera.proj);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
