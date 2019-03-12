@@ -38,13 +38,13 @@ void log_print(log_type_t t, const char *fmt, va_list args)
 
     FILE* out = (t == LOG_ERROR) ? stderr : stdout;
     platform_mutex_lock(&mut);
-        platform_set_terminal_color(log_message_color(t));
+        platform_set_terminal_color(out, log_message_color(t));
         fprintf(out, "[hedgehog]");
 
-        platform_set_terminal_color(TERM_COLOR_WHITE);
+        platform_set_terminal_color(out, TERM_COLOR_WHITE);
         fprintf(out, " (%li.%06i) ", dt_sec, dt_usec);
 
-        platform_clear_terminal_color();
+        platform_clear_terminal_color(out);
         vfprintf(out, fmt, args);
         fprintf(out, "\n");
     platform_mutex_unlock(&mut);

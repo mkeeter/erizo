@@ -26,12 +26,12 @@ void platform_get_time(int64_t* sec, int32_t* usec) {
     *usec = t.tv_usec;
 }
 
-void platform_set_terminal_color(platform_terminal_color_t c) {
-    printf("\x1b[3%im", c - TERM_COLOR_BLACK);
+void platform_set_terminal_color(FILE* f, platform_terminal_color_t c) {
+    fprintf(f, "\x1b[3%im", c - TERM_COLOR_BLACK);
 }
 
-void platform_clear_terminal_color() {
-    printf("\x1b[0m");
+void platform_clear_terminal_color(FILE* f) {
+    fprintf(f, "\x1b[0m");
 }
 
 int platform_mutex_init(platform_mutex_t* mutex) {

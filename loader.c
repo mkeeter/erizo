@@ -3,6 +3,8 @@
 #include "model.h"
 #include "worker.h"
 
+static void* loader_run(void* loader_);
+
 void loader_wait(loader_t* loader, loader_state_t target) {
     platform_mutex_lock(&loader->mutex);
     while (loader->state < target) {
@@ -18,8 +20,29 @@ void loader_next(loader_t* loader, loader_state_t target) {
     platform_mutex_unlock(&loader->mutex);
 }
 
-void* loader_run(void* loader_) {
-    loader_t* const loader = (loader_t*)loader_;
+void loader_init(loader_t* loader) {
+    platform_mutex_init(&loader->mutex);
+    platform_cond_init(&loader->cond);
+    loader_next(loader, LOADER_IDLE);
+}
+
+void loader_start(loader_t* loader, const char* filename) {
+    const loader_state_t s = loader_state(loader);
+    if (s != LOADER_IDLE) {
+        log_error_and_abort("Invalid loader state: %i", s);
+    }
+
+    loader->filename = filename;
+    loader->buffer = NULL;
+    loader_next(loader, LOADER_START);
+
+    if (platform_thread_create(&loader->thread, loader_run, loader)) {
+        log_error_and_abort("Error creating loader thread");
+    }
+}
+
+static void* loader_run(void* loader_) {
+    loader_t* loader = (loader_t*)loader_;
 
     size_t size;
     const char* mapped = platform_mmap(loader->filename, &size);
@@ -101,6 +124,11 @@ void* loader_run(void* loader_) {
     free(ram);
 
     log_trace("Loader thread done");
+    loader_next(loader, LOADER_DONE);
+
+    /*  Kick the main event loop, to make sure it catches the load */
+    glfwPostEmptyEvent();
+
     return NULL;
 }
 
@@ -117,7 +145,18 @@ void loader_allocate_vbo(loader_t* loader) {
     log_trace("Allocated buffer");
 }
 
+loader_state_t loader_state(loader_t* loader) {
+    platform_mutex_lock(&loader->mutex);
+    loader_state_t out = loader->state;
+    platform_mutex_unlock(&loader->mutex);
+    return out;
+}
+
 void loader_finish(loader_t* loader, model_t* model) {
+    if (platform_thread_join(&loader->thread)) {
+        log_error_and_abort("Failed to join loader thread");
+    }
+
     if (!loader->vbo) {
         log_error_and_abort("Invalid loader VBO");
     } else if (!model->vao) {
@@ -138,5 +177,6 @@ void loader_finish(loader_t* loader, model_t* model) {
     memcpy(model->mat, loader->mat, sizeof(model->mat));
 
     log_trace("Copied model from loader");
+    loader_next(loader, LOADER_IDLE);
 }
 

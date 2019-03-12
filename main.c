@@ -23,16 +23,8 @@ int main(int argc, char** argv) {
     }
 
     loader_t loader;
-    loader.filename = argv[1];
-    loader.buffer = NULL;
-    loader.state = LOADER_START;
-    platform_mutex_init(&loader.mutex);
-    platform_cond_init(&loader.cond);
-
-    platform_thread_t loader_thread;
-    if (platform_thread_create(&loader_thread, loader_run, &loader)) {
-        log_error_and_abort("Error creating thread");
-    }
+    loader_init(&loader);
+    loader_start(&loader, argv[1]);
 
     if (!glfwInit()) {
         log_error_and_abort("Failed to initialize glfw");
@@ -79,10 +71,11 @@ int main(int argc, char** argv) {
         glClearColor(0.3, 0.3, 0.3, 1.0);
         glClearDepth(1.0);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
         if (first) {
-            if (platform_thread_join(&loader_thread)) {
-                log_error_and_abort("Failed to join loader thread");
-            }
+            loader_wait(&loader, LOADER_DONE);
+        }
+        if (loader_state(&loader) == LOADER_DONE) {
             loader_finish(&loader, &model);
         }
 
@@ -100,8 +93,7 @@ int main(int argc, char** argv) {
         }
 
         /* Poll for and process events */
-        glfwPollEvents();
-
+        glfwWaitEvents();
         first = 0;
     }
 

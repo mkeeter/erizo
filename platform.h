@@ -28,8 +28,8 @@ typedef enum {
     TERM_COLOR_CYAN,
     TERM_COLOR_WHITE,
 } platform_terminal_color_t;
-void platform_set_terminal_color(platform_terminal_color_t c);
-void platform_clear_terminal_color();
+void platform_set_terminal_color(FILE* f, platform_terminal_color_t c);
+void platform_clear_terminal_color(FILE* f);
 
 /*  Threading API is a thin wrapper around pthreads */
 int platform_mutex_init(platform_mutex_t* mutex);
