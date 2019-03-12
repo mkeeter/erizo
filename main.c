@@ -18,8 +18,7 @@ int main(int argc, char** argv) {
     loader_start(&loader, argv[1]);
 
     /*  Initialize our camera to store width and height */
-    camera_t camera;
-    camera_update_proj(&camera, 500, 500);
+    camera_t camera = {500, 500};
 
     if (!glfwInit()) {
         log_error_and_abort("Failed to initialize glfw");
@@ -63,14 +62,12 @@ int main(int argc, char** argv) {
     log_trace("Showed window");
 
     /*  Build the app by stitching together our other objects */
-    app_t app = { &backdrop, &camera, &loader, &model, window };
+    app_t app = { APP_PRELOAD, &backdrop, &camera, &loader, &model, window };
     app_init(&app);
 
     while (!glfwWindowShouldClose(window))
     {
-        app_check_loader(&app);
-        app_draw(&app);
-
+        app_run(&app);
         glfwWaitEvents();
     }
 

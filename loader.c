@@ -87,6 +87,7 @@ static void* loader_run(void* loader_) {
             log_error_and_abort("Error joining worker thread");
         }
     }
+    log_trace("Joined worker threads");
 
     /*  Reduce min / max arrays from worker subprocesses */
     float center[3];
@@ -116,14 +117,14 @@ static void* loader_run(void* loader_) {
     loader->mat[14] = -center[2] / scale;
     loader->mat[15] = 1.0f;
 
-    platform_munmap(mapped, size);
-    free(ram);
-
+    /*  Mark the load as done and post an empty event, to make sure that
+     *  the main loop wakes up and checks the loader */
     log_trace("Loader thread done");
     loader_next(loader, LOADER_DONE);
-
-    /*  Kick the main event loop, to make sure it catches the load */
     glfwPostEmptyEvent();
+
+    platform_munmap(mapped, size);
+    free(ram);
 
     return NULL;
 }
@@ -135,7 +136,9 @@ void loader_allocate_vbo(loader_t* loader) {
 
     glBufferData(GL_ARRAY_BUFFER, loader->num_triangles * 36,
                  NULL, GL_STATIC_DRAW);
-    loader->buffer = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    loader->buffer = glMapBufferRange(GL_ARRAY_BUFFER, 0, loader->num_triangles * 36,
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT |
+            GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
     loader_next(loader, LOADER_GPU_BUFFER);
 
     log_trace("Allocated buffer");
@@ -149,10 +152,6 @@ loader_state_t loader_state(loader_t* loader) {
 }
 
 void loader_finish(loader_t* loader, model_t* model) {
-    if (platform_thread_join(&loader->thread)) {
-        log_error_and_abort("Failed to join loader thread");
-    }
-
     if (!loader->vbo) {
         log_error_and_abort("Invalid loader VBO");
     } else if (!model->vao) {
@@ -173,6 +172,12 @@ void loader_finish(loader_t* loader, model_t* model) {
     memcpy(model->mat, loader->mat, sizeof(model->mat));
 
     log_trace("Copied model from loader");
-    loader_next(loader, LOADER_IDLE);
 }
 
+void loader_reset(loader_t* loader) {
+    if (platform_thread_join(&loader->thread)) {
+        log_error_and_abort("Failed to join loader thread");
+    }
+    loader_next(loader, LOADER_IDLE);
+    log_trace("Reset loader");
+}
