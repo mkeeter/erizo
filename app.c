@@ -38,6 +38,11 @@ void app_run(app_t* app) {
     if (app->state == APP_PRELOAD) {
         loader_wait(app->loader, LOADER_DONE);
         loader_finish(app->loader, app->model);
+    } else if (app->state == APP_LOAD &&
+               loader_state(app->loader) == LOADER_DONE) {
+        loader_finish(app->loader, app->model);
+        loader_reset(app->loader);
+        app->state = APP_RUNNING;
     }
 
     model_draw(app->model, app->camera->proj);
@@ -50,10 +55,15 @@ void app_run(app_t* app) {
         app->state = APP_PREDRAW;
     }
 
+    /*  On first draw (whether or not there was a model passed in on
+     *  the command line), update the camera projection matrix using the
+     *  true framebuffer size. */
     if (app->state == APP_PREDRAW) {
         int width;
         int height;
         glfwGetFramebufferSize(app->window, &width, &height);
         camera_update_proj(app->camera, width, height);
+
+        app->state = APP_RUNNING;
     }
 }
