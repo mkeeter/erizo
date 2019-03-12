@@ -35,6 +35,7 @@ void app_run(app_t* app) {
     glClear(GL_DEPTH_BUFFER_BIT);
     backdrop_draw(app->backdrop);
 
+    /*  At the very last moment, check on the loader */
     if (app->state == APP_PRELOAD) {
         loader_wait(app->loader, LOADER_DONE);
         loader_finish(app->loader, app->model);
