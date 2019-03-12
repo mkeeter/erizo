@@ -1,6 +1,3 @@
-#ifndef PLATFORM_UNIX_H
-#define PLATFORM_UNIX_H
-
 #include <pthread.h>
 
 typedef struct platform_thread {
@@ -14,5 +11,3 @@ typedef struct platform_mutex {
 typedef struct platform_cond {
     pthread_cond_t data;
 } platform_cond_t;
-
-#endif

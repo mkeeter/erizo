@@ -1,6 +1,3 @@
-#ifndef WORKER_H
-#define WORKER_H
-
 #include "platform.h"
 
 struct loader_;
@@ -20,5 +17,3 @@ typedef struct worker_ {
 } worker_t;
 
 void worker_start(worker_t* worker);
-
-#endif

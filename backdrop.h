@@ -1,6 +1,3 @@
-#ifndef BACKDROP_H
-#define BACKDROP_H
-
 #include "platform.h"
 
 typedef struct backdrop_ {
@@ -13,5 +10,3 @@ typedef struct backdrop_ {
 
 void backdrop_init(backdrop_t* backdrop);
 void backdrop_draw(backdrop_t* backdrop);
-
-#endif

@@ -1,6 +1,3 @@
-#ifndef LOADER_H
-#define LOADER_H
-
 #include "platform.h"
 
 struct model_;
@@ -43,5 +40,3 @@ void loader_next(loader_t* loader, loader_state_t target);
 
 void loader_allocate_vbo(loader_t* loader);
 void loader_finish(loader_t* loader, struct model_ * model);
-
-#endif

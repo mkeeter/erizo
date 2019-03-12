@@ -1,6 +1,3 @@
-#ifndef MODEL_H
-#define MODEL_H
-
 #include "platform.h"
 
 typedef struct model_ {
@@ -17,5 +14,3 @@ typedef struct model_ {
 
 void model_init(model_t* model);
 void model_draw(model_t* model, const float* proj);
-
-#endif
