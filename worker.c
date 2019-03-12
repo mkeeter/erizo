@@ -2,7 +2,15 @@
 #include "log.h"
 #include "worker.h"
 
-void* worker_run(void* worker_) {
+static void* worker_run(void* worker_);
+
+void worker_start(worker_t* worker) {
+    if (platform_thread_create(&worker->thread, worker_run, worker)) {
+        log_error_and_abort("Error creating worker thread");
+    }
+}
+
+static void* worker_run(void* worker_) {
     worker_t* const worker = (worker_t*)worker_;
     loader_t* const loader = worker->loader;
 
@@ -33,4 +41,3 @@ void* worker_run(void* worker_) {
 
     return NULL;
 }
-

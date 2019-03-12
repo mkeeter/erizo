@@ -58,7 +58,6 @@ static void* loader_run(void* loader_) {
      *  as the buffer is ready, they'll start! */
     const size_t NUM_WORKERS = 8;
     worker_t workers[NUM_WORKERS];
-    platform_thread_t worker_threads[NUM_WORKERS];
     for (unsigned i=0; i < NUM_WORKERS; ++i) {
         const size_t start = i * loader->num_triangles / NUM_WORKERS;
         const size_t end = (i + 1) * loader->num_triangles / NUM_WORKERS;
@@ -68,11 +67,8 @@ static void* loader_run(void* loader_) {
         workers[i].stl = (const char (*)[50])&mapped[80 + 4 + 12 + 50 * start];
         workers[i].ram = (float (*)[9])&ram[start * 9];
         workers[i].gpu = NULL;
-        if (platform_thread_create(&worker_threads[i], worker_run,
-                                   &workers[i]))
-        {
-            log_error_and_abort("Error creating worker thread");
-        }
+
+        worker_start(&workers[i]);
     }
 
     log_trace("Waiting for buffer...");
@@ -87,7 +83,7 @@ static void* loader_run(void* loader_) {
     log_trace("Sent buffers to worker threads");
 
     for (i = 0; i < NUM_WORKERS; ++i) {
-        if (platform_thread_join(&worker_threads[i])) {
+        if (platform_thread_join(&workers[i].thread)) {
             log_error_and_abort("Error joining worker thread");
         }
     }

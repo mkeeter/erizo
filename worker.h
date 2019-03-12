@@ -6,6 +6,7 @@
 struct loader_;
 
 typedef struct worker_ {
+    platform_thread_t thread;
     struct loader_* loader;
 
     /*  Inputs from loader */
@@ -18,6 +19,6 @@ typedef struct worker_ {
     float max[3];
 } worker_t;
 
-void* worker_run(void* worker_);
+void worker_start(worker_t* worker);
 
 #endif
