@@ -29,8 +29,8 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
     float inv[4][4];
     mat4_inv(out, inv);
 
-    float pos_screen[3] = { 4.0 * xpos / (app->camera->width) - 1.0f,
-                            4.0 * ypos / (app->camera->height) - 1.0f,
+    float pos_screen[3] = { 2.0 * xpos / (app->camera->width) - 1.0f,
+                            2.0 * ypos / (app->camera->height) - 1.0f,
                             0.0f};
     float pos_world[3];
     mat4_apply(inv, pos_screen, pos_world);
