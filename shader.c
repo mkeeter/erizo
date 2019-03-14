@@ -14,7 +14,7 @@ GLuint shader_build(const GLchar* src, GLenum type) {
 
         GLchar* buf = malloc(len + 1);
         glGetShaderInfoLog(shader, len, NULL, buf);
-        fprintf(stderr, "Failed to build shader: %s\n", buf);
+        log_error_and_abort("Failed to build shader: %s\n", buf);
         free(buf);
     }
 
