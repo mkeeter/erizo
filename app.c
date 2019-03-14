@@ -79,11 +79,11 @@ void app_run(app_t* app) {
 
     /*  On first draw (whether or not there was a model passed in on
      *  the command line), update the camera projection matrix using the
-     *  true framebuffer size. */
+     *  true window size. */
     if (app->state == APP_PREDRAW) {
         int width;
         int height;
-        glfwGetFramebufferSize(app->window, &width, &height);
+        glfwGetWindowSize(app->window, &width, &height);
         camera_update_proj(app->camera, width, height);
         log_trace("Got framebuffer size %i x %i", width, height);
 
