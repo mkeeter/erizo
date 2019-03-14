@@ -13,4 +13,4 @@ typedef struct model_ {
 } model_t;
 
 void model_init(model_t* model);
-void model_draw(model_t* model, const float* proj);
+void model_draw(model_t* model, const float proj[4][4]);

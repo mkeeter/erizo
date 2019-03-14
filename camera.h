@@ -3,7 +3,7 @@
 typedef struct camera_ {
     int width;
     int height;
-    float proj[16];
+    float proj[4][4];
 } camera_t;
 
 /*  Updates the proj matrix from width and height */

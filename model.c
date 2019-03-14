@@ -72,11 +72,11 @@ void model_init(model_t* model) {
     log_trace("Initialized model");
 }
 
-void model_draw(model_t* model, const float* proj) {
+void model_draw(model_t* model, const float proj[4][4]) {
     glEnable(GL_DEPTH_TEST);
     glUseProgram(model->prog);
     glBindVertexArray(model->vao);
-    glUniformMatrix4fv(model->u_proj, 1, GL_FALSE, proj);
+    glUniformMatrix4fv(model->u_proj, 1, GL_FALSE, (float*)proj);
     glUniformMatrix4fv(model->u_model, 1, GL_FALSE, model->mat);
     glDrawArrays(GL_TRIANGLES, 0, model->num_triangles * 3);
 }
