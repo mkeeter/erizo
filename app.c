@@ -3,6 +3,7 @@
 #include "camera.h"
 #include "loader.h"
 #include "log.h"
+#include "mat.h"
 #include "model.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode,
@@ -12,17 +13,37 @@ void key_callback(GLFWwindow* window, int key, int scancode,
         glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
-void fb_size_callback(GLFWwindow* window, int width, int height)
+void window_size_callback(GLFWwindow* window, int width, int height)
 {
     app_t* app = glfwGetWindowUserPointer(window);
     camera_update_proj(app->camera, width, height);
     app_run(app);
 }
 
+void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    app_t* app = glfwGetWindowUserPointer(window);
+
+    float out[4][4];
+    mat4_mul(app->model->mat, app->camera->proj, out);
+    float inv[4][4];
+    mat4_inv(out, inv);
+
+    float pos_screen[3] = { 4.0 * xpos / (app->camera->width) - 1.0f,
+                            4.0 * ypos / (app->camera->height) - 1.0f,
+                            0.0f};
+    float pos_world[3];
+    mat4_apply(inv, pos_screen, pos_world);
+
+    log_trace("screen pos: %f %f\tworld pos: %f %f", pos_screen[0], pos_screen[1],
+            pos_world[0], pos_world[1]);
+}
+
 void app_init(app_t* app) {
     glfwSetWindowUserPointer(app->window, app);
     glfwSetKeyCallback(app->window, key_callback);
-    glfwSetFramebufferSizeCallback(app->window, fb_size_callback);
+    glfwSetWindowSizeCallback(app->window, window_size_callback);
+    glfwSetCursorPosCallback(app->window, cursor_pos_callback);
 
     /*  We populated camera width + height, but didn't yet build
      *  the project matrix (to save time).  */

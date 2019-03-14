@@ -3,10 +3,18 @@
 #include "camera.h"
 #include "log.h"
 #include "loader.h"
+#include "mat.h"
 #include "model.h"
 #include "shader.h"
 
 int main(int argc, char** argv) {
+    float mat[4][4];
+    mat4_identity(mat);
+    for (unsigned i=0; i < 16; ++i) {
+        printf("%f ", ((float*)mat)[i]);
+    }
+    printf("\n");
+
     log_info("Startup!");
 
     if (argc != 2) {

@@ -77,6 +77,6 @@ void model_draw(model_t* model, const float proj[4][4]) {
     glUseProgram(model->prog);
     glBindVertexArray(model->vao);
     glUniformMatrix4fv(model->u_proj, 1, GL_FALSE, (float*)proj);
-    glUniformMatrix4fv(model->u_model, 1, GL_FALSE, model->mat);
+    glUniformMatrix4fv(model->u_model, 1, GL_FALSE, (float*)model->mat);
     glDrawArrays(GL_TRIANGLES, 0, model->num_triangles * 3);
 }

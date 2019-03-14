@@ -1,5 +1,6 @@
 #include "loader.h"
 #include "log.h"
+#include "mat.h"
 #include "model.h"
 #include "worker.h"
 
@@ -107,15 +108,17 @@ static void* loader_run(void* loader_) {
             scale = d;
         }
     }
+    /*  Translation component of model matrix */
+    mat4_translation(center, loader->mat);
 
-    memset(loader->mat, 0, sizeof(loader->mat));
-    loader->mat[0] = 1.0f / scale;
-    loader->mat[12] = -center[0] / scale;
-    loader->mat[5] = 1.0f / scale;
-    loader->mat[13] = -center[1] / scale;
-    loader->mat[10] = 1.0f / scale;
-    loader->mat[14] = -center[2] / scale;
-    loader->mat[15] = 1.0f;
+    /*  Scale component of model matrix */
+    float scale_vec[3];
+    for (unsigned s=0; s < 3; ++s) {
+        scale_vec[s] = 1 / scale;
+    }
+    float scale_matrix[4][4];
+    mat4_scaling(scale_vec, scale_matrix);
+    mat4_mul(loader->mat, scale_matrix, loader->mat);
 
     /*  Mark the load as done and post an empty event, to make sure that
      *  the main loop wakes up and checks the loader */

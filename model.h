@@ -2,7 +2,7 @@
 
 typedef struct model_ {
     uint32_t num_triangles;
-    float mat[16];
+    float mat[4][4];
 
     GLuint vao;
     GLuint vbo;

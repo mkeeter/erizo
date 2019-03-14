@@ -1,7 +1,34 @@
 #include "mat.h"
 
-void mat4_mul(const float a[4][4], const float b[4][4], float out[4][4]) {
-   for (unsigned i=0; i < 4; ++i) {
+void mat4_identity(float out[4][4]) {
+    memset(out, 0, sizeof(float) * 4 * 4);
+    for (unsigned i=0; i < 4; ++i) {
+        out[i][i] = 1.0f;
+    }
+}
+
+void mat4_translation(const float d[3], float out[4][4]) {
+    mat4_identity(out);
+    for (unsigned i=0; i < 3; ++i) {
+        out[3][i] = -d[i];
+    }
+}
+
+void mat4_scaling(const float s[3], float out[4][4]) {
+    mat4_identity(out);
+    for (unsigned i=0; i < 3; ++i) {
+        out[i][i] = s[i];
+    }
+}
+
+void mat4_mul(const float a_[4][4], const float b_[4][4], float out[4][4]) {
+    /*  Copy to local matrices, in case out[][] overlaps a_ or b_ */
+    float a[4][4];
+    memcpy(a, a_, sizeof(a));
+    float b[4][4];
+    memcpy(b, b_, sizeof(a));
+
+    for (unsigned i=0; i < 4; ++i) {
        for (unsigned j=0; j < 4; ++j) {
            out[i][j] = 0.0f;
            for (unsigned k=0; k < 4; ++k) {
@@ -9,6 +36,23 @@ void mat4_mul(const float a[4][4], const float b[4][4], float out[4][4]) {
            }
        }
    }
+}
+
+void mat4_apply(const float m_[4][4], const float v[3], float out[3]) {
+    float m[4][4];
+    memcpy(m, m_, sizeof(m));
+
+    float w[4] = {v[0], v[1], v[2], 1.0f};
+    float o[4];
+    for (unsigned i=0; i < 4; ++i) {
+        o[i] = 0.0f;
+        for (unsigned j=0; j < 4; ++j) {
+            o[i] += m[i][j] * w[j];
+        }
+    }
+    for (unsigned k=0; k < 3; ++k) {
+        out[k] = o[k] / o[3];
+    }
 }
 
 void mat4_inv(const float in[4][4], float out[4][4]) {
