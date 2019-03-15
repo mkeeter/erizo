@@ -1,6 +1,6 @@
 #include "platform.h"
 
-typedef enum app_mouse_ {
+typedef enum camera_mouse_ {
     CAMERA_IDLE,
     CAMERA_ROT,
     CAMERA_PAN,

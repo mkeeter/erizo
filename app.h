@@ -10,7 +10,7 @@ typedef enum app_state_ {
     APP_PREDRAW,
     APP_LOAD,
     APP_RUNNING,
-    APP_QUIT,
+    APP_QUIT
 } app_state_t;
 
 typedef struct app_ {

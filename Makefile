@@ -1,22 +1,35 @@
-SRC = $(wildcard *.c)
-OBJ = $(addprefix build/,$(SRC:.c=.o))
-DEP = $(OBJ:.o=.d)
+SRC := $(wildcard *.c)
+OBJ := $(SRC:.c=.o)
 
-BUILD_DIR = build
-BUILD_DIR_FLAG = $(BUILD_DIR)/.f
+BUILD_DIR := build
+BUILD_DIR_FLAG := $(BUILD_DIR)/.f
 
-CFLAGS = -std=c99 -Wall -Werror -g -O3 -pedantic
-LDFLAGS = -lglfw -lglew -framework OpenGL $(CFLAGS)
+CFLAGS := -Wall -Werror -g -O3 -pedantic
+LDFLAGS := -lglfw -lglew -framework OpenGL $(CFLAGS)
+
+# Platform detection
+UNAME := $(shell uname)
+ifeq ($(UNAME), Darwin)
+	OBJ := $(OBJ) platform_darwin.o
+	LDFLAGS := $(LDFLAGS) -framework Foundation -framework Cocoa
+endif
+
+OBJ := $(addprefix build/,$(OBJ))
+DEP := $(OBJ:.o=.d)
 
 hedgehog: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(CFLAGS) $^
 
 build/%.o: %.c $(BUILD_DIR_FLAG)
+	$(CC) $(CFLAGS) -c -o $@ -std=c99 $<
+build/%.o: %.mm $(BUILD_DIR_FLAG)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-include $(DEP)
+-include $(DEP)
 build/%.d: %.c $(BUILD_DIR_FLAG)
-	$(CC) $(CFLAGS) $< -MM -MT $(@:.d=.o) > $@
+	$(CC) $< -MM -MT $(@:.d=.o) > $@
+build/%.d: %.mm $(BUILD_DIR_FLAG)
+	$(CC) $< -MM -MT $(@:.d=.o) > $@
 
 # Create a directory using a marker file
 $(BUILD_DIR_FLAG):

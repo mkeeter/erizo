@@ -26,7 +26,7 @@ typedef enum {
     TERM_COLOR_BLUE,
     TERM_COLOR_MAGENTA,
     TERM_COLOR_CYAN,
-    TERM_COLOR_WHITE,
+    TERM_COLOR_WHITE
 } platform_terminal_color_t;
 void platform_set_terminal_color(FILE* f, platform_terminal_color_t c);
 void platform_clear_terminal_color(FILE* f);
@@ -44,5 +44,7 @@ int platform_cond_broadcast(platform_cond_t* cond);
 int platform_thread_create(platform_thread_t* thread,
                            void *(*run)(void *), void* data);
 int platform_thread_join(platform_thread_t* thread);
+
+void platform_build_menus();
 
 #endif
