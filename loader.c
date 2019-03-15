@@ -76,14 +76,14 @@ static void* loader_run(void* loader_) {
     loader_wait(loader, LOADER_GPU_BUFFER);
 
     /*  Populate GPU pointers, then kick off workers copying triangles */
-    for (i=0; i < NUM_WORKERS; ++i) {
+    for (unsigned i=0; i < NUM_WORKERS; ++i) {
         const size_t start = i * loader->num_triangles / NUM_WORKERS;
         workers[i].gpu = (float (*)[9])&loader->buffer[start * 9];
     }
     loader_next(loader, LOADER_WORKER_GPU);
     log_trace("Sent buffers to worker threads");
 
-    for (i = 0; i < NUM_WORKERS; ++i) {
+    for (unsigned i=0; i < NUM_WORKERS; ++i) {
         if (platform_thread_join(&workers[i].thread)) {
             log_error_and_abort("Error joining worker thread");
         }
@@ -94,7 +94,7 @@ static void* loader_run(void* loader_) {
     float center[3];
     float scale = 0;
     for (unsigned v=0; v < 3; ++v) {
-        for (i=1; i < NUM_WORKERS; ++i) {
+        for (unsigned i=1; i < NUM_WORKERS; ++i) {
             if (workers[i].max[v] > workers[0].max[v]) {
                 workers[0].max[v] = workers[i].max[v];
             }

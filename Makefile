@@ -5,7 +5,7 @@ DEP = $(OBJ:.o=.d)
 BUILD_DIR = build
 BUILD_DIR_FLAG = $(BUILD_DIR)/.f
 
-CFLAGS = -std=c89 -Wall -Werror -g -O3
+CFLAGS = -std=c99 -Wall -Werror -g -O3 -pedantic
 LDFLAGS = -lglfw -lglew -framework OpenGL $(CFLAGS)
 
 hedgehog: $(OBJ)
