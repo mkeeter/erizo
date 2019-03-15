@@ -25,3 +25,21 @@ void camera_update_view(camera_t* camera) {
         mat4_mul(camera->view, yaw, camera->view);
     }
 }
+
+void camera_mouse_to_world(camera_t* camera, float* x, float* y) {
+    float out[4][4];
+    mat4_identity(out);
+    mat4_mul(camera->model, out, out);
+    mat4_mul(camera->proj, out, out);
+    mat4_mul(camera->view, out, out);
+    mat4_inv(out, out);
+
+    float pos[3] = { 2.0f * (*x) / (camera->width)  - 1.0f,
+                     2.0f * (*y) / (camera->height) - 1.0f,
+                     0.0f};
+    mat4_apply(out, pos, pos);
+
+    *x = pos[0];
+    *y = pos[1];
+}
+

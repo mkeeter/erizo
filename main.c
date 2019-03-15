@@ -6,6 +6,7 @@
 #include "mat.h"
 #include "model.h"
 #include "shader.h"
+#include "window.h"
 
 int main(int argc, char** argv) {
     float mat[4][4];
@@ -26,7 +27,7 @@ int main(int argc, char** argv) {
     loader_start(&loader, argv[1]);
 
     /*  Initialize our camera to store width and height */
-    camera_t camera = {500, 500};
+    camera_t camera = {500, 500, .yaw=0.8f};
 
     if (!glfwInit()) {
         log_error_and_abort("Failed to initialize glfw");
@@ -72,9 +73,9 @@ int main(int argc, char** argv) {
     /*  Build the app by stitching together our other objects */
     app_t app = { APP_PRELOAD, &backdrop, &camera, &loader, &model, window };
     app_init(&app);
+    window_set_callbacks(window, &app);
 
-    while (!glfwWindowShouldClose(window))
-    {
+    while (app.state != APP_QUIT && !glfwWindowShouldClose(window)) {
         app_run(&app);
         glfwWaitEvents();
     }

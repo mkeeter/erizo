@@ -83,6 +83,6 @@ void model_draw(model_t* model, camera_t* camera) {
     glBindVertexArray(model->vao);
     glUniformMatrix4fv(model->u_proj, 1, GL_FALSE, (float*)camera->proj);
     glUniformMatrix4fv(model->u_view, 1, GL_FALSE, (float*)camera->view);
-    glUniformMatrix4fv(model->u_model, 1, GL_FALSE, (float*)model->mat);
+    glUniformMatrix4fv(model->u_model, 1, GL_FALSE, (float*)camera->model);
     glDrawArrays(GL_TRIANGLES, 0, model->num_triangles * 3);
 }

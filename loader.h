@@ -1,6 +1,7 @@
 #include "platform.h"
 
 struct model_;
+struct camera_;
 
 typedef enum loader_state_ {
     LOADER_IDLE,
@@ -39,5 +40,6 @@ void loader_wait(loader_t* loader, loader_state_t target);
 void loader_next(loader_t* loader, loader_state_t target);
 
 void loader_allocate_vbo(loader_t* loader);
-void loader_finish(loader_t* loader, struct model_ * model);
+void loader_finish(loader_t* loader, struct model_* model,
+                   struct camera_* camera);
 void loader_reset(loader_t* loader);

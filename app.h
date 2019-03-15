@@ -10,9 +10,10 @@ typedef enum app_state_ {
     APP_PREDRAW,
     APP_LOAD,
     APP_RUNNING,
+    APP_QUIT,
 } app_state_t;
 
-typedef struct app {
+typedef struct app_ {
     app_state_t state;
 
     struct backdrop_* backdrop;
@@ -20,8 +21,15 @@ typedef struct app {
     struct loader_* loader;
     struct model_*  model;
 
-    GLFWwindow* const window;
+    GLFWwindow* window;
 } app_t;
 
 void app_init(app_t* app);
 void app_run(app_t* app);
+
+/*  Callbacks */
+void app_cb_window_size(app_t* app, int width, int height);
+void app_cb_keypress(app_t* app, int key, int scancode, int action, int mods);
+void app_cb_mouse_pos(app_t* app, float xpos, float ypos);
+void app_cb_mouse_click(app_t* app, int button, int action, int mods);
+void app_cb_mouse_scroll(app_t* app, float xoffset, float yoffset);

@@ -1,3 +1,4 @@
+#include "camera.h"
 #include "loader.h"
 #include "log.h"
 #include "mat.h"
@@ -154,7 +155,7 @@ loader_state_t loader_state(loader_t* loader) {
     return out;
 }
 
-void loader_finish(loader_t* loader, model_t* model) {
+void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
     if (!loader->vbo) {
         log_error_and_abort("Invalid loader VBO");
     } else if (!model->vao) {
@@ -172,7 +173,7 @@ void loader_finish(loader_t* loader, model_t* model) {
     loader->vbo = 0;
 
     model->num_triangles = loader->num_triangles;
-    memcpy(model->mat, loader->mat, sizeof(model->mat));
+    memcpy(camera->model, loader->mat, sizeof(loader->mat));
 
     log_trace("Copied model from loader");
 }
