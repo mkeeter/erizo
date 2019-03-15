@@ -26,8 +26,19 @@ void app_cb_window_size(app_t* app, int width, int height)
 }
 
 void app_cb_mouse_pos(app_t* app, float xpos, float ypos) {
+    camera_set_mouse_pos(app->camera, xpos, ypos);
 }
+
 void app_cb_mouse_click(app_t* app, int button, int action, int mods) {
+    if (action == GLFW_PRESS) {
+        if (button == GLFW_MOUSE_BUTTON_1) {
+            camera_begin_pan(app->camera);
+        } else if (button == GLFW_MOUSE_BUTTON_2) {
+            camera_begin_rot(app->camera);
+        }
+    } else {
+        camera_end_drag(app->camera);
+    }
 }
 void app_cb_mouse_scroll(app_t* app, float xoffset, float yoffset) {
 }

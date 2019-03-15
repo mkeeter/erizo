@@ -1,9 +1,9 @@
 #include "platform.h"
 
 typedef enum app_mouse_ {
-    APP_MOUSE_UP,
-    APP_MOUSE_ROT,
-    APP_MOUSE_PAN,
+    CAMERA_IDLE,
+    CAMERA_ROT,
+    CAMERA_PAN,
 } camera_mouse_t;
 
 typedef struct camera_ {
@@ -27,6 +27,7 @@ typedef struct camera_ {
     camera_mouse_t state;
     float mouse_pos[2];
     float click_pos[2];
+    float start[3]; /* Flexible drag data, depends on mode */
 } camera_t;
 
 /*  Updates the proj matrix from width and height */
@@ -38,3 +39,12 @@ void camera_update_view(camera_t* camera);
 /*  Converts a position in mouse coordinates (0 to window height / width)
  *  into world coordinates, assigning to the given floats */
 void camera_mouse_to_world(camera_t* camera, float* x, float* y);
+
+/*  Mouse handling functions */
+void camera_begin_pan(camera_t* camera);
+void camera_begin_rot(camera_t* camera);
+void camera_end_drag(camera_t* camera);
+
+/*  Assigns the current mouse position, causing a rotation or
+ *  pan if the button was already held down. */
+void camera_set_mouse_pos(camera_t* camera, float x, float y);
