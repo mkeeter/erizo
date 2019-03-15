@@ -1,5 +1,7 @@
 #include "platform.h"
 
+struct camera_;
+
 typedef struct model_ {
     uint32_t num_triangles;
     float mat[4][4];
@@ -9,8 +11,9 @@ typedef struct model_ {
 
     GLuint prog;
     GLuint u_proj;
+    GLuint u_view;
     GLuint u_model;
 } model_t;
 
 void model_init(model_t* model);
-void model_draw(model_t* model, const float proj[4][4]);
+void model_draw(model_t* model, struct camera_* camera);

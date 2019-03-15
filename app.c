@@ -16,7 +16,9 @@ void key_callback(GLFWwindow* window, int key, int scancode,
 void window_size_callback(GLFWwindow* window, int width, int height)
 {
     app_t* app = glfwGetWindowUserPointer(window);
-    camera_update_proj(app->camera, width, height);
+    app->camera->width = width;
+    app->camera->height = height;
+    camera_update_proj(app->camera);
     app_run(app);
 }
 
@@ -46,8 +48,9 @@ void app_init(app_t* app) {
     glfwSetCursorPosCallback(app->window, cursor_pos_callback);
 
     /*  We populated camera width + height, but didn't yet build
-     *  the project matrix (to save time).  */
-    camera_update_proj(app->camera, app->camera->width, app->camera->height);
+     *  the projection or view matrices (to save time).  */
+    camera_update_proj(app->camera);
+    camera_update_view(app->camera);
 
     glClearDepth(1.0);
 }
@@ -67,7 +70,7 @@ void app_run(app_t* app) {
         app->state = APP_RUNNING;
     }
 
-    model_draw(app->model, app->camera->proj);
+    model_draw(app->model, app->camera);
     glfwSwapBuffers(app->window);
 
     /*  Print a timing message on first load */
@@ -77,16 +80,7 @@ void app_run(app_t* app) {
         app->state = APP_PREDRAW;
     }
 
-    /*  On first draw (whether or not there was a model passed in on
-     *  the command line), update the camera projection matrix using the
-     *  true window size. */
     if (app->state == APP_PREDRAW) {
-        int width;
-        int height;
-        glfwGetWindowSize(app->window, &width, &height);
-        camera_update_proj(app->camera, width, height);
-        log_trace("Got framebuffer size %i x %i", width, height);
-
         app->state = APP_RUNNING;
     }
 }
