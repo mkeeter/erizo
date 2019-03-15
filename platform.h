@@ -10,7 +10,11 @@
 #include <string.h>
 #include <stdarg.h>
 
+#if defined(PLATFORM_DARWIN)
 #include "platform_unix.h"
+#else
+#error "Not yet ported to this platform!"
+#endif
 
 const char* platform_mmap(const char* filename, size_t* size);
 void platform_munmap(const char* data, size_t size);

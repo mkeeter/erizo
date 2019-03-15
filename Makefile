@@ -12,6 +12,7 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 	OBJ := $(OBJ) platform_darwin.o
 	LDFLAGS := $(LDFLAGS) -framework Foundation -framework Cocoa
+	CFLAGS := $(CFLAGS) -DPLATFORM_DARWIN
 endif
 
 OBJ := $(addprefix build/,$(OBJ))
