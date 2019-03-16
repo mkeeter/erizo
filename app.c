@@ -57,27 +57,18 @@ void app_run(app_t* app) {
     backdrop_draw(app->backdrop);
 
     /*  At the very last moment, check on the loader */
-    if (app->state == APP_PRELOAD) {
+    if (app->state == APP_LOAD) {
         loader_wait(app->loader, LOADER_DONE);
+        app->state = APP_LOAD;
         loader_finish(app->loader, app->model, app->camera);
-    } else if (app->state == APP_LOAD &&
-               loader_state(app->loader) == LOADER_DONE) {
-        loader_finish(app->loader, app->model, app->camera);
-        loader_reset(app->loader);
-        app->state = APP_RUNNING;
     }
-
     model_draw(app->model, app->camera);
     glfwSwapBuffers(app->window);
 
     /*  Print a timing message on first load */
-    if (app->state == APP_PRELOAD) {
-        log_info("First draw complete");
+    if (app->state == APP_LOAD) {
+        log_info("Load complete");
         loader_reset(app->loader);
-        app->state = APP_PREDRAW;
-    }
-
-    if (app->state == APP_PREDRAW) {
         app->state = APP_RUNNING;
     }
 }

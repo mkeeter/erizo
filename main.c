@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     log_trace("Showed window");
 
     /*  Build the app by stitching together our other objects */
-    app_t app = { APP_PRELOAD, &backdrop, &camera, &loader, &model, window };
+    app_t app = { APP_LOAD, &backdrop, &camera, &loader, &model, window };
     app_init(&app);
     window_set_callbacks(window, &app);
     platform_build_menus(&app);

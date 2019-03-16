@@ -6,8 +6,6 @@ struct model_;
 struct backdrop_;
 
 typedef enum app_state_ {
-    APP_PRELOAD,
-    APP_PREDRAW,
     APP_LOAD,
     APP_RUNNING,
     APP_QUIT
