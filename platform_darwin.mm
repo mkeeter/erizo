@@ -29,8 +29,7 @@ extern "C" {
 }
 @end
 
-// Cocoa constructs the default application menu by hand for each program; that's what MainMenu.[nx]ib does
-extern "C" void platform_build_menus(app_t* app)
+extern "C" void platform_init(app_t* app)
 {
     Glue *glue = [[Glue alloc] init];
     glue->app = app;

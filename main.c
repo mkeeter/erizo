@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     app_t app = { state, &backdrop, &camera, &loader, &model, window };
     app_init(&app);
     window_set_callbacks(window, &app);
-    platform_build_menus(&app);
+    platform_init(&app);
 
     while (app.state != APP_QUIT && !glfwWindowShouldClose(window)) {
         app_run(&app);

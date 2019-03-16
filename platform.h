@@ -51,6 +51,7 @@ int platform_thread_create(platform_thread_t* thread,
                            void *(*run)(void *), void* data);
 int platform_thread_join(platform_thread_t* thread);
 
-void platform_build_menus(struct app_* app);
+/*  Initializes the menu and other native features */
+void platform_init(struct app_* app);
 
 #endif
