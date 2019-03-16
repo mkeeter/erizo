@@ -27,6 +27,9 @@ typedef struct app_ {
 void app_init(app_t* app);
 void app_run(app_t* app);
 
+/*  Triggered from the UI */
+void app_open(app_t* app, const char* filename);
+
 /*  Callbacks */
 void app_cb_window_size(app_t* app, int width, int height);
 void app_cb_keypress(app_t* app, int key, int scancode, int action, int mods);

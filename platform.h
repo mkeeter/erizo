@@ -16,6 +16,8 @@
 #error "Not yet ported to this platform!"
 #endif
 
+struct app_;
+
 const char* platform_mmap(const char* filename, size_t* size);
 void platform_munmap(const char* data, size_t size);
 
@@ -49,6 +51,6 @@ int platform_thread_create(platform_thread_t* thread,
                            void *(*run)(void *), void* data);
 int platform_thread_join(platform_thread_t* thread);
 
-void platform_build_menus();
+void platform_build_menus(struct app_* app);
 
 #endif

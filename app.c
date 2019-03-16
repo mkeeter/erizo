@@ -81,3 +81,12 @@ void app_run(app_t* app) {
         app->state = APP_RUNNING;
     }
 }
+
+void app_open(app_t* app, const char* filename) {
+    if (app->state != APP_RUNNING) {
+        log_error_and_abort("Invalid state for app_open: %i", app->state);
+    }
+    loader_start(app->loader, filename);
+    loader_allocate_vbo(app->loader);
+    app->state = APP_LOAD;
+}

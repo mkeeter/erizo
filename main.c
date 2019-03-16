@@ -69,12 +69,12 @@ int main(int argc, char** argv) {
 
     glfwShowWindow(window);
     log_trace("Showed window");
-    platform_build_menus();
 
     /*  Build the app by stitching together our other objects */
     app_t app = { APP_PRELOAD, &backdrop, &camera, &loader, &model, window };
     app_init(&app);
     window_set_callbacks(window, &app);
+    platform_build_menus(&app);
 
     while (app.state != APP_QUIT && !glfwWindowShouldClose(window)) {
         app_run(&app);

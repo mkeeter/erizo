@@ -52,7 +52,7 @@ static void* loader_run(void* loader_) {
            sizeof(loader->num_triangles));
     loader_next(loader, LOADER_TRIANGLE_COUNT);
 
-    float* ram = malloc(loader->num_triangles * 3 * 3 * sizeof(float));
+    float* ram = (float*)malloc(loader->num_triangles * 3 * 3 * sizeof(float));
     loader_next(loader, LOADER_RAM_BUFFER);
 
     /*  We kick off our mmap-to-OpenGL copying workers here, even though the
