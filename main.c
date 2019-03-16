@@ -9,22 +9,21 @@
 #include "window.h"
 
 int main(int argc, char** argv) {
-    float mat[4][4];
-    mat4_identity(mat);
-    for (unsigned i=0; i < 16; ++i) {
-        printf("%f ", ((float*)mat)[i]);
-    }
-    printf("\n");
-
     log_info("Startup!");
 
     if (argc != 2) {
-        log_error_and_abort("No input file");
+        log_info("No input file");
+    } else if (argc > 2) {
+        log_error_and_abort("Too many arguments (expected 0 or 1)");
     }
+    const app_state_t state = (argc == 2) ? APP_LOAD : APP_RUNNING;
 
     loader_t loader;
     loader_init(&loader);
-    loader_start(&loader, argv[1]);
+
+    if (state == APP_LOAD) {
+        loader_start(&loader, argv[1]);
+    }
 
     /*  Initialize our camera to store width and height */
     camera_t camera = {500, 500, .yaw=0.8f};
@@ -58,7 +57,9 @@ int main(int argc, char** argv) {
 
     /*  Highest priority once OpenGL is running: allocate the VBO
      *  and pass it to the loader thread.  */
-    loader_allocate_vbo(&loader);
+    if (state == APP_LOAD) {
+        loader_allocate_vbo(&loader);
+    }
 
     /*  Next, build the OpenGL-dependent objects */
     model_t model;
@@ -71,7 +72,7 @@ int main(int argc, char** argv) {
     log_trace("Showed window");
 
     /*  Build the app by stitching together our other objects */
-    app_t app = { APP_LOAD, &backdrop, &camera, &loader, &model, window };
+    app_t app = { state, &backdrop, &camera, &loader, &model, window };
     app_init(&app);
     window_set_callbacks(window, &app);
     platform_build_menus(&app);
