@@ -1,3 +1,7 @@
+# Force the version-generation script to run before
+# anything else, generating version.c
+_VERSION := $(shell sh version.sh)
+
 SRC := $(wildcard *.c)
 OBJ := $(SRC:.c=.o)
 
@@ -14,7 +18,6 @@ ifeq ($(UNAME), Darwin)
 	PLATFORM := -DPLATFORM_DARWIN
 endif
 
-OBJ := $(OBJ) version.o
 OBJ := $(addprefix build/,$(OBJ))
 DEP := $(OBJ:.o=.d)
 
@@ -28,24 +31,16 @@ build/%.o: %.c | $(BUILD_DIR)
 build/%.o: %.mm | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ $<
 
-build/version.o: build/version.c  | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
-
 -include $(DEP)
 build/%.d: %.c | $(BUILD_DIR)
 	$(CC) $< $(PLATFORM) -MM -MT $(@:.d=.o) > $@
 build/%.d: %.mm | $(BUILD_DIR)
 	$(CC) $< $(PLATFORM) -MM -MT $(@:.d=.o) > $@
 
-# Create a directory using a marker file
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-.PHONY: clean version
+.PHONY: clean
 clean:
-	rm -rf $(OBJ) $(DEP) build/version.c
+	rm -rf $(OBJ) $(DEP)
 	rmdir $(BUILD_DIR)
-
-build/version.c: version
-version:
-	sh version.sh
