@@ -12,7 +12,7 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 	OBJ := $(OBJ) platform_darwin.o
 	LDFLAGS := $(LDFLAGS) -framework Foundation -framework Cocoa
-	CFLAGS := $(CFLAGS) -DPLATFORM_DARWIN
+	PLATFORM := -DPLATFORM_DARWIN
 endif
 
 OBJ := $(addprefix build/,$(OBJ))
@@ -22,15 +22,15 @@ hedgehog: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(CFLAGS) $^
 
 build/%.o: %.c $(BUILD_DIR_FLAG)
-	$(CC) $(CFLAGS) -c -o $@ -std=c99 $<
+	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
 build/%.o: %.mm $(BUILD_DIR_FLAG)
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ $<
 
 -include $(DEP)
 build/%.d: %.c $(BUILD_DIR_FLAG)
-	$(CC) $< -MM -MT $(@:.d=.o) > $@
+	$(CC) $< $(PLATFORM) -MM -MT $(@:.d=.o) > $@
 build/%.d: %.mm $(BUILD_DIR_FLAG)
-	$(CC) $< -MM -MT $(@:.d=.o) > $@
+	$(CC) $< $(PLATFORM) -MM -MT $(@:.d=.o) > $@
 
 # Create a directory using a marker file
 $(BUILD_DIR_FLAG):
