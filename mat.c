@@ -47,7 +47,7 @@ void mat4_apply(const float m_[4][4], const float v[3], float out[3]) {
     for (unsigned i=0; i < 4; ++i) {
         o[i] = 0.0f;
         for (unsigned j=0; j < 4; ++j) {
-            o[i] += m[i][j] * w[j];
+            o[i] += m[j][i] * w[j];
         }
     }
     for (unsigned k=0; k < 3; ++k) {
