@@ -22,6 +22,12 @@ void camera_update_proj(camera_t* camera) {
 void camera_update_view(camera_t* camera) {
     mat4_identity(camera->view);
 
+    {   /* Apply translation */
+        float t[4][4];
+        mat4_translation(camera->center, t);
+        mat4_mul(camera->view, t, camera->view);
+    }
+
     {   /* Apply the yaw rotation */
         const float c = cos(camera->yaw);
         const float s = sin(camera->yaw);
@@ -39,12 +45,6 @@ void camera_update_view(camera_t* camera) {
                                {0.0f,  s,    c,   0.0f},
                                {0.0f, 0.0f, 0.0f, 1.0f}};
         mat4_mul(camera->view, p, camera->view);
-    }
-
-    {   /* Apply translation */
-        float t[4][4];
-        mat4_translation(camera->center, t);
-        mat4_mul(camera->view, t, camera->view);
     }
 
     {   /*  Apply the scaling */
