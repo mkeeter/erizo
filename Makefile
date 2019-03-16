@@ -33,15 +33,17 @@ build/%.d: %.c $(BUILD_DIR_FLAG)
 build/%.d: %.mm $(BUILD_DIR_FLAG)
 	$(CC) $< $(PLATFORM) -MM -MT $(@:.d=.o) > $@
 
-build/version.c:
-	sh version.sh
-
 # Create a directory using a marker file
 $(BUILD_DIR_FLAG):
 	mkdir -p $(dir $@)
 	touch $@
 
-.PHONY: clean
+.PHONY: clean version
 clean:
 	rm -rf $(OBJ) $(DEP) $(BUILD_DIR_FLAG) build/version.c
 	rmdir $(BUILD_DIR)
+
+version:
+	sh version.sh
+
+build/version.c: version
