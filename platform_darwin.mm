@@ -23,7 +23,7 @@ extern "C" {
             NSURL *doc = [[panel URLs] objectAtIndex:0];
             NSString *urlString = [doc path];
             app_open(self->app, [urlString UTF8String]);
-            NSLog(@"open item called %@", doc);
+            [[NSApp mainWindow] makeKeyWindow];
         }
     }];
 }
