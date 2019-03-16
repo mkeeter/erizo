@@ -34,7 +34,13 @@ void camera_update_view(camera_t* camera) {
         mat4_mul(camera->view, p, camera->view);
     }
 
-    {
+    {   /* Apply translation */
+        float t[4][4];
+        mat4_translation(camera->center, t);
+        mat4_mul(camera->view, t, camera->view);
+    }
+
+    {   /*  Apply the scaling */
         float s[4][4];
         mat4_scaling(1.0f / camera->scale, s);
         mat4_mul(camera->view, s, camera->view);
