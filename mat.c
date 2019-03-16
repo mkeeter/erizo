@@ -14,10 +14,10 @@ void mat4_translation(const float d[3], float out[4][4]) {
     }
 }
 
-void mat4_scaling(const float s[3], float out[4][4]) {
+void mat4_scaling(const float s, float out[4][4]) {
     mat4_identity(out);
     for (unsigned i=0; i < 3; ++i) {
-        out[i][i] = s[i];
+        out[i][i] = s;
     }
 }
 

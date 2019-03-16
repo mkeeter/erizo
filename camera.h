@@ -15,6 +15,7 @@ typedef struct camera_ {
     float pitch;
     float yaw;
     float center[3];
+    float scale;
 
     /*  Calculated matrices */
     float proj[4][4];

@@ -33,23 +33,12 @@ void camera_update_view(camera_t* camera) {
                                {0.0f, 0.0f, 0.0f, 1.0f}};
         mat4_mul(camera->view, p, camera->view);
     }
-}
 
-void camera_mouse_to_world(camera_t* camera, float* x, float* y) {
-    float out[4][4];
-    mat4_identity(out);
-    mat4_mul(camera->model, out, out);
-    mat4_mul(camera->proj, out, out);
-    mat4_mul(camera->view, out, out);
-    mat4_inv(out, out);
-
-    float pos[3] = { 2.0f * (*x) / (camera->width)  - 1.0f,
-                     2.0f * (*y) / (camera->height) - 1.0f,
-                     0.0f};
-    mat4_apply(out, pos, pos);
-
-    *x = pos[0];
-    *y = pos[1];
+    {
+        float s[4][4];
+        mat4_scaling(1.0f / camera->scale, s);
+        mat4_mul(camera->view, s, camera->view);
+    }
 }
 
 void camera_set_mouse_pos(camera_t* camera, float x, float y) {
@@ -61,9 +50,11 @@ void camera_set_mouse_pos(camera_t* camera, float x, float y) {
 
     switch (camera->state) {
         case CAMERA_IDLE:  break;
-        case CAMERA_ROT: /* do something to pitch + yaw */
-                            break;
         case CAMERA_PAN: {
+            /* TODO */
+            break;
+        }
+        case CAMERA_ROT: {
             const float start_pitch = camera->start[0];
             const float start_yaw = camera->start[1];
 
@@ -93,14 +84,14 @@ void camera_set_mouse_pos(camera_t* camera, float x, float y) {
 
 void camera_begin_pan(camera_t* camera) {
     memcpy(camera->click_pos, camera->mouse_pos, sizeof(camera->mouse_pos));
-    camera->start[0] = camera->pitch;
-    camera->start[1] = camera->yaw;
+    memcpy(camera->start, camera->center, sizeof(camera->center));
     camera->state = CAMERA_PAN;
 }
 
 void camera_begin_rot(camera_t* camera) {
     memcpy(camera->click_pos, camera->mouse_pos, sizeof(camera->mouse_pos));
-    memcpy(camera->start, camera->center, sizeof(camera->center));
+    camera->start[0] = camera->pitch;
+    camera->start[1] = camera->yaw;
     camera->state = CAMERA_ROT;
 }
 

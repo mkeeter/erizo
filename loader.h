@@ -19,7 +19,8 @@ typedef struct loader_ {
     /*  Model parameters */
     GLuint vbo;
     uint32_t num_triangles;
-    float mat[4][4];
+    float center[3];
+    float scale;
 
     /*  GPU-mapped buffer, populated by main thread */
     float* buffer;
