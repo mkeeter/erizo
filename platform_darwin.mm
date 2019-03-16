@@ -1,6 +1,8 @@
 extern "C" {
 #include "app.h"
 }
+#define GLFW_EXPOSE_NATIVE_COCOA
+#include <GLFW/glfw3native.h>
 
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
@@ -23,7 +25,9 @@ extern "C" {
             NSURL *doc = [[panel URLs] objectAtIndex:0];
             NSString *urlString = [doc path];
             app_open(self->app, [urlString UTF8String]);
-            [[NSApp mainWindow] makeKeyWindow];
+
+            NSWindow* window = glfwGetCocoaWindow(self->app->window);
+            [window makeKeyWindow];
         }
     }];
 }
