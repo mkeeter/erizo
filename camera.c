@@ -68,8 +68,8 @@ void camera_set_mouse_pos(camera_t* camera, float x, float y) {
             camera->pitch = start_pitch + dy / 100.0f;
             if (camera->pitch < -M_PI) {
                 camera->pitch = -M_PI;
-            } else if (camera->pitch > M_PI) {
-                camera->pitch = M_PI;
+            } else if (camera->pitch > 0.0f) {
+                camera->pitch = 0.0f;
             }
 
             /*  Update yaw and keep it under 360 degrees */
