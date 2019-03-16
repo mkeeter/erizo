@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     }
 
     /*  Initialize our camera to store width and height */
-    camera_t camera = {500, 500, .yaw=0.8f};
+    camera_t camera = {.width=500, .height=500};
 
     if (!glfwInit()) {
         log_error_and_abort("Failed to initialize glfw");

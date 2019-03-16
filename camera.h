@@ -29,6 +29,7 @@ typedef struct camera_ {
     float mouse_pos[2];
     float click_pos[2];
     float start[3]; /* Flexible drag data, depends on mode */
+    float drag_mat[4][4];
 } camera_t;
 
 /*  Updates the proj matrix from width and height */
