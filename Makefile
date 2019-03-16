@@ -15,6 +15,7 @@ ifeq ($(UNAME), Darwin)
 	PLATFORM := -DPLATFORM_DARWIN
 endif
 
+OBJ := $(OBJ) version.o
 OBJ := $(addprefix build/,$(OBJ))
 DEP := $(OBJ:.o=.d)
 
@@ -32,6 +33,9 @@ build/%.d: %.c $(BUILD_DIR_FLAG)
 build/%.d: %.mm $(BUILD_DIR_FLAG)
 	$(CC) $< $(PLATFORM) -MM -MT $(@:.d=.o) > $@
 
+build/version.c:
+	sh version.sh
+
 # Create a directory using a marker file
 $(BUILD_DIR_FLAG):
 	mkdir -p $(dir $@)
@@ -39,5 +43,5 @@ $(BUILD_DIR_FLAG):
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJ) $(DEP) $(BUILD_DIR_FLAG)
+	rm -rf $(OBJ) $(DEP) $(BUILD_DIR_FLAG) build/version.c
 	rmdir $(BUILD_DIR)
