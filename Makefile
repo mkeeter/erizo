@@ -19,6 +19,8 @@ OBJ := $(OBJ) version.o
 OBJ := $(addprefix build/,$(OBJ))
 DEP := $(OBJ:.o=.d)
 
+all: version hedgehog
+
 hedgehog: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(CFLAGS) $^
 
@@ -45,5 +47,3 @@ clean:
 
 version:
 	sh version.sh
-
-build/version.c: version
