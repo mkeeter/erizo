@@ -13,8 +13,10 @@ const char* GIT_BRANCH="${GIT_BRANCH}";
 EOF
 )
 
-PREV=$(cat build/version.c 2> /dev/null || echo '')
+TARGET=build/version.c
+PREV=$(cat $TARGET 2> /dev/null || echo '')
 if [ "$VERSION" != "$PREV" ]
 then
-    echo "$VERSION" > build/version.c
+    echo "SAVING NEW VERSION FILE"
+    echo "$VERSION" > $TARGET
 fi
