@@ -81,3 +81,7 @@ GLFWwindow* window_new(float width, float height) {
     }
     return window;
 }
+
+void window_delete(GLFWwindow* window) {
+    glfwDestroyWindow(window);
+}

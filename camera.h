@@ -34,6 +34,7 @@ typedef struct camera_ {
 
 /*  Constructs a new heap-allocated camera */
 camera_t* camera_new(float width, float height);
+void camera_delete(camera_t* camera);
 
 /*  Updates the proj matrix from width and height */
 void camera_update_proj(camera_t* camera);

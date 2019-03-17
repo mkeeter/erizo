@@ -9,6 +9,10 @@ camera_t* camera_new(float width, float height) {
     return camera;
 }
 
+void camera_delete(camera_t* camera) {
+    free(camera);
+}
+
 void camera_mat(camera_t* camera, float m[4][4]) {
     mat4_identity(m);
     mat4_mul(camera->proj, m, m);

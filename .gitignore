@@ -1,3 +1,4 @@
 build/*
 hedgehog
 version.c
+sphere.c

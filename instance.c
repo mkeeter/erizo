@@ -42,6 +42,14 @@ instance_t* instance_new(const char* filename) {
     return instance;
 }
 
+void instance_delete(instance_t* instance) {
+    OBJECT_DELETE_MEMBER(instance, model);
+    OBJECT_DELETE_MEMBER(instance, camera);
+    OBJECT_DELETE_MEMBER(instance, backdrop);
+    OBJECT_DELETE_MEMBER(instance, window);
+    free(instance);
+}
+
 /******************************************************************************/
 
 void instance_cb_keypress(instance_t* instance, int key, int scancode,

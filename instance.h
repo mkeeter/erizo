@@ -15,6 +15,7 @@ typedef struct instance_ {
 } instance_t;
 
 instance_t* instance_new(const char* filename);
+void instance_delete(instance_t* instance);
 void instance_run(instance_t* instance);
 
 /*  Callbacks */

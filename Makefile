@@ -3,7 +3,7 @@
 _VERSION := $(shell sh version.sh)
 
 SRC := $(wildcard *.c)
-OBJ := $(SRC:.c=.o)
+OBJ := $(SRC:.c=.o) sphere.o
 
 BUILD_DIR := build
 
@@ -24,7 +24,7 @@ DEP := $(OBJ:.o=.d)
 all: hedgehog
 
 hedgehog: $(OBJ)
-	$(CC) -o $@ $(LDFLAGS) $(CFLAGS) $(OBJ)
+	$(CC) -o $@ $(LDFLAGS) $(CFLAGS) $^
 
 build/%.o: %.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
@@ -39,6 +39,9 @@ build/%.d: %.mm | $(BUILD_DIR)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
+
+sphere.c: sphere.stl
+	xxd -i $< > $@
 
 .PHONY: clean
 clean:

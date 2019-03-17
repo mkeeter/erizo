@@ -80,6 +80,16 @@ model_t* model_new() {
     return model;
 }
 
+void model_delete(model_t* model) {
+    glDeleteBuffers(1, &model->vbo);
+    glDeleteVertexArrays(1, &model->vao);
+    glDeleteShader(model->vs);
+    glDeleteShader(model->gs);
+    glDeleteShader(model->fs);
+    glDeleteProgram(model->prog);
+    free(model);
+}
+
 void model_draw(model_t* model, camera_t* camera) {
     glEnable(GL_DEPTH_TEST);
     glUseProgram(model->prog);

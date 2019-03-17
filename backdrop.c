@@ -35,9 +35,9 @@ void main() {
 
 backdrop_t* backdrop_new() {
     OBJECT_ALLOC(backdrop);
-    GLuint vs = shader_build(BACKDROP_VS_SRC, GL_VERTEX_SHADER);
-    GLuint fs = shader_build(BACKDROP_FS_SRC, GL_FRAGMENT_SHADER);
-    backdrop->prog = shader_link_vf(vs, fs);
+    backdrop->vs = shader_build(BACKDROP_VS_SRC, GL_VERTEX_SHADER);
+    backdrop->fs = shader_build(BACKDROP_FS_SRC, GL_FRAGMENT_SHADER);
+    backdrop->prog = shader_link_vf(backdrop->vs, backdrop->fs);
     glUseProgram(backdrop->prog);
     backdrop->u_gradient = glGetUniformLocation(backdrop->prog, "gradient");
 
@@ -56,6 +56,15 @@ backdrop_t* backdrop_new() {
     log_trace("Initialized backdrop");
 
     return backdrop;
+}
+
+void backdrop_delete(backdrop_t* backdrop) {
+    glDeleteBuffers(1, &backdrop->vbo);
+    glDeleteVertexArrays(1, &backdrop->vao);
+    glDeleteShader(backdrop->vs);
+    glDeleteShader(backdrop->fs);
+    glDeleteProgram(backdrop->prog);
+    free(backdrop);
 }
 
 void backdrop_draw(backdrop_t* backdrop) {
