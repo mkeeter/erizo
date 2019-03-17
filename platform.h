@@ -19,6 +19,7 @@
 #endif
 
 struct app_;
+struct instance_;
 
 const char* platform_mmap(const char* filename, size_t* size);
 void platform_munmap(const char* data, size_t size);
@@ -57,5 +58,6 @@ int platform_thread_join(platform_thread_t* thread);
 
 /*  Initializes the menu and other native features */
 void platform_init(struct app_* app);
+void* platform_native_window(struct instance_* instance);
 
 #endif

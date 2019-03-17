@@ -13,6 +13,7 @@ extern "C" {
     app_t* app;
 }
 -(void) onOpen;
+-(void) onClose;
 @end
 
 @implementation Glue
@@ -32,6 +33,11 @@ extern "C" {
         }
     }];
 }
+
+-(void) onClose {
+    void* window = [[NSApplication sharedApplication] keyWindow];
+    app_close_native_window(self->app, window);
+}
 @end
 
 extern "C" void platform_init(app_t* app)
@@ -40,14 +46,25 @@ extern "C" void platform_init(app_t* app)
     glue->app = app;
 
     NSMenu *fileMenu = [[[NSMenu alloc] initWithTitle:@"File"] autorelease];
-    NSMenuItem *fileMenuItem = [[[NSMenuItem alloc] initWithTitle:@"File" action:NULL keyEquivalent:@""] autorelease];
+    NSMenuItem *fileMenuItem = [[[NSMenuItem alloc]
+        initWithTitle:@"File" action:NULL keyEquivalent:@""] autorelease];
     [fileMenuItem setSubmenu:fileMenu];
 
-    NSMenuItem *open = [[[NSMenuItem alloc] initWithTitle:@"Open" action:@selector(onOpen) keyEquivalent:@"o"] autorelease];
-    [fileMenu setAutoenablesItems:NO];
+    NSMenuItem *open = [[[NSMenuItem alloc]
+        initWithTitle:@"Open"
+        action:@selector(onOpen) keyEquivalent:@"o"] autorelease];
     open.target = glue;
-    [open setEnabled:true];
     [fileMenu addItem:open];
 
+    NSMenuItem *close = [[[NSMenuItem alloc]
+        initWithTitle:@"Close"
+        action:@selector(onClose) keyEquivalent:@"w"] autorelease];
+    close.target = glue;
+    [fileMenu addItem:close];
+
     [[NSApplication sharedApplication].mainMenu insertItem:fileMenuItem atIndex:1];
+}
+
+extern "C" void* platform_native_window(instance_t* instance) {
+    return (instance == NULL) ? NULL : glfwGetCocoaWindow(instance->window);
 }
