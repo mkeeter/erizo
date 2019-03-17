@@ -4,7 +4,6 @@ struct model_;
 struct camera_;
 
 typedef enum loader_state_ {
-    LOADER_IDLE,
     LOADER_START,
     LOADER_TRIANGLE_COUNT,
     LOADER_RAM_BUFFER,
@@ -33,8 +32,7 @@ typedef struct loader_ {
 
 } loader_t;
 
-void loader_init(loader_t* loader);
-void loader_start(loader_t* loader, const char* filename);
+loader_t* loader_new(const char* filename);
 loader_state_t loader_state(loader_t* loader);
 
 void loader_wait(loader_t* loader, loader_state_t target);

@@ -39,10 +39,12 @@ void platform_clear_terminal_color(FILE* f);
 
 /*  Threading API is a thin wrapper around pthreads */
 int platform_mutex_init(platform_mutex_t* mutex);
+int platform_mutex_destroy(platform_mutex_t* mutex);
 int platform_mutex_lock(platform_mutex_t* mutex);
 int platform_mutex_unlock(platform_mutex_t* mutex);
 
 int platform_cond_init(platform_cond_t* cond);
+int platform_cond_destroy(platform_cond_t* cond);
 int platform_cond_wait(platform_cond_t* cond,
                        platform_mutex_t* mutex);
 int platform_cond_broadcast(platform_cond_t* cond);

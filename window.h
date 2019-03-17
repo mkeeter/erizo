@@ -1,5 +1,5 @@
 #include "platform.h"
 
-struct app_;
+struct instance_;
 
-void window_set_callbacks(GLFWwindow* window, struct app_* app);
+void window_set_callbacks(GLFWwindow* window, struct instance_* instance);

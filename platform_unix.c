@@ -38,8 +38,16 @@ int platform_mutex_init(platform_mutex_t* mutex) {
     return pthread_mutex_init(&mutex->data, NULL);
 }
 
+int platform_mutex_destroy(platform_mutex_t* mutex) {
+    return pthread_mutex_destroy(&mutex->data);
+}
+
 int platform_cond_init(platform_cond_t* cond) {
     return pthread_cond_init(&cond->data, NULL);
+}
+
+int platform_cond_destroy(platform_cond_t* cond) {
+    return pthread_cond_destroy(&cond->data);
 }
 
 int platform_mutex_lock(platform_mutex_t* mutex) {

@@ -22,23 +22,17 @@ void loader_next(loader_t* loader, loader_state_t target) {
     platform_mutex_unlock(&loader->mutex);
 }
 
-void loader_init(loader_t* loader) {
+loader_t* loader_new(const char* filename) {
+    loader_t* loader = (loader_t*)calloc(sizeof(loader_t), 1);
     platform_mutex_init(&loader->mutex);
     platform_cond_init(&loader->cond);
-    loader_next(loader, LOADER_IDLE);
-}
-
-void loader_start(loader_t* loader, const char* filename) {
-    const loader_state_t s = loader_state(loader);
-    if (s != LOADER_IDLE) {
-        log_error_and_abort("Invalid loader state: %i", s);
-    }
 
     loader->filename = filename;
 
     if (platform_thread_create(&loader->thread, loader_run, loader)) {
         log_error_and_abort("Error creating loader thread");
     }
+    return loader;
 }
 
 static void* loader_run(void* loader_) {
@@ -173,6 +167,8 @@ void loader_reset(loader_t* loader) {
     if (platform_thread_join(&loader->thread)) {
         log_error_and_abort("Failed to join loader thread");
     }
-    loader_next(loader, LOADER_IDLE);
-    log_trace("Reset loader");
+    platform_mutex_destroy(&loader->mutex);
+    platform_cond_destroy(&loader->cond);
+    free(loader);
+    log_trace("Destroyed loader");
 }

@@ -1,5 +1,6 @@
 extern "C" {
 #include "app.h"
+#include "instance.h"
 }
 #define GLFW_EXPOSE_NATIVE_COCOA
 #include <GLFW/glfw3native.h>
@@ -24,9 +25,9 @@ extern "C" {
         if (result == NSModalResponseOK) {
             NSURL *doc = [[panel URLs] objectAtIndex:0];
             NSString *urlString = [doc path];
-            app_open(self->app, [urlString UTF8String]);
+            instance_t* instance = app_open(self->app, [urlString UTF8String]);
 
-            NSWindow* window = glfwGetCocoaWindow(self->app->window);
+            NSWindow* window = glfwGetCocoaWindow(instance->window);
             [window makeKeyWindow];
         }
     }];
