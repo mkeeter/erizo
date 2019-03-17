@@ -6,6 +6,9 @@ camera_t* camera_new(float width, float height) {
     OBJECT_ALLOC(camera);
     camera->width = width;
     camera->height = height;
+
+    /*  Avoids a division by 0 during initial construction */
+    camera->scale = 1.0f;
     return camera;
 }
 
