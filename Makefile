@@ -45,5 +45,5 @@ sphere.c: sphere.stl
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJ) $(DEP)
+	rm -rf $(OBJ) $(DEP) sphere.c version.c
 	rmdir $(BUILD_DIR)

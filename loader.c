@@ -4,6 +4,7 @@
 #include "mat.h"
 #include "model.h"
 #include "object.h"
+#include "sphere.h"
 #include "worker.h"
 
 static void* loader_run(void* loader_);
@@ -41,8 +42,16 @@ static void* loader_run(void* loader_) {
     loader->buffer = NULL;
     loader_next(loader, LOADER_START);
 
+    /*  Filesize in bytes; needed to munmap file at the end */
     size_t size;
-    const char* mapped = platform_mmap(loader->filename, &size);
+
+    /*  This magic filename tells us to load a builtin array,
+     *  rather than something in the filesystem */
+    bool builtin_sphere = !strcmp(loader->filename, ":/sphere");
+    const char* mapped = builtin_sphere
+        ? mapped = (const char*)sphere_stl
+        : platform_mmap(loader->filename, &size);
+
     memcpy(&loader->num_triangles, &mapped[80],
            sizeof(loader->num_triangles));
     loader_next(loader, LOADER_TRIANGLE_COUNT);
@@ -110,7 +119,9 @@ static void* loader_run(void* loader_) {
     loader_next(loader, LOADER_DONE);
     glfwPostEmptyEvent();
 
-    platform_munmap(mapped, size);
+    if (!builtin_sphere) {
+        platform_munmap(mapped, size);
+    }
     free(ram);
 
     return NULL;
