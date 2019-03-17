@@ -61,6 +61,7 @@ GLFWwindow* window_new(float width, float height) {
     }
 
     glfwMakeContextCurrent(window);
+    log_trace("Made context current");
 
     if (first) {
         const GLenum glew_err = glewInit();

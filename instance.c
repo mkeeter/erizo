@@ -14,7 +14,6 @@ instance_t* instance_new(const char* filename) {
 
     camera_t* camera = camera_new(500.0f, 500.0f);
     GLFWwindow* const window = window_new(camera->width, camera->height);
-    log_trace("Made context current");
 
     /*  Highest priority once OpenGL is running: allocate the VBO
      *  and pass it to the loader thread.  */
