@@ -2,8 +2,27 @@
 # anything else, generating version.c
 _VERSION := $(shell sh version.sh)
 
-SRC := $(wildcard *.c)
-OBJ := $(SRC:.c=.o) sphere.o
+# Source files
+SRC :=       \
+	app      \
+	backdrop \
+	camera   \
+	instance \
+	loader   \
+	log      \
+	main     \
+	mat      \
+	model    \
+	shader   \
+	window   \
+	worker   \
+	# end of source files
+
+# Generated files
+GEN :=       \
+	sphere   \
+	version  \
+	# end of generated files
 
 BUILD_DIR := build
 
@@ -13,11 +32,12 @@ LDFLAGS := -lglfw -lglew -framework OpenGL $(CFLAGS)
 # Platform detection
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
-	OBJ := $(OBJ) platform_darwin.o
+	SRC := $(SRC) platform_unix platform_darwin
 	LDFLAGS := $(LDFLAGS) -framework Foundation -framework Cocoa
 	PLATFORM := -DPLATFORM_DARWIN
 endif
 
+OBJ := $(SRC:=.o) $(GEN:=.o)
 OBJ := $(addprefix build/,$(OBJ))
 DEP := $(OBJ:.o=.d)
 
@@ -45,5 +65,5 @@ sphere.c: sphere.stl
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJ) $(DEP) sphere.c version.c
+	rm -rf $(OBJ) $(DEP) $(GEN:=.c)
 	rmdir $(BUILD_DIR)
