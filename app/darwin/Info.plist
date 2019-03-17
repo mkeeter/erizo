@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSHighResolutionCapable</key>
+    <string>True</string>
+    <key>CFBundleIconFile</key>
+    <string>hedgehog.icns</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleGetInfoString</key>
+    <string>The fastest STL viewer</string>
+    <key>CFBundleExecutable</key>
+    <string>hedgehog</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.impraxical.hedgehog</string>
+    <key>CFBundleVersion</key>
+    <string>0.0.0</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>stl</string>
+            </array>
+            <key>CFBundleTypeName</key>
+            <string>STL mesh</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+    </array>
+</dict>
+</plist>
+
