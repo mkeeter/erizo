@@ -3,6 +3,7 @@
 #include "log.h"
 #include "mat.h"
 #include "model.h"
+#include "object.h"
 #include "worker.h"
 
 static void* loader_run(void* loader_);
@@ -23,7 +24,7 @@ void loader_next(loader_t* loader, loader_state_t target) {
 }
 
 loader_t* loader_new(const char* filename) {
-    loader_t* loader = (loader_t*)calloc(sizeof(loader_t), 1);
+    OBJECT_ALLOC(loader);
     platform_mutex_init(&loader->mutex);
     platform_cond_init(&loader->cond);
 

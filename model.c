@@ -1,6 +1,7 @@
 #include "camera.h"
 #include "log.h"
 #include "model.h"
+#include "object.h"
 #include "shader.h"
 
 const GLchar* MODEL_VS_SRC = GLSL(330,
@@ -61,7 +62,8 @@ void main() {
 }
 );
 
-void model_init(model_t* model) {
+model_t* model_new() {
+    OBJECT_ALLOC(model);
     model->num_triangles = 0;
     model->vbo = 0;
     glGenVertexArrays(1, &model->vao);
@@ -75,6 +77,7 @@ void model_init(model_t* model) {
     model->u_model = glGetUniformLocation(model->prog, "model");
 
     log_trace("Initialized model");
+    return model;
 }
 
 void model_draw(model_t* model, camera_t* camera) {

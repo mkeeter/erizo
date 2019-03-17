@@ -1,6 +1,13 @@
-#include <math.h>
 #include "camera.h"
+#include "object.h"
 #include "mat.h"
+
+camera_t* camera_new(float width, float height) {
+    OBJECT_ALLOC(camera);
+    camera->width = width;
+    camera->height = height;
+    return camera;
+}
 
 void camera_mat(camera_t* camera, float m[4][4]) {
     mat4_identity(m);

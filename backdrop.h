@@ -8,5 +8,5 @@ typedef struct backdrop_ {
     GLuint u_gradient;
 } backdrop_t;
 
-void backdrop_init(backdrop_t* backdrop);
+backdrop_t* backdrop_new();
 void backdrop_draw(backdrop_t* backdrop);

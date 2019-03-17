@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
+#include <math.h>
 
 #if defined(PLATFORM_DARWIN)
 #include "platform_unix.h"

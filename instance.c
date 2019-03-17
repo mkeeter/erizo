@@ -5,6 +5,7 @@
 #include "log.h"
 #include "mat.h"
 #include "model.h"
+#include "object.h"
 #include "window.h"
 
 static int first = 1;
@@ -24,10 +25,7 @@ instance_t* instance_new(const char* filename) {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     }
 
-    camera_t* camera = (camera_t*)calloc(sizeof(camera_t), 1);
-    camera->width = 500.0f;
-    camera->height = 500.0f;
-
+    camera_t* camera = camera_new(500.0f, 500.0f);
     GLFWwindow* const window = glfwCreateWindow(
             camera->width, camera->height,
             "hedgehog", NULL, NULL);
@@ -54,16 +52,13 @@ instance_t* instance_new(const char* filename) {
     loader_allocate_vbo(loader);
 
     /*  Next, build the OpenGL-dependent objects */
-    model_t* model = (model_t*)calloc(sizeof(model_t), 1);
-    model_init(model);
-
-    backdrop_t* backdrop = (backdrop_t*)calloc(sizeof(backdrop_t), 1);
-    backdrop_init(backdrop);
+    model_t* model = model_new();
+    backdrop_t* backdrop = backdrop_new();
 
     glfwShowWindow(window);
     log_trace("Showed window");
 
-    instance_t* instance = (instance_t*)calloc(sizeof(instance_t), 1);
+    OBJECT_ALLOC(instance);
     window_set_callbacks(window, instance);
 
     instance->backdrop = backdrop;

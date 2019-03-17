@@ -14,5 +14,5 @@ typedef struct model_ {
     GLuint u_model;
 } model_t;
 
-void model_init(model_t* model);
+model_t* model_new();
 void model_draw(model_t* model, struct camera_* camera);

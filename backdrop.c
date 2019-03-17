@@ -1,5 +1,6 @@
 #include "backdrop.h"
 #include "log.h"
+#include "object.h"
 #include "shader.h"
 
 const GLchar* BACKDROP_VS_SRC = GLSL(330,
@@ -32,7 +33,8 @@ void main() {
 }
 );
 
-void backdrop_init(backdrop_t* backdrop) {
+backdrop_t* backdrop_new() {
+    OBJECT_ALLOC(backdrop);
     GLuint vs = shader_build(BACKDROP_VS_SRC, GL_VERTEX_SHADER);
     GLuint fs = shader_build(BACKDROP_FS_SRC, GL_FRAGMENT_SHADER);
     backdrop->prog = shader_link_vf(vs, fs);
@@ -52,6 +54,8 @@ void backdrop_init(backdrop_t* backdrop) {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     log_trace("Initialized backdrop");
+
+    return backdrop;
 }
 
 void backdrop_draw(backdrop_t* backdrop) {
