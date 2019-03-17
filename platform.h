@@ -4,12 +4,13 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <math.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
-#include <stdarg.h>
-#include <math.h>
 
 #if defined(PLATFORM_DARWIN)
 #include "platform_unix.h"

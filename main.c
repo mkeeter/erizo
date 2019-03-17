@@ -15,6 +15,7 @@ int main(int argc, char** argv) {
     if (argc == 2) {
         app_open(&app, argv[1]);
     }
+    platform_init(&app);
 
     while (1) {
         app_run(&app);
