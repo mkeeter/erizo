@@ -7,7 +7,7 @@ OBJ := $(SRC:.c=.o)
 
 BUILD_DIR := build
 
-CFLAGS := -Wall -Werror -g -O3 -pedantic -fsanitize=address
+CFLAGS := -Wall -Werror -g -O3 -pedantic
 LDFLAGS := -lglfw -lglew -framework OpenGL $(CFLAGS)
 
 # Platform detection
