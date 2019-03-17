@@ -26,7 +26,8 @@ static void cb_mouse_click(GLFWwindow* window, int button,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void window_set_callbacks(GLFWwindow* window, instance_t* instance) {
+void window_bind(GLFWwindow* window, instance_t* instance) {
+    instance->window = window;
     glfwSetWindowUserPointer(window, instance);
 
     glfwSetWindowSizeCallback(window, cb_window_size);

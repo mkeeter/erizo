@@ -28,13 +28,12 @@ instance_t* instance_new(const char* filename) {
     log_trace("Showed window");
 
     OBJECT_ALLOC(instance);
-    window_set_callbacks(window, instance);
+    window_bind(window, instance);
 
     instance->backdrop = backdrop;
     instance->camera = camera;
     instance->loader = loader;
     instance->model = model;
-    instance->window = window;
 
     camera_update_proj(instance->camera);
     camera_update_view(instance->camera);
@@ -97,7 +96,7 @@ void instance_run(instance_t* instance) {
     /*  Print a timing message on model load */
     if (instance->loader) {
         log_info("Load complete");
-        loader_reset(instance->loader);
+        loader_delete(instance->loader);
         instance->loader = NULL;
     }
 }

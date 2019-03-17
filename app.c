@@ -2,6 +2,15 @@
 #include "instance.h"
 #include "log.h"
 
+static void app_close_instance(app_t* app, unsigned i) {
+    if (i >= app->num_instances) {
+        log_error_and_abort("Invalid index (%u > %u)",
+                            i, app->num_instances);
+    }
+    instance_delete(app->instances[i]);
+    app->instances[i] = NULL;
+}
+
 instance_t* app_open(app_t* app, const char* filename) {
     instance_t* instance = instance_new(filename);
 
@@ -31,15 +40,6 @@ void app_close_native_window(app_t* app, void* native_window) {
         }
     }
     log_error_and_abort("Native window not found");
-}
-
-void app_close_instance(app_t* app, unsigned i) {
-    if (i >= app->num_instances) {
-        log_error_and_abort("Invalid index (%u > %u)",
-                            i, app->num_instances);
-    }
-    instance_delete(app->instances[i]);
-    app->instances[i] = NULL;
 }
 
 bool app_run(app_t* app) {

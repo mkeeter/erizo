@@ -42,10 +42,6 @@ void camera_update_proj(camera_t* camera);
 /*  Recalculates the view matrix */
 void camera_update_view(camera_t* camera);
 
-/*  Converts a position in mouse coordinates (0 to window height / width)
- *  into world coordinates, assigning to the given floats */
-void camera_mouse_to_world(camera_t* camera, float* x, float* y);
-
 /*  Mouse handling functions */
 void camera_begin_pan(camera_t* camera);
 void camera_begin_rot(camera_t* camera);

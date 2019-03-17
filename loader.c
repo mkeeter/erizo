@@ -144,13 +144,6 @@ void loader_allocate_vbo(loader_t* loader) {
     log_trace("Allocated buffer");
 }
 
-loader_state_t loader_state(loader_t* loader) {
-    platform_mutex_lock(&loader->mutex);
-    loader_state_t out = loader->state;
-    platform_mutex_unlock(&loader->mutex);
-    return out;
-}
-
 void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
     if (!loader->vbo) {
         log_error_and_abort("Invalid loader VBO");
@@ -177,7 +170,7 @@ void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
     log_trace("Copied model from loader");
 }
 
-void loader_reset(loader_t* loader) {
+void loader_delete(loader_t* loader) {
     if (platform_thread_join(&loader->thread)) {
         log_error_and_abort("Failed to join loader thread");
     }

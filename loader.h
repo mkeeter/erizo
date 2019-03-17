@@ -33,7 +33,7 @@ typedef struct loader_ {
 } loader_t;
 
 loader_t* loader_new(const char* filename);
-loader_state_t loader_state(loader_t* loader);
+void loader_delete(loader_t* loader);
 
 void loader_wait(loader_t* loader, loader_state_t target);
 void loader_next(loader_t* loader, loader_state_t target);
@@ -41,4 +41,3 @@ void loader_next(loader_t* loader, loader_state_t target);
 void loader_allocate_vbo(loader_t* loader);
 void loader_finish(loader_t* loader, struct model_* model,
                    struct camera_* camera);
-void loader_reset(loader_t* loader);
