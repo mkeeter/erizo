@@ -2,3 +2,5 @@ build/*
 hedgehog
 version.c
 sphere.c
+Hedgehog.app
+local/*
