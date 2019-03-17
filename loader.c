@@ -157,7 +157,6 @@ void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glDeleteBuffers(1, &model->vbo);
     model->vbo = loader->vbo;
     model->num_triangles = loader->num_triangles;
     loader->vbo = 0;
