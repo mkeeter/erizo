@@ -26,7 +26,7 @@ GEN :=       \
 
 BUILD_DIR := build
 
-CFLAGS := -Wall -Werror -g -O3 -pedantic
+CFLAGS := -Wall -Werror -g -O3 -pedantic -Iinc
 LDFLAGS := -lglfw -lglew -framework OpenGL $(CFLAGS)
 
 # Platform detection
@@ -37,8 +37,7 @@ ifeq ($(UNAME), Darwin)
 	PLATFORM := -DPLATFORM_DARWIN
 endif
 
-OBJ := $(SRC:=.o) $(GEN:=.o)
-OBJ := $(addprefix build/,$(OBJ))
+OBJ := $(addprefix build/,$(SRC:=.o) $(GEN:=.o))
 DEP := $(OBJ:.o=.d)
 
 all: hedgehog
@@ -46,24 +45,25 @@ all: hedgehog
 hedgehog: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^
 
-build/%.o: %.c | $(BUILD_DIR)
+build/%.o: src/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
-build/%.o: %.mm | $(BUILD_DIR)
+build/%.o: src/%.mm | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ $<
 
 -include $(DEP)
-build/%.d: %.c | $(BUILD_DIR)
-	$(CC) $< $(PLATFORM) -MM -MT $(@:.d=.o) > $@
-build/%.d: %.mm | $(BUILD_DIR)
-	$(CC) $< $(PLATFORM) -MM -MT $(@:.d=.o) > $@
+build/%.d: src/%.c | $(BUILD_DIR)
+	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
+build/%.d: src/%.mm | $(BUILD_DIR)
+	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-sphere.c: sphere.stl
+src/sphere.c: sphere.stl
 	xxd -i $< > $@
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJ) $(DEP) $(GEN:=.c)
+	rm -rf $(OBJ) $(DEP) $(addprefix src,$(GEN:=.c))
 	rmdir $(BUILD_DIR)
+	rm -f hedgehog

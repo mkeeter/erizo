@@ -13,7 +13,7 @@ const char* GIT_BRANCH="${GIT_BRANCH}";
 EOF
 )
 
-TARGET=version.c
+TARGET=src/version.c
 PREV=$(cat $TARGET 2> /dev/null || echo '')
 if [ "$VERSION" != "$PREV" ]
 then
