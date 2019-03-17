@@ -35,8 +35,6 @@ void loader_start(loader_t* loader, const char* filename) {
     }
 
     loader->filename = filename;
-    loader->buffer = NULL;
-    loader_next(loader, LOADER_START);
 
     if (platform_thread_create(&loader->thread, loader_run, loader)) {
         log_error_and_abort("Error creating loader thread");
@@ -45,6 +43,8 @@ void loader_start(loader_t* loader, const char* filename) {
 
 static void* loader_run(void* loader_) {
     loader_t* loader = (loader_t*)loader_;
+    loader->buffer = NULL;
+    loader_next(loader, LOADER_START);
 
     size_t size;
     const char* mapped = platform_mmap(loader->filename, &size);
