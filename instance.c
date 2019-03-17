@@ -52,14 +52,6 @@ void instance_delete(instance_t* instance) {
 
 /******************************************************************************/
 
-void instance_cb_keypress(instance_t* instance, int key, int scancode,
-                     int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(instance->window, 1);
-    }
-}
-
 void instance_cb_window_size(instance_t* instance, int width, int height)
 {
     instance->camera->width = width;

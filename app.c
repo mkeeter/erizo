@@ -22,14 +22,18 @@ instance_t* app_open(app_t* app, const char* filename) {
     return instance;
 }
 
-void app_run(app_t* app) {
+bool app_run(app_t* app) {
+    bool any_active = false;
     for (unsigned i=0; i < app->num_instances; ++i) {
         if (app->instances[i] != NULL) {
             instance_run(app->instances[i]);
             if (glfwWindowShouldClose(app->instances[i]->window)) {
                 instance_delete(app->instances[i]);
                 app->instances[i] = NULL;
+            } else {
+                any_active = true;
             }
         }
     }
+    return any_active;
 }

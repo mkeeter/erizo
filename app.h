@@ -7,7 +7,7 @@ typedef struct app_ {
 } app_t;
 
 /*  Calls instance_run on every instance */
-void app_run(app_t* app);
+bool app_run(app_t* app);
 
 /*  Triggered from the UI */
 struct instance_* app_open(app_t* app, const char* filename);

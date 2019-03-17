@@ -20,8 +20,7 @@ int main(int argc, char** argv) {
     }
     platform_init(&app);
 
-    while (1) {
-        app_run(&app);
+    while (app_run(&app)) {
         glfwWaitEvents();
     }
 
