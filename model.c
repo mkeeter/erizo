@@ -68,10 +68,10 @@ model_t* model_new() {
     model->vbo = 0;
     glGenVertexArrays(1, &model->vao);
 
-    GLuint vs = shader_build(MODEL_VS_SRC, GL_VERTEX_SHADER);
-    GLuint gs = shader_build(MODEL_GS_SRC, GL_GEOMETRY_SHADER);
-    GLuint fs = shader_build(MODEL_FS_SRC, GL_FRAGMENT_SHADER);
-    model->prog = shader_link_vgf(vs, gs, fs);
+    model->vs = shader_build(MODEL_VS_SRC, GL_VERTEX_SHADER);
+    model->gs = shader_build(MODEL_GS_SRC, GL_GEOMETRY_SHADER);
+    model->fs = shader_build(MODEL_FS_SRC, GL_FRAGMENT_SHADER);
+    model->prog = shader_link_vgf(model->vs, model->gs, model->fs);
     model->u_proj = glGetUniformLocation(model->prog, "proj");
     model->u_view = glGetUniformLocation(model->prog, "view");
     model->u_model = glGetUniformLocation(model->prog, "model");
