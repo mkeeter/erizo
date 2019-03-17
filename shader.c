@@ -12,7 +12,7 @@ GLuint shader_build(const GLchar* src, GLenum type) {
         GLint len = 0;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
 
-        GLchar* buf = malloc(len + 1);
+        GLchar* buf = (GLchar*)malloc(len + 1);
         glGetShaderInfoLog(shader, len, NULL, buf);
         log_error_and_abort("Failed to build shader: %s\n", buf);
         free(buf);
@@ -28,7 +28,7 @@ void shader_check_link(GLuint program) {
         GLint len = 0;
         glGetProgramiv(program, GL_INFO_LOG_LENGTH, &len);
 
-        GLchar* buf = malloc(len + 1);
+        GLchar* buf = (GLchar*)malloc(len + 1);
         glGetProgramInfoLog(program, len, NULL, buf);
         log_error_and_abort("Failed to link program: %s\n", buf);
     }

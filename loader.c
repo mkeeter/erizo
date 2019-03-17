@@ -122,9 +122,11 @@ void loader_allocate_vbo(loader_t* loader) {
 
     glBufferData(GL_ARRAY_BUFFER, loader->num_triangles * 36,
                  NULL, GL_STATIC_DRAW);
-    loader->buffer = glMapBufferRange(GL_ARRAY_BUFFER, 0, loader->num_triangles * 36,
-            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT |
-            GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+    loader->buffer = (float*)glMapBufferRange(
+            GL_ARRAY_BUFFER, 0, loader->num_triangles * 36,
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
+                             | GL_MAP_INVALIDATE_BUFFER_BIT
+                             | GL_MAP_UNSYNCHRONIZED_BIT);
     loader_next(loader, LOADER_GPU_BUFFER);
 
     log_trace("Allocated buffer");

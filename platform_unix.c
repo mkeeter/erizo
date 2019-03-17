@@ -11,7 +11,7 @@ const char* platform_mmap(const char* filename, size_t* size) {
     fstat(stl_fd, &s);
     *size = s.st_size;
 
-    return mmap(0, *size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
+    return (const char*)mmap(0, *size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
 }
 
 void platform_munmap(const char* data, size_t size) {
