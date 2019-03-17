@@ -16,11 +16,12 @@ static void* worker_run(void* worker_) {
 
     loader_wait(loader, LOADER_RAM_BUFFER);
 
-    memcpy(worker->min, &worker->stl[0], sizeof(worker->min));
-    memcpy(worker->min, &worker->stl[0], sizeof(worker->max));
+    memcpy(worker->min, worker->stl, sizeof(worker->min));
+    memcpy(worker->max, worker->stl, sizeof(worker->max));
 
     /*  Copy from the memmapped STL to flat RAM, finding bounds */
     for (size_t i=0; i < worker->count; ++i) {
+        /*  Copy the three vertices into RAM */
         memcpy(&worker->ram[i], &worker->stl[i], 36);
         for (unsigned t=0; t < 3; ++t) {
             for (unsigned a=0; a < 3; ++a) {
