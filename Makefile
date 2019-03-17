@@ -44,7 +44,7 @@ DEP := $(OBJ:.o=.d)
 all: hedgehog
 
 hedgehog: $(OBJ)
-	$(CC) -o $@ $(LDFLAGS) $(CFLAGS) $^
+	$(CC) -o $@ $(LDFLAGS) $^
 
 build/%.o: %.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
