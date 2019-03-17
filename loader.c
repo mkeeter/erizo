@@ -49,7 +49,7 @@ static void* loader_run(void* loader_) {
      *  rather than something in the filesystem */
     bool builtin_sphere = !strcmp(loader->filename, ":/sphere");
     const char* mapped = builtin_sphere
-        ? mapped = (const char*)sphere_stl
+        ? (const char*)sphere_stl
         : platform_mmap(loader->filename, &size);
 
     memcpy(&loader->num_triangles, &mapped[80],
