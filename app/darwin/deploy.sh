@@ -11,6 +11,7 @@ cd ../..
 make clean
 make -j8
 
+rm -rf $APP
 mkdir -p $APP/Contents/MacOS
 mkdir -p $APP/Contents/Resources
 mkdir -p $APP/Contents/Frameworks
