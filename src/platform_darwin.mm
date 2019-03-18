@@ -14,7 +14,6 @@ extern "C" {
 @interface Glue : NSObject {
 @public
     app_t* app;
-    BOOL should_open;
 }
 -(void) onOpen;
 -(void) onClose;
@@ -48,27 +47,11 @@ static Glue* GLUE = NULL;
 
 void fopenFiles(id self, SEL _cmd, NSApplication* application,
                 NSArray<NSString *>* openFiles) {
-    if (GLUE->should_open) {
-        for (NSString* t in openFiles) {
-            instance_t* instance = app_open(GLUE->app, [t UTF8String]);
-            NSWindow* window = glfwGetCocoaWindow(instance->window);
-            [window makeKeyWindow];
-        }
+    for (NSString* t in openFiles) {
+        instance_t* instance = app_open(GLUE->app, [t UTF8String]);
+        NSWindow* window = glfwGetCocoaWindow(instance->window);
+        [window makeKeyWindow];
     }
-}
-
-extern "C" void platform_preinit(app_t* app) {
-    GLUE = [[Glue alloc] init];
-    GLUE->app = app;
-    GLUE->should_open = YES;
-
-    //  Monkey-patch the application delegate so that it knows
-    //  how to open files, even before the first glfwInit call
-    //  (since otherwise it will fail to open files when they're
-    //  double-clicked and it is the default opener)
-    Class delegate_class = NSClassFromString(@"GLFWApplicationDelegate");
-    class_addMethod(delegate_class, @selector(application:openFiles:),
-                    (IMP)fopenFiles, "v@:@@");
 }
 
 extern "C" void platform_init(app_t* app, int argc, char** argv)
@@ -77,10 +60,19 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
         //  Disable file opening through application:openFiles:, which
         //  is triggered for command-line arguments during the first call
         //  to glfwInit.
-        GLUE->should_open = NO;
         app_open(app, argv[1]);
-        GLUE->should_open = YES;
-    } else {
+    }
+
+    GLUE = [[Glue alloc] init];
+    GLUE->app = app;
+
+    //  Monkey-patch the application delegate so that it knows
+    //  how to open files.
+    Class delegate_class = NSClassFromString(@"GLFWApplicationDelegate");
+    class_addMethod(delegate_class, @selector(application:openFiles:),
+                    (IMP)fopenFiles, "v@:@@");
+
+    if (app->num_instances == 0) {
         //  Construct a dummy window, which triggers GLFW initialization
         //  and may cause the application to open a file (if it was
         //  double-clicked or dragged onto the icon).
@@ -92,6 +84,7 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
         }
     }
 
+    // Build a file menu
     NSMenu *fileMenu = [[[NSMenu alloc] initWithTitle:@"File"] autorelease];
     NSMenuItem *fileMenuItem = [[[NSMenuItem alloc]
         initWithTitle:@"File" action:NULL keyEquivalent:@""] autorelease];
