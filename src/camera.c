@@ -86,13 +86,9 @@ void camera_set_mouse_pos(camera_t* camera, float x, float y) {
             mat4_apply(camera->drag_mat, v, v);
             float w[3] = {camera->mouse_pos[0], camera->mouse_pos[1], 0.0f};
             mat4_apply(camera->drag_mat, w, w);
-            printf("We want to put [%f %f %f] at [%f %f %f]\n",
-                    v[0], v[1], v[2], w[0], w[1], w[2]);
             for (unsigned i=0; i < 3; ++i) {
                 camera->center[i] = camera->start[i] + v[i] - w[i];
             }
-            printf("  center: [%f %f %f]\n", camera->center[0],
-                    camera->center[1], camera->center[2]);
             camera_update_view(camera);
             break;
         }
