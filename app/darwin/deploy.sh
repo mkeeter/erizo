@@ -26,11 +26,15 @@ do
     install_name_tool -change $LIB @executable_path/../Frameworks/$(basename $LIB) $APP/Contents/MacOS/hedgehog
 done
 
-rm -rf deploy $EXE.dmg
-mkdir deploy
-cp -r $APP deploy
-hdiutil create $EXE.dmg -volname "$EXE $VERSION" -srcfolder deploy
+if [ "$1" == "dmg" ]
+then
+    rm -rf deploy $EXE.dmg
+    mkdir deploy
+    cp -r $APP deploy
+    hdiutil create $EXE.dmg -volname "$EXE $VERSION" -srcfolder deploy
 
-# Clean up
-rm -rf deploy
+    # Clean up
+    rm -rf deploy
+fi
+
 make clean
