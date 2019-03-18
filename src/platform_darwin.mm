@@ -42,13 +42,11 @@ extern "C" {
 }
 @end
 
-static Glue* GLUE_INSTANCE=NULL;
-
 void fopenFiles(id self, SEL _cmd, NSApplication* application,
                 NSArray<NSString *>* openFiles) {
     for (NSString* t in openFiles) {
-        NSLog(@"opening %@ in %p", t, (void*)GLUE_INSTANCE->app);
-        instance_t* instance = app_open(GLUE_INSTANCE->app, [t UTF8String]);
+        Glue* glue = objc_getAssociatedObject(self, "GLUE");
+        instance_t* instance = app_open(glue->app, [t UTF8String]);
         NSWindow* window = glfwGetCocoaWindow(instance->window);
         [window makeKeyWindow];
     }
@@ -57,12 +55,13 @@ void fopenFiles(id self, SEL _cmd, NSApplication* application,
 
 extern "C" void platform_init(app_t* app)
 {
-    NSLog(@"Application is at %p", (void*)app);
-    GLUE_INSTANCE = [[Glue alloc] init];
-    GLUE_INSTANCE->app = app;
+    Glue* glue = [[Glue alloc] init];
+    glue->app = app;
 
-    Class delegate = object_getClass([NSApp delegate]);
-    class_addMethod(delegate, @selector(application:openFiles:),
+    id delegate = [NSApp delegate];
+    Class delegate_class = object_getClass(delegate);
+    objc_setAssociatedObject(delegate, "GLUE", glue, OBJC_ASSOCIATION_RETAIN);
+    class_addMethod(delegate_class, @selector(application:openFiles:),
                     (IMP)fopenFiles, "v@:@@");
 
     NSMenu *fileMenu = [[[NSMenu alloc] initWithTitle:@"File"] autorelease];
@@ -73,13 +72,13 @@ extern "C" void platform_init(app_t* app)
     NSMenuItem *open = [[[NSMenuItem alloc]
         initWithTitle:@"Open"
         action:@selector(onOpen) keyEquivalent:@"o"] autorelease];
-    open.target = GLUE_INSTANCE;
+    open.target = glue;
     [fileMenu addItem:open];
 
     NSMenuItem *close = [[[NSMenuItem alloc]
         initWithTitle:@"Close"
         action:@selector(onClose) keyEquivalent:@"w"] autorelease];
-    close.target = GLUE_INSTANCE;
+    close.target = glue;
     [fileMenu addItem:close];
 
     [[NSApplication sharedApplication].mainMenu insertItem:fileMenuItem atIndex:1];
