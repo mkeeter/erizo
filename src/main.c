@@ -15,7 +15,9 @@ int main(int argc, char** argv) {
     }
 
     if (argc == 2) {
+        platform_disable_opening();
         app_open(&app, argv[1]);
+        platform_enable_opening();
     } else {
         app_open(&app, ":/sphere");
     }

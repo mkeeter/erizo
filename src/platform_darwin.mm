@@ -13,6 +13,7 @@ extern "C" {
 @interface Glue : NSObject {
 @public
     app_t* app;
+    BOOL should_open;
 }
 -(void) onOpen;
 -(void) onClose;
@@ -46,17 +47,19 @@ static Glue* GLUE = NULL;
 
 void fopenFiles(id self, SEL _cmd, NSApplication* application,
                 NSArray<NSString *>* openFiles) {
-    for (NSString* t in openFiles) {
-        instance_t* instance = app_open(GLUE->app, [t UTF8String]);
-        NSWindow* window = glfwGetCocoaWindow(instance->window);
-        [window makeKeyWindow];
+    if (GLUE->should_open) {
+        for (NSString* t in openFiles) {
+            instance_t* instance = app_open(GLUE->app, [t UTF8String]);
+            NSWindow* window = glfwGetCocoaWindow(instance->window);
+            [window makeKeyWindow];
+        }
     }
-    NSLog(@"%@ %@ %@", self, application, openFiles);
 }
 
 extern "C" void platform_preinit(app_t* app) {
     GLUE = [[Glue alloc] init];
     GLUE->app = app;
+    GLUE->should_open = YES;
 
     //  Monkey-patch the application delegate so that it knows
     //  how to open files, even before the first glfwInit call
@@ -65,6 +68,14 @@ extern "C" void platform_preinit(app_t* app) {
     Class delegate_class = NSClassFromString(@"GLFWApplicationDelegate");
     class_addMethod(delegate_class, @selector(application:openFiles:),
                     (IMP)fopenFiles, "v@:@@");
+}
+
+extern "C" void platform_disable_opening() {
+    GLUE->should_open = NO;
+}
+
+extern "C" void platform_enable_opening() {
+    GLUE->should_open = YES;
 }
 
 extern "C" void platform_init(app_t* app)
