@@ -4,3 +4,4 @@ version.c
 sphere.c
 Hedgehog.app
 local/*
+.DS_Store
