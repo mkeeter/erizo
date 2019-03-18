@@ -25,7 +25,7 @@ instance_t* app_open(app_t* app, const char* filename) {
     /*  Otherwise, extend the array by one */
     if (i == app->num_instances) {
         app->instances = (instance_t**)realloc(
-                app->instances, sizeof(instance) * (i + 1));
+                app->instances, sizeof(instance_t*) * (i + 1));
         app->num_instances++;
     }
     app->instances[i] = instance;
