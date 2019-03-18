@@ -11,6 +11,14 @@ extern "C" {
 #import <Foundation/NSObjCRuntime.h>
 #import <objc/runtime.h>
 
+@interface InstanceHandle : NSObject {
+@public
+    instance_t* instance;
+}
+@end
+@implementation InstanceHandle
+@end
+
 @interface Glue : NSObject {
 @public
     app_t* app;
@@ -38,8 +46,9 @@ extern "C" {
 }
 
 -(void) onClose {
-    void* window = [[NSApplication sharedApplication] keyWindow];
-    app_close_native_window(self->app, window);
+    NSWindow* window = [[NSApplication sharedApplication] keyWindow];
+    InstanceHandle* handle = objc_getAssociatedObject(window, "WINDOW_INSTANCE");
+    glfwSetWindowShouldClose(handle->instance->window, 1);
 }
 @end
 
@@ -52,6 +61,14 @@ void fopenFiles(id self, SEL _cmd, NSApplication* application,
         NSWindow* window = glfwGetCocoaWindow(instance->window);
         [window makeKeyWindow];
     }
+}
+
+extern "C" void platform_window_bind(GLFWwindow* w) {
+    InstanceHandle* handle = [[InstanceHandle alloc] init];
+    handle->instance = (instance_t*)glfwGetWindowUserPointer(w);
+
+    objc_setAssociatedObject(glfwGetCocoaWindow(w), "WINDOW_INSTANCE",
+                             handle, OBJC_ASSOCIATION_RETAIN);
 }
 
 extern "C" void platform_init(app_t* app, int argc, char** argv)

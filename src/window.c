@@ -35,6 +35,8 @@ void window_bind(GLFWwindow* window, instance_t* instance) {
     glfwSetCursorPosCallback(window, cb_mouse_pos);
     glfwSetScrollCallback(window, cb_mouse_scroll);
     glfwSetMouseButtonCallback(window, cb_mouse_click);
+
+    platform_window_bind(window);
 }
 
 GLFWwindow* window_new(float width, float height) {

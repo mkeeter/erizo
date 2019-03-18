@@ -11,4 +11,3 @@ bool app_run(app_t* app);
 
 /*  Triggered from the UI */
 struct instance_* app_open(app_t* app, const char* filename);
-void app_close_native_window(app_t* app, void* window);

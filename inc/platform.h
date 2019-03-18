@@ -58,6 +58,6 @@ int platform_thread_join(platform_thread_t* thread);
 
 /*  Initializes the menu and other native features */
 void platform_init(struct app_* app, int argc, char** argv);
-void* platform_native_window(struct instance_* instance);
+void platform_window_bind(GLFWwindow* window);
 
 #endif
