@@ -1,6 +1,7 @@
 extern "C" {
 #include "app.h"
 #include "instance.h"
+#include "window.h"
 }
 #define GLFW_EXPOSE_NATIVE_COCOA
 #include <GLFW/glfw3native.h>
@@ -70,16 +71,27 @@ extern "C" void platform_preinit(app_t* app) {
                     (IMP)fopenFiles, "v@:@@");
 }
 
-extern "C" void platform_disable_opening() {
-    GLUE->should_open = NO;
-}
-
-extern "C" void platform_enable_opening() {
-    GLUE->should_open = YES;
-}
-
-extern "C" void platform_init(app_t* app)
+extern "C" void platform_init(app_t* app, int argc, char** argv)
 {
+    if (argc == 2) {
+        //  Disable file opening through application:openFiles:, which
+        //  is triggered for command-line arguments during the first call
+        //  to glfwInit.
+        GLUE->should_open = NO;
+        app_open(app, argv[1]);
+        GLUE->should_open = YES;
+    } else {
+        //  Construct a dummy window, which triggers GLFW initialization
+        //  and may cause the application to open a file (if it was
+        //  double-clicked or dragged onto the icon).
+        window_new(1.0f, 1.0f);
+
+        //  If no file was opened, then load the default
+        if (app->num_instances == 0) {
+            app_open(app, ":/sphere");
+        }
+    }
+
     NSMenu *fileMenu = [[[NSMenu alloc] initWithTitle:@"File"] autorelease];
     NSMenuItem *fileMenuItem = [[[NSMenuItem alloc]
         initWithTitle:@"File" action:NULL keyEquivalent:@""] autorelease];

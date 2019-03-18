@@ -14,14 +14,7 @@ int main(int argc, char** argv) {
         log_error_and_abort("Too many arguments (expected 0 or 1)");
     }
 
-    if (argc == 2) {
-        platform_disable_opening();
-        app_open(&app, argv[1]);
-        platform_enable_opening();
-    } else {
-        app_open(&app, ":/sphere");
-    }
-    platform_init(&app);
+    platform_init(&app, argc, argv);
 
     while (app_run(&app)) {
         glfwWaitEvents();

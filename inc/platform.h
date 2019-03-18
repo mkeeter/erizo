@@ -58,9 +58,7 @@ int platform_thread_join(platform_thread_t* thread);
 
 /*  Initializes the menu and other native features */
 void platform_preinit(struct app_* app);
-void platform_init(struct app_* app);
-void platform_disable_opening();
-void platform_enable_opening();
+void platform_init(struct app_* app, int argc, char** argv);
 void* platform_native_window(struct instance_* instance);
 
 #endif
