@@ -5,6 +5,8 @@
 
 int main(int argc, char** argv) {
     log_info("Startup!");
+    app_t app = { NULL, 0 };
+    platform_preinit(&app);
 
     if (argc != 2) {
         log_info("No input file");
@@ -12,7 +14,6 @@ int main(int argc, char** argv) {
         log_error_and_abort("Too many arguments (expected 0 or 1)");
     }
 
-    app_t app = { NULL, 0 };
     if (argc == 2) {
         app_open(&app, argv[1]);
     } else {

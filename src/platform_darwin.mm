@@ -42,28 +42,33 @@ extern "C" {
 }
 @end
 
+static Glue* GLUE = NULL;
+
 void fopenFiles(id self, SEL _cmd, NSApplication* application,
                 NSArray<NSString *>* openFiles) {
     for (NSString* t in openFiles) {
-        Glue* glue = objc_getAssociatedObject(self, "GLUE");
-        instance_t* instance = app_open(glue->app, [t UTF8String]);
+        instance_t* instance = app_open(GLUE->app, [t UTF8String]);
         NSWindow* window = glfwGetCocoaWindow(instance->window);
         [window makeKeyWindow];
     }
     NSLog(@"%@ %@ %@", self, application, openFiles);
 }
 
-extern "C" void platform_init(app_t* app)
-{
-    Glue* glue = [[Glue alloc] init];
-    glue->app = app;
+extern "C" void platform_preinit(app_t* app) {
+    GLUE = [[Glue alloc] init];
+    GLUE->app = app;
 
-    id delegate = [NSApp delegate];
-    Class delegate_class = object_getClass(delegate);
-    objc_setAssociatedObject(delegate, "GLUE", glue, OBJC_ASSOCIATION_RETAIN);
+    //  Monkey-patch the application delegate so that it knows
+    //  how to open files, even before the first glfwInit call
+    //  (since otherwise it will fail to open files when they're
+    //  double-clicked and it is the default opener)
+    Class delegate_class = NSClassFromString(@"GLFWApplicationDelegate");
     class_addMethod(delegate_class, @selector(application:openFiles:),
                     (IMP)fopenFiles, "v@:@@");
+}
 
+extern "C" void platform_init(app_t* app)
+{
     NSMenu *fileMenu = [[[NSMenu alloc] initWithTitle:@"File"] autorelease];
     NSMenuItem *fileMenuItem = [[[NSMenuItem alloc]
         initWithTitle:@"File" action:NULL keyEquivalent:@""] autorelease];
@@ -72,13 +77,13 @@ extern "C" void platform_init(app_t* app)
     NSMenuItem *open = [[[NSMenuItem alloc]
         initWithTitle:@"Open"
         action:@selector(onOpen) keyEquivalent:@"o"] autorelease];
-    open.target = glue;
+    open.target = GLUE;
     [fileMenu addItem:open];
 
     NSMenuItem *close = [[[NSMenuItem alloc]
         initWithTitle:@"Close"
         action:@selector(onClose) keyEquivalent:@"w"] autorelease];
-    close.target = glue;
+    close.target = GLUE;
     [fileMenu addItem:close];
 
     [[NSApplication sharedApplication].mainMenu insertItem:fileMenuItem atIndex:1];
