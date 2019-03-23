@@ -77,6 +77,7 @@ void instance_cb_mouse_click(instance_t* instance, int button, int action, int m
     }
 }
 void instance_cb_mouse_scroll(instance_t* instance, float xoffset, float yoffset) {
+    camera_zoom(instance->camera, yoffset);
 }
 
 void instance_run(instance_t* instance) {

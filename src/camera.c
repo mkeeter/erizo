@@ -119,15 +119,21 @@ void camera_set_mouse_pos(camera_t* camera, float x, float y) {
     }
 }
 
+/*  Finds the inverse of the view + projection matrix.  This
+ *  turns normalized mouse coordinates (in the +/- 1 range)
+ *  into world coordinates. */
+static void camera_vpi_mat(camera_t* camera, float m[4][4]) {
+    mat4_identity(m);
+    mat4_mul(camera->proj, m, m);
+    mat4_mul(camera->view, m, m);
+    mat4_inv(m, m);
+}
+
 void camera_begin_pan(camera_t* camera) {
     memcpy(camera->click_pos, camera->mouse_pos, sizeof(camera->mouse_pos));
     memcpy(camera->start, camera->center, sizeof(camera->center));
 
-    mat4_identity(camera->drag_mat);
-    mat4_mul(camera->proj, camera->drag_mat, camera->drag_mat);
-    mat4_mul(camera->view, camera->drag_mat, camera->drag_mat);
-    mat4_inv(camera->drag_mat, camera->drag_mat);
-
+    camera_vpi_mat(camera, camera->drag_mat);
     camera->state = CAMERA_PAN;
 }
 
@@ -140,4 +146,25 @@ void camera_begin_rot(camera_t* camera) {
 
 void camera_end_drag(camera_t* camera) {
     camera->state = CAMERA_IDLE;
+}
+
+void camera_zoom(camera_t* camera, float amount) {
+    const float mouse[3] = {camera->mouse_pos[0], camera->mouse_pos[1], 0.0f};
+
+    float mat[4][4];
+    camera_vpi_mat(camera, mat);
+    float before[3];
+    mat4_apply(mat, mouse, before);
+
+    camera->scale *= powf(1.01f, amount);
+    camera_update_view(camera);
+
+    camera_vpi_mat(camera, mat);
+    float after[3];
+    mat4_apply(mat, mouse, after);
+
+    for (unsigned i=0; i < 3; ++i) {
+        camera->center[i] += before[i] - after[i];
+    }
+    camera_update_view(camera);
 }
