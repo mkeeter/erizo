@@ -1,4 +1,5 @@
 #include "backdrop.h"
+#include "color.h"
 #include "log.h"
 #include "object.h"
 #include "shader.h"
@@ -6,18 +7,22 @@
 const GLchar* BACKDROP_VS_SRC = GLSL(330,
 layout(location=0) in vec2 pos;
 
-uniform mat4 gradient;
+uniform vec3 upper_left;
+uniform vec3 upper_right;
+uniform vec3 lower_left;
+uniform vec3 lower_right;
+
 out vec4 grad_color;
 
 void main() {
     if (pos.x < 0.0f && pos.y < 0.0f) {
-        grad_color = gradient[0];
+        grad_color = vec4(lower_left, 1.0f);
     } else if (pos.x > 0.0f && pos.y < 0.0f) {
-        grad_color = gradient[1];
+        grad_color = vec4(lower_right, 1.0f);
     } else if (pos.x < 0.0f && pos.y > 0.0f) {
-        grad_color = gradient[2];
+        grad_color = vec4(upper_left, 1.0f);
     } else if (pos.x > 0.0f && pos.y > 0.0f) {
-        grad_color = gradient[3];
+        grad_color = vec4(upper_right, 1.0f);
     }
 
     gl_Position = vec4(pos, 1.0f, 1.0f);
@@ -39,7 +44,11 @@ backdrop_t* backdrop_new() {
     backdrop->fs = shader_build(BACKDROP_FS_SRC, GL_FRAGMENT_SHADER);
     backdrop->prog = shader_link_vf(backdrop->vs, backdrop->fs);
     glUseProgram(backdrop->prog);
-    backdrop->u_gradient = glGetUniformLocation(backdrop->prog, "gradient");
+
+    GET_UNIFORM_LOC(backdrop, upper_left);
+    GET_UNIFORM_LOC(backdrop, upper_right);
+    GET_UNIFORM_LOC(backdrop, lower_left);
+    GET_UNIFORM_LOC(backdrop, lower_right);
 
     const float corners[] = {-1.0f, -1.0f,
                              -1.0f,  1.0f,
@@ -70,11 +79,10 @@ void backdrop_delete(backdrop_t* backdrop) {
 void backdrop_draw(backdrop_t* backdrop) {
     glDisable(GL_DEPTH_TEST);
     glUseProgram(backdrop->prog);
-    const float gradient[] = {0.00f, 0.10f, 0.15f, 1.0f,
-                              0.00f, 0.12f, 0.18f, 1.0f,
-                              0.03f, 0.21f, 0.26f, 1.0f,
-                              0.06f, 0.26f, 0.30f, 1.0f};
-    glUniformMatrix4fv(backdrop->u_gradient, 1, GL_FALSE, gradient);
+    color_from_hex("003440", backdrop->u_upper_left);
+    color_from_hex("002833", backdrop->u_upper_right);
+    color_from_hex("002833", backdrop->u_lower_left);
+    color_from_hex("002833", backdrop->u_lower_right);
     glBindVertexArray(backdrop->vao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

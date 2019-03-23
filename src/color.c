@@ -22,8 +22,6 @@ void color_from_hex(const char* hex, GLuint u) {
     float f[3];
     for (unsigned i=0; i < 3; ++i) {
         f[i] = c[i] / 255.0f;
-        printf("%i ", c[i]);
     }
-    printf("\n");
     glUniform3fv(u,  1, f);
 }

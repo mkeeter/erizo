@@ -79,13 +79,14 @@ model_t* model_new() {
     model->gs = shader_build(MODEL_GS_SRC, GL_GEOMETRY_SHADER);
     model->fs = shader_build(MODEL_FS_SRC, GL_FRAGMENT_SHADER);
     model->prog = shader_link_vgf(model->vs, model->gs, model->fs);
-    model->u_proj = glGetUniformLocation(model->prog, "proj");
-    model->u_view = glGetUniformLocation(model->prog, "view");
-    model->u_model = glGetUniformLocation(model->prog, "model");
 
-    model->u_key = glGetUniformLocation(model->prog, "key");
-    model->u_fill = glGetUniformLocation(model->prog, "fill");
-    model->u_base = glGetUniformLocation(model->prog, "base");
+    GET_UNIFORM_LOC(model, proj);
+    GET_UNIFORM_LOC(model, view);
+    GET_UNIFORM_LOC(model, model);
+
+    GET_UNIFORM_LOC(model, key);
+    GET_UNIFORM_LOC(model, fill);
+    GET_UNIFORM_LOC(model, base);
 
     log_trace("Initialized model");
     return model;
