@@ -1,7 +1,7 @@
 #include "color.h"
 #include "log.h"
 
-void color_from_hex(const char* hex, GLuint u) {
+void color_uniform_hex(GLuint u, const char* hex) {
     if (strlen(hex) != 6) {
         log_error_and_abort("Invalid hex string '%s'", hex);
     }

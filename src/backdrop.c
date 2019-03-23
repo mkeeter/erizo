@@ -45,10 +45,10 @@ backdrop_t* backdrop_new() {
     backdrop->prog = shader_link_vf(backdrop->vs, backdrop->fs);
     glUseProgram(backdrop->prog);
 
-    GET_UNIFORM_LOC(backdrop, upper_left);
-    GET_UNIFORM_LOC(backdrop, upper_right);
-    GET_UNIFORM_LOC(backdrop, lower_left);
-    GET_UNIFORM_LOC(backdrop, lower_right);
+    SHADER_GET_UNIFORM_LOC(backdrop, upper_left);
+    SHADER_GET_UNIFORM_LOC(backdrop, upper_right);
+    SHADER_GET_UNIFORM_LOC(backdrop, lower_left);
+    SHADER_GET_UNIFORM_LOC(backdrop, lower_right);
 
     const float corners[] = {-1.0f, -1.0f,
                              -1.0f,  1.0f,
@@ -79,10 +79,10 @@ void backdrop_delete(backdrop_t* backdrop) {
 void backdrop_draw(backdrop_t* backdrop) {
     glDisable(GL_DEPTH_TEST);
     glUseProgram(backdrop->prog);
-    color_from_hex("003440", backdrop->u_upper_left);
-    color_from_hex("002833", backdrop->u_upper_right);
-    color_from_hex("002833", backdrop->u_lower_left);
-    color_from_hex("002833", backdrop->u_lower_right);
+    color_uniform_hex(backdrop->u_upper_left, "003440");
+    color_uniform_hex(backdrop->u_upper_right, "002833");
+    color_uniform_hex(backdrop->u_lower_left, "002833");
+    color_uniform_hex(backdrop->u_lower_right, "002833");
     glBindVertexArray(backdrop->vao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

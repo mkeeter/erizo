@@ -80,13 +80,13 @@ model_t* model_new() {
     model->fs = shader_build(MODEL_FS_SRC, GL_FRAGMENT_SHADER);
     model->prog = shader_link_vgf(model->vs, model->gs, model->fs);
 
-    GET_UNIFORM_LOC(model, proj);
-    GET_UNIFORM_LOC(model, view);
-    GET_UNIFORM_LOC(model, model);
+    SHADER_GET_UNIFORM_LOC(model, proj);
+    SHADER_GET_UNIFORM_LOC(model, view);
+    SHADER_GET_UNIFORM_LOC(model, model);
 
-    GET_UNIFORM_LOC(model, key);
-    GET_UNIFORM_LOC(model, fill);
-    GET_UNIFORM_LOC(model, base);
+    SHADER_GET_UNIFORM_LOC(model, key);
+    SHADER_GET_UNIFORM_LOC(model, fill);
+    SHADER_GET_UNIFORM_LOC(model, base);
 
     log_trace("Initialized model");
     return model;
@@ -110,9 +110,9 @@ void model_draw(model_t* model, camera_t* camera) {
     glUniformMatrix4fv(model->u_view, 1, GL_FALSE, (float*)camera->view);
     glUniformMatrix4fv(model->u_model, 1, GL_FALSE, (float*)camera->model);
 
-    color_from_hex("fdf6e3", model->u_key);
-    color_from_hex("eee8d5", model->u_fill);
-    color_from_hex("657b83", model->u_base);
+    color_uniform_hex(model->u_key, "fdf6e3");
+    color_uniform_hex(model->u_fill, "eee8d5");
+    color_uniform_hex(model->u_base, "657b83");
 
     glDrawArrays(GL_TRIANGLES, 0, model->num_triangles * 3);
 }

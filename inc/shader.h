@@ -6,6 +6,6 @@ GLuint shader_build(const GLchar* src, GLenum type);
 GLuint shader_link_vgf(GLuint vs, GLuint gs, GLuint fs);
 GLuint shader_link_vf(GLuint vs, GLuint fs);
 
-#define GET_UNIFORM_LOC(object, target) { \
+#define SHADER_GET_UNIFORM_LOC(object, target) { \
     object->u_##target = glGetUniformLocation(object->prog, #target); \
 }
