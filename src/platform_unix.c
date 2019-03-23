@@ -1,14 +1,23 @@
+#include <errno.h>
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 
 #include "platform.h"
+#include "log.h"
 
 const char* platform_mmap(const char* filename, size_t* size) {
     int stl_fd = open(filename, O_RDONLY);
+    if (stl_fd == -1) {
+        log_error("open failed (errno: %i)", errno);
+        return NULL;
+    }
     struct stat s;
-    fstat(stl_fd, &s);
+    if (fstat(stl_fd, &s)) {
+        log_error("fstat failed (errno: %i)", errno);
+        return NULL;
+    }
     *size = s.st_size;
 
     return (const char*)mmap(0, *size, PROT_READ, MAP_PRIVATE, stl_fd, 0);

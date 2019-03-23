@@ -48,14 +48,45 @@ static void* loader_run(void* loader_) {
     /*  This magic filename tells us to load a builtin array,
      *  rather than something in the filesystem */
     bool builtin_sphere = !strcmp(loader->filename, ":/sphere");
-    const char* mapped = builtin_sphere
-        ? (const char*)sphere_stl
-        : platform_mmap(loader->filename, &size);
+    const char* mapped;
+    if (builtin_sphere) {
+        mapped = (const char*)sphere_stl;
+        size = sphere_stl_len;
+    } else {
+        mapped = platform_mmap(loader->filename, &size);
+    }
+
+    /*  Check that the file was opened. */
+    if (!mapped) {
+        log_error("Could not open %s", loader->filename);
+        loader_next(loader, LOADER_ERROR_NO_FILE);
+        return NULL;
+    }
+
+    /*  TODO: check for ASCII STL here */
+
+    /*  Check whether the file is a valid size. */
+    if (size < 84) {
+        log_error("File is too small to be an STL (%i < 84)", size);
+        loader_next(loader, LOADER_ERROR_WRONG_SIZE);
+        return NULL;
+    }
 
     memcpy(&loader->num_triangles, &mapped[80],
            sizeof(loader->num_triangles));
-    loader_next(loader, LOADER_TRIANGLE_COUNT);
 
+    /*  Compare the actual file size with the expected size */
+    const uint32_t expected_size = loader->num_triangles * 50 + 84;
+    if (expected_size != size) {
+        log_error("Invalid file size for %u triangles (expected %u, got %u)",
+                  loader->num_triangles, expected_size, size);
+        loader_next(loader, LOADER_ERROR_WRONG_SIZE);
+        return NULL;
+    }
+
+    /*  Inform the main thread that it can now create an OpenGL buffer
+     *  for the given number of triangles. */
+    loader_next(loader, LOADER_TRIANGLE_COUNT);
     float* ram = (float*)malloc(loader->num_triangles * 3 * 3 * sizeof(float));
     loader_next(loader, LOADER_RAM_BUFFER);
 
@@ -140,6 +171,13 @@ void loader_allocate_vbo(loader_t* loader) {
     glBindBuffer(GL_ARRAY_BUFFER, loader->vbo);
     loader_wait(loader, LOADER_TRIANGLE_COUNT);
 
+    /*  Early return if there is an error in the loader;
+     *  we leave the buffer allocated so it can be cleaned
+     *  up as usual later. */
+    if (loader->state >= LOADER_ERROR) {
+        return;
+    }
+
     glBufferData(GL_ARRAY_BUFFER, loader->num_triangles * 36,
                  NULL, GL_STATIC_DRAW);
     loader->buffer = (float*)glMapBufferRange(
@@ -160,19 +198,25 @@ void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, loader->vbo);
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-    glBindVertexArray(model->vao);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    loader_wait(loader, LOADER_DONE);
 
-    model->vbo = loader->vbo;
-    model->num_triangles = loader->num_triangles;
-    loader->vbo = 0;
+    /*  If the loader succeeded, then set up all of the
+     *  GL buffers, matrices, etc. */
+    if (loader->state == LOADER_DONE) {
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+        glBindVertexArray(model->vao);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    memcpy(camera->model, loader->mat, sizeof(loader->mat));
-    camera_reset_view(camera);
+        model->vbo = loader->vbo;
+        model->num_triangles = loader->num_triangles;
+        loader->vbo = 0;
 
-    log_trace("Copied model from loader");
+        memcpy(camera->model, loader->mat, sizeof(loader->mat));
+        log_trace("Copied model from loader");
+    } else {
+        log_error("Loading failed");
+    }
 }
 
 void loader_delete(loader_t* loader) {

@@ -1,6 +1,5 @@
 #include "platform.h"
 
-struct loader_;
 struct camera_;
 struct model_;
 struct backdrop_;
@@ -8,7 +7,6 @@ struct backdrop_;
 typedef struct instance_ {
     struct backdrop_* backdrop;
     struct camera_* camera;
-    struct loader_* loader;
     struct model_*  model;
 
     GLFWwindow* window;

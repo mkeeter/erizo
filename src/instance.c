@@ -31,11 +31,17 @@ instance_t* instance_new(const char* filename) {
 
     instance->backdrop = backdrop;
     instance->camera = camera;
-    instance->loader = loader;
     instance->model = model;
 
     camera_update_proj(instance->camera);
     camera_reset_view(instance->camera);
+
+    /*  At the very last moment, check on the loader */
+    loader_finish(loader, instance->model, instance->camera);
+    if (loader->state != LOADER_DONE) {
+        glfwSetWindowShouldClose(instance->window, 1);
+    }
+    loader_delete(loader);
 
     return instance;
 }
@@ -85,18 +91,6 @@ void instance_run(instance_t* instance) {
     glClear(GL_DEPTH_BUFFER_BIT);
     backdrop_draw(instance->backdrop);
 
-    /*  At the very last moment, check on the loader */
-    if (instance->loader) {
-        loader_wait(instance->loader, LOADER_DONE);
-        loader_finish(instance->loader, instance->model, instance->camera);
-    }
     model_draw(instance->model, instance->camera);
     glfwSwapBuffers(instance->window);
-
-    /*  Print a timing message on model load */
-    if (instance->loader) {
-        log_info("Load complete");
-        loader_delete(instance->loader);
-        instance->loader = NULL;
-    }
 }

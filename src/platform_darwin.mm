@@ -38,7 +38,6 @@ extern "C" {
             NSURL *doc = [[panel URLs] objectAtIndex:0];
             NSString *urlString = [doc path];
             instance_t* instance = app_open(self->app, [urlString UTF8String]);
-
             NSWindow* window = glfwGetCocoaWindow(instance->window);
             [window makeKeyWindow];
         }
@@ -120,8 +119,4 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
     [fileMenu addItem:close];
 
     [[NSApplication sharedApplication].mainMenu insertItem:fileMenuItem atIndex:1];
-}
-
-extern "C" void* platform_native_window(instance_t* instance) {
-    return (instance == NULL) ? NULL : glfwGetCocoaWindow(instance->window);
 }

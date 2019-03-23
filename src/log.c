@@ -64,6 +64,13 @@ void log_info(const char *fmt, ...) {
     va_end(args);
 }
 
+void log_error(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    log_print(LOG_ERROR, fmt, args);
+    va_end(args);
+}
+
 void log_error_and_abort(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
