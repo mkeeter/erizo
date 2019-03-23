@@ -31,8 +31,7 @@ void main() {
     vec3 na = cross(a - b, c - b);
     vec3 nb = cross(b - c, a - c);
     vec3 nc = cross(c - a, b - a);
-
-    vert_norm = normalize(na + nb + nc);
+    vert_norm = normalize((view * model * vec4(na + nb + nc, 0.0f)).xyz);
 
     mat4 m = proj * view * model;
 
@@ -54,11 +53,18 @@ const GLchar* MODEL_FS_SRC = GLSL(330,
 in vec3 vert_norm;
 in vec3 pos_bary;
 
+uniform vec3 key;
+uniform vec3 fill;
+uniform vec3 base;
+
 out vec4 out_color;
 
 void main() {
-    out_color = vec4(abs(vert_norm), 1.0f) * 0.8f
-              + vec4(pos_bary, 1.0f) * 0.2f;
+    float a = dot(vert_norm, vec3(0.0f, 0.0f, 1.0f));
+    float b = dot(vert_norm, vec3(-0.57f, -0.57f, 0.57f));
+
+    out_color = vec4(mix(base, key,  a) * 0.5f +
+                     mix(base, fill, b) * 0.5f, 1.0f);
 }
 );
 
@@ -75,6 +81,10 @@ model_t* model_new() {
     model->u_proj = glGetUniformLocation(model->prog, "proj");
     model->u_view = glGetUniformLocation(model->prog, "view");
     model->u_model = glGetUniformLocation(model->prog, "model");
+
+    model->u_key = glGetUniformLocation(model->prog, "key");
+    model->u_fill = glGetUniformLocation(model->prog, "fill");
+    model->u_base = glGetUniformLocation(model->prog, "base");
 
     log_trace("Initialized model");
     return model;
@@ -97,5 +107,13 @@ void model_draw(model_t* model, camera_t* camera) {
     glUniformMatrix4fv(model->u_proj, 1, GL_FALSE, (float*)camera->proj);
     glUniformMatrix4fv(model->u_view, 1, GL_FALSE, (float*)camera->view);
     glUniformMatrix4fv(model->u_model, 1, GL_FALSE, (float*)camera->model);
+
+    const float key[3]  = {0.99f, 0.96f, 0.89f};
+    const float fill[3] = {0.92f, 0.91f, 0.83f};
+    const float base[3] = {0.40f, 0.48f, 0.51f};
+    glUniform3fv(model->u_key,  1, key);
+    glUniform3fv(model->u_fill, 1, fill);
+    glUniform3fv(model->u_base, 1, base);
+
     glDrawArrays(GL_TRIANGLES, 0, model->num_triangles * 3);
 }

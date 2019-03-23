@@ -14,10 +14,15 @@ typedef struct model_ {
     GLuint fs;
     GLuint prog;
 
-    /*  Uniform locations */
+    /*  Uniform locations for matrices */
     GLuint u_proj;
     GLuint u_view;
     GLuint u_model;
+
+    /*  Uniform locations for lighting */
+    GLuint u_key;
+    GLuint u_fill;
+    GLuint u_base;
 } model_t;
 
 model_t* model_new();
