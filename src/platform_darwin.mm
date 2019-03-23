@@ -120,3 +120,11 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
 
     [[NSApplication sharedApplication].mainMenu insertItem:fileMenuItem atIndex:1];
 }
+
+extern "C" void platform_warning(const char* title, const char* text) {
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert setMessageText:[NSString stringWithUTF8String:title]];
+    [alert setInformativeText:[NSString stringWithUTF8String:text]];
+    [alert addButtonWithTitle:@"Okay"];
+    [alert runModal];
+}

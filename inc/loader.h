@@ -45,3 +45,5 @@ void loader_next(loader_t* loader, loader_state_t target);
 void loader_allocate_vbo(loader_t* loader);
 void loader_finish(loader_t* loader, struct model_* model,
                    struct camera_* camera);
+
+const char* loader_error_string(loader_state_t state);

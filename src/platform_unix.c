@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "platform.h"
 #include "log.h"
@@ -16,11 +17,18 @@ const char* platform_mmap(const char* filename, size_t* size) {
     struct stat s;
     if (fstat(stl_fd, &s)) {
         log_error("fstat failed (errno: %i)", errno);
+        close(stl_fd);
         return NULL;
     }
     *size = s.st_size;
 
-    return (const char*)mmap(0, *size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
+    const void* ptr = mmap(0, *size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
+    close(stl_fd);
+    if (ptr == (void*)-1) {
+        log_error("mmap failed (errno: %i)", errno);
+        return NULL;
+    }
+    return (const char*)ptr;
 }
 
 void platform_munmap(const char* data, size_t size) {

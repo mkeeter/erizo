@@ -60,4 +60,7 @@ int platform_thread_join(platform_thread_t* thread);
 void platform_init(struct app_* app, int argc, char** argv);
 void platform_window_bind(GLFWwindow* window);
 
+/*  Shows a warning dialog with the given text */
+void platform_warning(const char* title, const char* text);
+
 #endif

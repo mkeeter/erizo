@@ -228,3 +228,24 @@ void loader_delete(loader_t* loader) {
     free(loader);
     log_trace("Destroyed loader");
 }
+
+const char* loader_error_string(loader_state_t state) {
+    switch(state) {
+        case LOADER_START:
+        case LOADER_TRIANGLE_COUNT:
+        case LOADER_RAM_BUFFER:
+        case LOADER_GPU_BUFFER:
+        case LOADER_WORKER_GPU:
+        case LOADER_DONE:
+            return "No error";
+
+        case LOADER_ERROR:
+            return "Generic error";
+        case LOADER_ERROR_NO_FILE:
+            return "File not found";
+        case LOADER_ERROR_ASCII_STL:
+            return "ASCII STLs are unsupported";
+        case LOADER_ERROR_WRONG_SIZE:
+            return "File size does not match triangle count";
+    }
+}

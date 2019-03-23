@@ -39,6 +39,10 @@ instance_t* instance_new(const char* filename) {
     /*  At the very last moment, check on the loader */
     loader_finish(loader, instance->model, instance->camera);
     if (loader->state != LOADER_DONE) {
+        backdrop_draw(instance->backdrop);
+        glfwSwapBuffers(instance->window);
+        platform_warning("Loading the file failed",
+                         loader_error_string(loader->state));
         glfwSetWindowShouldClose(instance->window, 1);
     }
     loader_delete(loader);
