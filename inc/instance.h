@@ -9,6 +9,8 @@ typedef struct instance_ {
     struct camera_* camera;
     struct model_*  model;
 
+    const char* error;
+
     GLFWwindow* window;
 } instance_t;
 

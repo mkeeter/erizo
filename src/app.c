@@ -1,4 +1,5 @@
 #include "app.h"
+#include "backdrop.h"
 #include "instance.h"
 #include "log.h"
 
@@ -13,6 +14,16 @@ static void app_close_instance(app_t* app, unsigned i) {
 
 instance_t* app_open(app_t* app, const char* filename) {
     instance_t* instance = instance_new(filename);
+
+    /*  If loading failed, then do a special one-time drawing of
+     *  the backdrop, show an error dialog, and mark the window
+     *  as closing in the next event loop */
+    if (instance->error) {
+        backdrop_draw(instance->backdrop);
+        glfwSwapBuffers(instance->window);
+        platform_warning("Loading the file failed", instance->error);
+        glfwSetWindowShouldClose(instance->window, 1);
+    }
 
     /*  Search for an unused instance slot, which is marked
      *  by a NULL pointer in the instances array */
