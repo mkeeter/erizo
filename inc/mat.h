@@ -1,5 +1,3 @@
-#include "platform.h"
-
 /*  Constructs an identity matrix */
 void mat4_identity(float out[4][4]);
 

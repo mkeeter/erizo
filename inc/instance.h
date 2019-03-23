@@ -1,5 +1,6 @@
 #include "platform.h"
 
+struct app_;
 struct camera_;
 struct model_;
 struct backdrop_;
@@ -10,11 +11,12 @@ typedef struct instance_ {
     struct model_*  model;
 
     const char* error;
+    struct app_* parent;
 
     GLFWwindow* window;
 } instance_t;
 
-instance_t* instance_new(const char* filename);
+instance_t* instance_new(struct app_* parent, const char* filename);
 void instance_delete(instance_t* instance);
 void instance_run(instance_t* instance);
 

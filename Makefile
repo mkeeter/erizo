@@ -15,6 +15,7 @@ SRC :=       \
 	mat      \
 	model    \
 	shader   \
+	theme    \
 	window   \
 	worker   \
 	# end of source files

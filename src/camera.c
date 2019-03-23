@@ -1,3 +1,5 @@
+#include "platform.h"
+
 #include "camera.h"
 #include "object.h"
 #include "mat.h"

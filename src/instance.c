@@ -1,6 +1,7 @@
-#include "instance.h"
+#include "app.h"
 #include "backdrop.h"
 #include "camera.h"
+#include "instance.h"
 #include "loader.h"
 #include "log.h"
 #include "mat.h"
@@ -8,7 +9,7 @@
 #include "object.h"
 #include "window.h"
 
-instance_t* instance_new(const char* filename) {
+instance_t* instance_new(app_t* parent, const char* filename) {
     /*  Kick the loader off in a separate thread */
     loader_t* loader = loader_new(filename);
 
@@ -32,6 +33,7 @@ instance_t* instance_new(const char* filename) {
     instance->backdrop = backdrop;
     instance->camera = camera;
     instance->model = model;
+    instance->parent = parent;
 
     camera_update_proj(instance->camera);
     camera_reset_view(instance->camera);

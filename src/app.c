@@ -13,7 +13,7 @@ static void app_close_instance(app_t* app, unsigned i) {
 }
 
 instance_t* app_open(app_t* app, const char* filename) {
-    instance_t* instance = instance_new(filename);
+    instance_t* instance = instance_new(app, filename);
 
     /*  If loading failed, then do a special one-time drawing of
      *  the backdrop, show an error dialog, and mark the window

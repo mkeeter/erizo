@@ -1,5 +1,3 @@
-#include "platform.h"
-
 typedef enum camera_mouse_ {
     CAMERA_IDLE,
     CAMERA_ROT,

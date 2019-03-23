@@ -1,11 +1,13 @@
 #include "app.h"
 #include "instance.h"
+#include "theme.h"
 #include "log.h"
 #include "window.h"
 
 int main(int argc, char** argv) {
     log_info("Startup!");
-    app_t app = { NULL, 0 };
+    app_t app = { NULL, 0, NULL };
+    app.theme = theme_new_solarized();
 
     if (argc != 2) {
         log_info("No input file");

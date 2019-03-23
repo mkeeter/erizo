@@ -1,3 +1,5 @@
+#include "platform.h"
+
 #include "mat.h"
 
 void mat4_identity(float out[4][4]) {
