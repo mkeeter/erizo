@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "color.h"
 #include "log.h"
 #include "model.h"
 #include "object.h"
@@ -108,12 +109,9 @@ void model_draw(model_t* model, camera_t* camera) {
     glUniformMatrix4fv(model->u_view, 1, GL_FALSE, (float*)camera->view);
     glUniformMatrix4fv(model->u_model, 1, GL_FALSE, (float*)camera->model);
 
-    const float key[3]  = {0.99f, 0.96f, 0.89f};
-    const float fill[3] = {0.92f, 0.91f, 0.83f};
-    const float base[3] = {0.40f, 0.48f, 0.51f};
-    glUniform3fv(model->u_key,  1, key);
-    glUniform3fv(model->u_fill, 1, fill);
-    glUniform3fv(model->u_base, 1, base);
+    color_from_hex("fdf6e3", model->u_key);
+    color_from_hex("eee8d5", model->u_fill);
+    color_from_hex("657b83", model->u_base);
 
     glDrawArrays(GL_TRIANGLES, 0, model->num_triangles * 3);
 }

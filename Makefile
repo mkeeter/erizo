@@ -7,6 +7,7 @@ SRC :=       \
 	app      \
 	backdrop \
 	camera   \
+	color    \
 	instance \
 	loader   \
 	log      \
