@@ -16,13 +16,6 @@ void camera_delete(camera_t* camera) {
     free(camera);
 }
 
-void camera_mat(camera_t* camera, float m[4][4]) {
-    mat4_identity(m);
-    mat4_mul(camera->proj, m, m);
-    mat4_mul(camera->view, m, m);
-    mat4_mul(camera->model, m, m);
-}
-
 void camera_update_proj(camera_t* camera) {
     mat4_identity(camera->proj);
     const float aspect = (float)camera->width / (float)camera->height;
@@ -31,6 +24,12 @@ void camera_update_proj(camera_t* camera) {
     } else {
         camera->proj[1][1] *= aspect;
     }
+}
+
+void camera_reset_view(camera_t* camera) {
+    camera->scale = 1.0f;
+    memset(camera->center, 0, sizeof(camera->center));
+    camera_update_view(camera);
 }
 
 void camera_update_view(camera_t* camera) {
@@ -124,7 +123,9 @@ void camera_begin_pan(camera_t* camera) {
     memcpy(camera->click_pos, camera->mouse_pos, sizeof(camera->mouse_pos));
     memcpy(camera->start, camera->center, sizeof(camera->center));
 
-    camera_mat(camera, camera->drag_mat);
+    mat4_identity(camera->drag_mat);
+    mat4_mul(camera->proj, camera->drag_mat, camera->drag_mat);
+    mat4_mul(camera->view, camera->drag_mat, camera->drag_mat);
     mat4_inv(camera->drag_mat, camera->drag_mat);
 
     camera->state = CAMERA_PAN;

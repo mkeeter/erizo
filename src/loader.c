@@ -96,7 +96,8 @@ static void* loader_run(void* loader_) {
     log_trace("Joined worker threads");
 
     /*  Reduce min / max arrays from worker subprocesses */
-    loader->scale = 0.0f;
+    float scale = 0.0f;
+    float center[3];
     for (unsigned v=0; v < 3; ++v) {
         for (unsigned i=1; i < NUM_WORKERS; ++i) {
             if (workers[i].max[v] > workers[0].max[v]) {
@@ -106,12 +107,19 @@ static void* loader_run(void* loader_) {
                 workers[0].min[v] = workers[i].min[v];
             }
         }
-        loader->center[v] = (workers[0].max[v] + workers[0].min[v]) / 2.0f;
+        center[v] = (workers[0].max[v] + workers[0].min[v]) / 2.0f;
         const float d = workers[0].max[v] - workers[0].min[v];
-        if (d > loader->scale) {
-            loader->scale = d;
+        if (d > scale) {
+            scale = d;
         }
     }
+    /*  Build the model matrix, which positions the model at
+     *  [0,0,0] and scales it to fit the standard GL view */
+    float t[4][4];
+    mat4_translation(center, t);
+    float s[4][4];
+    mat4_scaling(1.0f / scale, s);
+    mat4_mul(t, s, loader->mat);
 
     /*  Mark the load as done and post an empty event, to make sure that
      *  the main loop wakes up and checks the loader */
@@ -161,10 +169,8 @@ void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
     model->num_triangles = loader->num_triangles;
     loader->vbo = 0;
 
-    /*  The model matrix applies the initial transform */
-    mat4_translation(loader->center, camera->model);
-    camera->scale = loader->scale;
-    camera_update_view(camera);
+    memcpy(camera->model, loader->mat, sizeof(loader->mat));
+    camera_reset_view(camera);
 
     log_trace("Copied model from loader");
 }

@@ -35,7 +35,7 @@ instance_t* instance_new(const char* filename) {
     instance->model = model;
 
     camera_update_proj(instance->camera);
-    camera_update_view(instance->camera);
+    camera_reset_view(instance->camera);
 
     return instance;
 }

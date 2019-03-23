@@ -42,6 +42,9 @@ void camera_update_proj(camera_t* camera);
 /*  Recalculates the view matrix */
 void camera_update_view(camera_t* camera);
 
+/*  Resets center and scale, then recalculates the view matrix */
+void camera_reset_view(camera_t* camera);
+
 /*  Mouse handling functions */
 void camera_begin_pan(camera_t* camera);
 void camera_begin_rot(camera_t* camera);
