@@ -37,6 +37,18 @@ loader_t* loader_new(const char* filename) {
     return loader;
 }
 
+/*  Helper type and function to clean up loader data */
+typedef enum { MMAP, STATIC, DYNAMIC } loader_allocation_t;
+static void loader_free(const char* data, size_t size,
+                        loader_allocation_t t)
+{
+    switch (t) {
+        case MMAP:      platform_munmap(data, size); break;
+        case DYNAMIC:   free((void*)data); break;
+        case STATIC:    break;
+    }
+}
+
 static void* loader_run(void* loader_) {
     loader_t* loader = (loader_t*)loader_;
     loader->buffer = NULL;
@@ -47,12 +59,14 @@ static void* loader_run(void* loader_) {
 
     /*  This magic filename tells us to load a builtin array,
      *  rather than something in the filesystem */
-    bool builtin_sphere = !strcmp(loader->filename, ":/sphere");
     const char* mapped;
-    if (builtin_sphere) {
+    loader_allocation_t allocation_type;
+    if (!strcmp(loader->filename, ":/sphere")) {
+        allocation_type = STATIC;
         mapped = (const char*)sphere_stl;
         size = sphere_stl_len;
     } else {
+        allocation_type = MMAP;
         mapped = platform_mmap(loader->filename, &size);
     }
 
@@ -60,12 +74,14 @@ static void* loader_run(void* loader_) {
     if (!mapped) {
         log_error("Could not open %s", loader->filename);
         loader_next(loader, LOADER_ERROR_NO_FILE);
+        loader_free(mapped, size, allocation_type);
         return NULL;
     }
 
     /*  Check whether this is an ASCII stl */
     if (size >= 6 && !strncmp("solid ", mapped, 6)) {
         loader_next(loader, LOADER_ERROR_ASCII_STL);
+        loader_free(mapped, size, allocation_type);
         return NULL;
     }
 
@@ -73,6 +89,7 @@ static void* loader_run(void* loader_) {
     if (size < 84) {
         log_error("File is too small to be an STL (%i < 84)", size);
         loader_next(loader, LOADER_ERROR_WRONG_SIZE);
+        loader_free(mapped, size, allocation_type);
         return NULL;
     }
 
@@ -85,6 +102,7 @@ static void* loader_run(void* loader_) {
         log_error("Invalid file size for %u triangles (expected %u, got %u)",
                   loader->num_triangles, expected_size, size);
         loader_next(loader, LOADER_ERROR_WRONG_SIZE);
+        loader_free(mapped, size, allocation_type);
         return NULL;
     }
 
@@ -162,9 +180,8 @@ static void* loader_run(void* loader_) {
     loader_next(loader, LOADER_DONE);
     glfwPostEmptyEvent();
 
-    if (!builtin_sphere) {
-        platform_munmap(mapped, size);
-    }
+    /*  Release any allocated file data */
+    loader_free(mapped, size, allocation_type);
     free(ram);
 
     return NULL;
