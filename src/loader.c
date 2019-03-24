@@ -49,6 +49,66 @@ static void loader_free(const char* data, size_t size,
     }
 }
 
+static const char* loader_parse_ascii(const char* data, size_t* size) {
+    size_t buf_size = 256;
+    size_t buf_count = 0;
+    float* buffer = (float*)malloc(sizeof(float) * buf_size);
+
+    while (1) {
+        data = strstr(data, "vertex");
+        if (!data) {
+            break;
+        }
+
+        /* Skip to the first character after 'vertex' */
+        data += 6;
+
+        for (unsigned i=0; i < 3; ++i) {
+            while (*data && isspace(*data)) {
+                data++;
+            }
+            if (*data == 0) {
+                free(buffer);
+                log_error("Unexpected file end");
+                return NULL;
+            }
+            float f;
+            const int r = sscanf(data, "%f", &f);
+            if (r == 0 || r == EOF) {
+                free(buffer);
+                log_error("Failed to parse float");
+                return NULL;
+            }
+
+            if (buf_size == buf_count) {
+                buf_size *= 2;
+                buffer = (float*)realloc(buffer, buf_size * sizeof(float));
+            }
+            buffer[buf_count++] = f;
+        }
+    }
+    log_trace("Parsed ASCII STL with %i floats", buf_count);
+
+    if (buf_count % 9 != 0) {
+        log_error("Total vertex count isn't divisible by 9");
+        free(buffer);
+        return NULL;
+    }
+    const uint32_t triangle_count = buf_count / 9;
+    *size = 84 + 50 * triangle_count;
+    char* out = (char*)malloc(*size);
+
+    /*  Copy triangle count into the buffer */
+    memcpy(&out[80], &triangle_count, 4);
+
+    /*  Copy all of the raw triangles into the buffer, spaced out
+     *  like a binary STL file (so that we can re-use the reader) */
+    for (unsigned i=0; i < buf_count / 9; i++)  {
+        memcpy(&out[84 + i*50 + 12], &buffer[i*9], 36);
+    }
+    return out;
+}
+
 static void* loader_run(void* loader_) {
     loader_t* loader = (loader_t*)loader_;
     loader->buffer = NULL;
@@ -80,9 +140,18 @@ static void* loader_run(void* loader_) {
 
     /*  Check whether this is an ASCII stl */
     if (size >= 6 && !strncmp("solid ", mapped, 6)) {
-        loader_next(loader, LOADER_ERROR_ASCII_STL);
-        loader_free(mapped, size, allocation_type);
-        return NULL;
+        size_t new_size;
+        const char* new_mapped = loader_parse_ascii(mapped, &new_size);
+        if (new_mapped) {
+            loader_free(mapped, size, allocation_type);
+            mapped = new_mapped;
+            size = new_size;
+            allocation_type = DYNAMIC;
+        } else {
+            loader_next(loader, LOADER_ERROR_BAD_ASCII_STL);
+            loader_free(mapped, size, allocation_type);
+            return NULL;
+        }
     }
 
     /*  Check whether the file is a valid size. */
@@ -264,8 +333,8 @@ const char* loader_error_string(loader_state_t state) {
             return "Generic error";
         case LOADER_ERROR_NO_FILE:
             return "File not found";
-        case LOADER_ERROR_ASCII_STL:
-            return "ASCII STLs are unsupported";
+        case LOADER_ERROR_BAD_ASCII_STL:
+            return "Failed to parse ASCII stl";
         case LOADER_ERROR_WRONG_SIZE:
             return "File size does not match triangle count";
     }

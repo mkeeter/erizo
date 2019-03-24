@@ -4,6 +4,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <ctype.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>

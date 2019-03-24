@@ -13,7 +13,7 @@ typedef enum loader_state_ {
 
     LOADER_ERROR, /* Lower bound for error codes */
     LOADER_ERROR_NO_FILE,
-    LOADER_ERROR_ASCII_STL,
+    LOADER_ERROR_BAD_ASCII_STL,
     LOADER_ERROR_WRONG_SIZE,
 } loader_state_t;
 
