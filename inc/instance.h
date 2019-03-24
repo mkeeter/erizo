@@ -1,9 +1,10 @@
 #include "platform.h"
 
 struct app_;
+struct backdrop_;
 struct camera_;
 struct model_;
-struct backdrop_;
+struct theme_;
 
 typedef struct instance_ {
     struct backdrop_* backdrop;
@@ -18,7 +19,7 @@ typedef struct instance_ {
 
 instance_t* instance_new(struct app_* parent, const char* filename);
 void instance_delete(instance_t* instance);
-void instance_run(instance_t* instance);
+void instance_draw(instance_t* instance, struct theme_* theme);
 
 /*  Callbacks */
 void instance_cb_window_size(instance_t* instance, int width, int height);

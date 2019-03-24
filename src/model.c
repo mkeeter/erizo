@@ -4,6 +4,7 @@
 #include "model.h"
 #include "object.h"
 #include "shader.h"
+#include "theme.h"
 
 const GLchar* MODEL_VS_SRC = GLSL(330,
 layout(location=0) in vec3 pos;
@@ -102,7 +103,7 @@ void model_delete(model_t* model) {
     free(model);
 }
 
-void model_draw(model_t* model, camera_t* camera) {
+void model_draw(model_t* model, camera_t* camera, theme_t* theme) {
     glEnable(GL_DEPTH_TEST);
     glUseProgram(model->prog);
     glBindVertexArray(model->vao);
@@ -110,9 +111,9 @@ void model_draw(model_t* model, camera_t* camera) {
     glUniformMatrix4fv(model->u_view, 1, GL_FALSE, (float*)camera->view);
     glUniformMatrix4fv(model->u_model, 1, GL_FALSE, (float*)camera->model);
 
-    color_uniform_hex(model->u_key, "fdf6e3");
-    color_uniform_hex(model->u_fill, "eee8d5");
-    color_uniform_hex(model->u_base, "657b83");
+    color_uniform_hex(model->u_key,  theme->key);
+    color_uniform_hex(model->u_fill, theme->fill);
+    color_uniform_hex(model->u_base, theme->base);
 
     glDrawArrays(GL_TRIANGLES, 0, model->num_triangles * 3);
 }

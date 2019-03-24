@@ -7,6 +7,7 @@
 #include "mat.h"
 #include "model.h"
 #include "object.h"
+#include "theme.h"
 #include "window.h"
 
 instance_t* instance_new(app_t* parent, const char* filename) {
@@ -66,14 +67,17 @@ void instance_cb_window_size(instance_t* instance, int width, int height)
 
     /*  Continue to render while the window is being resized
      *  (otherwise it ends up greyed out on Mac)  */
-    instance_run(instance);
+    instance_draw(instance, instance->parent->theme);
 }
 
 void instance_cb_mouse_pos(instance_t* instance, float xpos, float ypos) {
     camera_set_mouse_pos(instance->camera, xpos, ypos);
 }
 
-void instance_cb_mouse_click(instance_t* instance, int button, int action, int mods) {
+void instance_cb_mouse_click(instance_t* instance, int button,
+                             int action, int mods)
+{
+    (void)mods;
     if (action == GLFW_PRESS) {
         if (button == GLFW_MOUSE_BUTTON_1) {
             camera_begin_pan(instance->camera);
@@ -84,15 +88,18 @@ void instance_cb_mouse_click(instance_t* instance, int button, int action, int m
         camera_end_drag(instance->camera);
     }
 }
-void instance_cb_mouse_scroll(instance_t* instance, float xoffset, float yoffset) {
+void instance_cb_mouse_scroll(instance_t* instance,
+                              float xoffset, float yoffset)
+{
+    (void)xoffset;
     camera_zoom(instance->camera, yoffset);
 }
 
-void instance_run(instance_t* instance) {
+void instance_draw(instance_t* instance, theme_t* theme) {
     glfwMakeContextCurrent(instance->window);
     glClear(GL_DEPTH_BUFFER_BIT);
-    backdrop_draw(instance->backdrop);
+    backdrop_draw(instance->backdrop, theme);
 
-    model_draw(instance->model, instance->camera);
+    model_draw(instance->model, instance->camera, theme);
     glfwSwapBuffers(instance->window);
 }

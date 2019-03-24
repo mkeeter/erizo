@@ -19,7 +19,7 @@ instance_t* app_open(app_t* app, const char* filename) {
      *  the backdrop, show an error dialog, and mark the window
      *  as closing in the next event loop */
     if (instance->error) {
-        backdrop_draw(instance->backdrop);
+        backdrop_draw(instance->backdrop, app->theme);
         glfwSwapBuffers(instance->window);
         platform_warning("Loading the file failed", instance->error);
         glfwSetWindowShouldClose(instance->window, 1);
@@ -47,7 +47,7 @@ bool app_run(app_t* app) {
     bool any_active = false;
     for (unsigned i=0; i < app->num_instances; ++i) {
         if (app->instances[i] != NULL) {
-            instance_run(app->instances[i]);
+            instance_draw(app->instances[i], app->theme);
             if (glfwWindowShouldClose(app->instances[i]->window)) {
                 app_close_instance(app, i);
             } else {
