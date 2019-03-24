@@ -10,3 +10,4 @@ typedef struct theme_ {
 } theme_t;
 
 theme_t* theme_new_solarized();
+theme_t* theme_new_nord();

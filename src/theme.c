@@ -19,3 +19,20 @@ theme_t* theme_new_solarized() {
 
     return theme;
 }
+
+theme_t* theme_new_nord() {
+    OBJECT_ALLOC(theme);
+
+    /*  Backdrop colors */
+    theme->upper_left  = "3b4252";
+    theme->upper_right = "2e3440";
+    theme->lower_left  = "2e3440";
+    theme->lower_right = "2e3440";
+
+    /*  Model colors */
+    theme->key  = "eceff4";
+    theme->fill = "d8dee9";
+    theme->base = "4c566a";
+
+    return theme;
+}
