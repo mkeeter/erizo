@@ -63,7 +63,11 @@ static void* loader_run(void* loader_) {
         return NULL;
     }
 
-    /*  TODO: check for ASCII STL here */
+    /*  Check whether this is an ASCII stl */
+    if (size >= 6 && !strncmp("solid ", mapped, 6)) {
+        loader_next(loader, LOADER_ERROR_ASCII_STL);
+        return NULL;
+    }
 
     /*  Check whether the file is a valid size. */
     if (size < 84) {
