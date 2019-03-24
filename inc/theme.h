@@ -11,3 +11,4 @@ typedef struct theme_ {
 
 theme_t* theme_new_solarized();
 theme_t* theme_new_nord();
+theme_t* theme_new_gruvbox();

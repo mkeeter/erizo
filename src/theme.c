@@ -36,3 +36,20 @@ theme_t* theme_new_nord() {
 
     return theme;
 }
+
+theme_t* theme_new_gruvbox() {
+    OBJECT_ALLOC(theme);
+
+    /*  Backdrop colors */
+    theme->upper_left  = "3c3836";
+    theme->upper_right = "1d2021";
+    theme->lower_left  = "1d2021";
+    theme->lower_right = "1d2021";
+
+    /*  Model colors */
+    theme->key  = "fbf1c7";
+    theme->fill = "bdae93";
+    theme->base = "665c54";
+
+    return theme;
+}
