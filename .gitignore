@@ -1,7 +1,7 @@
 build/*
-hedgehog
+erizo
 version.c
 sphere.c
-Hedgehog.app
+Erizo.app
 local/*
 .DS_Store

@@ -7,17 +7,17 @@
     <key>NSHighResolutionCapable</key>
     <string>True</string>
     <key>CFBundleIconFile</key>
-    <string>hedgehog.icns</string>
+    <string>erizo.icns</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleGetInfoString</key>
     <string>The fastest STL viewer</string>
     <key>CFBundleExecutable</key>
-    <string>hedgehog</string>
+    <string>erizo</string>
     <key>CFBundleIdentifier</key>
-    <string>com.impraxical.hedgehog</string>
+    <string>com.impraxical.erizo</string>
     <key>CFBundleVersion</key>
-    <string>0.0.0</string>
+    <string>VERSION</string>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>

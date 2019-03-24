@@ -42,9 +42,9 @@ endif
 OBJ := $(addprefix build/,$(SRC:=.o) $(GEN:=.o))
 DEP := $(OBJ:.o=.d)
 
-all: hedgehog
+all: erizo
 
-hedgehog: $(OBJ)
+erizo: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^
 
 build/%.o: src/%.c | $(BUILD_DIR)
@@ -68,4 +68,4 @@ src/sphere.c: sphere.stl
 clean:
 	rm -rf $(OBJ) $(DEP) $(addprefix src,$(GEN:=.c))
 	rmdir $(BUILD_DIR)
-	rm -f hedgehog
+	rm -f erizo

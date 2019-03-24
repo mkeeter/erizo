@@ -39,7 +39,7 @@ void log_print(log_type_t t, const char *fmt, va_list args)
     FILE* out = (t == LOG_ERROR) ? stderr : stdout;
     platform_mutex_lock(&mut);
         platform_set_terminal_color(out, log_message_color(t));
-        fprintf(out, "[hedgehog]");
+        fprintf(out, "[erizo]");
 
         platform_set_terminal_color(out, TERM_COLOR_WHITE);
         fprintf(out, " (%li.%06i) ", dt_sec, dt_usec);
