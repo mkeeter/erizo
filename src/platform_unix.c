@@ -92,3 +92,16 @@ int platform_thread_create(platform_thread_t* thread,
 int platform_thread_join(platform_thread_t* thread) {
     return pthread_join(thread->data, NULL);
 }
+
+const char* platform_filename(const char* filepath) {
+    const char* target = filepath;
+    while (1) {
+        const char* next = strchr(target, '/');
+        if (next) {
+            target = next + 1;
+        } else {
+            break;
+        }
+    }
+    return target;
+}

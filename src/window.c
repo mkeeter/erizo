@@ -39,7 +39,7 @@ void window_bind(GLFWwindow* window, instance_t* instance) {
     platform_window_bind(window);
 }
 
-GLFWwindow* window_new(float width, float height) {
+GLFWwindow* window_new(const char* filename, float width, float height) {
     static bool first = true;
 
     if (first) {
@@ -55,7 +55,7 @@ GLFWwindow* window_new(float width, float height) {
     }
 
     GLFWwindow* const window = glfwCreateWindow(
-            width, height, "hedgehog", NULL, NULL);
+            width, height, filename, NULL, NULL);
     if (!window) {
         log_error_and_abort("Failed to create window");
     } else {

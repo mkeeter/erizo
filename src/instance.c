@@ -10,12 +10,13 @@
 #include "theme.h"
 #include "window.h"
 
-instance_t* instance_new(app_t* parent, const char* filename) {
+instance_t* instance_new(app_t* parent, const char* filepath) {
     /*  Kick the loader off in a separate thread */
-    loader_t* loader = loader_new(filename);
+    loader_t* loader = loader_new(filepath);
 
     camera_t* camera = camera_new(500.0f, 500.0f);
-    GLFWwindow* const window = window_new(camera->width, camera->height);
+    const char* filename = platform_filename(filepath);
+    GLFWwindow* window = window_new(filename, camera->width, camera->height);
 
     /*  Highest priority once OpenGL is running: allocate the VBO
      *  and pass it to the loader thread.  */

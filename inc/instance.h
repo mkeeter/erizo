@@ -17,7 +17,7 @@ typedef struct instance_ {
     GLFWwindow* window;
 } instance_t;
 
-instance_t* instance_new(struct app_* parent, const char* filename);
+instance_t* instance_new(struct app_* parent, const char* filepath);
 void instance_delete(instance_t* instance);
 void instance_draw(instance_t* instance, struct theme_* theme);
 
