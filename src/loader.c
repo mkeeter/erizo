@@ -54,46 +54,48 @@ static const char* loader_parse_ascii(const char* data, size_t* size) {
     size_t buf_count = 0;
     float* buffer = (float*)malloc(sizeof(float) * buf_size);
 
+#define ABORT_IF(cond, msg) \
+    if (cond) {             \
+        free(buffer);       \
+        log_error(msg);     \
+        return NULL;        \
+    }
+
+#define SKIP_WHILE(cond)                    \
+    while (*data && cond(*data)) {          \
+        data++;                             \
+    }                                       \
+    ABORT_IF(*data == 0, "Unexpected file end");
+
+    /*  The most liberal ASCII STL parser:  Ignore everything except
+     *  the word 'vertex', then read three floats after each one. */
+    const char VERTEX_STR[] = "vertex ";
     while (1) {
-        data = strstr(data, "vertex");
+        data = strstr(data, VERTEX_STR);
         if (!data) {
             break;
         }
 
         /* Skip to the first character after 'vertex' */
-        data += 6;
+        data += strlen(VERTEX_STR);
 
         for (unsigned i=0; i < 3; ++i) {
-            while (*data && isspace(*data)) {
-                data++;
-            }
-            if (*data == 0) {
-                free(buffer);
-                log_error("Unexpected file end");
-                return NULL;
-            }
+            SKIP_WHILE(isspace);
             float f;
             const int r = sscanf(data, "%f", &f);
-            if (r == 0 || r == EOF) {
-                free(buffer);
-                log_error("Failed to parse float");
-                return NULL;
-            }
-
+            ABORT_IF(r == 0 || r == EOF, "Failed to parse float");
             if (buf_size == buf_count) {
                 buf_size *= 2;
                 buffer = (float*)realloc(buffer, buf_size * sizeof(float));
             }
             buffer[buf_count++] = f;
+
+            SKIP_WHILE(!isspace);
         }
     }
-    log_trace("Parsed ASCII STL with %i floats", buf_count);
+    log_trace("Parsed ASCII STL", buf_count);
 
-    if (buf_count % 9 != 0) {
-        log_error("Total vertex count isn't divisible by 9");
-        free(buffer);
-        return NULL;
-    }
+    ABORT_IF(buf_count % 9 != 0, "Total vertex count isn't divisible by 9");
     const uint32_t triangle_count = buf_count / 9;
     *size = 84 + 50 * triangle_count;
     char* out = (char*)malloc(*size);
