@@ -1,3 +1,4 @@
+#include "app.h"
 #include "instance.h"
 #include "log.h"
 #include "window.h"
@@ -24,6 +25,15 @@ static void cb_mouse_click(GLFWwindow* window, int button,
     instance_cb_mouse_click(instance, button, action, mods);
 }
 
+static void cb_drop(GLFWwindow* window, int count, const char** paths)
+{
+    instance_t* instance = (instance_t*)glfwGetWindowUserPointer(window);
+    app_t* app = instance->parent;
+    for (int i=0; i < count;  i++) {
+        app_open(app, paths[i]);
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void window_bind(GLFWwindow* window, instance_t* instance) {
@@ -35,6 +45,7 @@ void window_bind(GLFWwindow* window, instance_t* instance) {
     glfwSetCursorPosCallback(window, cb_mouse_pos);
     glfwSetScrollCallback(window, cb_mouse_scroll);
     glfwSetMouseButtonCallback(window, cb_mouse_click);
+    glfwSetDropCallback(window, cb_drop);
 
     platform_window_bind(window);
 }
