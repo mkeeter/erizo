@@ -7,13 +7,13 @@
     <key>NSHighResolutionCapable</key>
     <string>True</string>
     <key>CFBundleIconFile</key>
-    <string>erizo.icns</string>
+    <string>Erizo.icns</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleGetInfoString</key>
     <string>The fastest STL viewer</string>
     <key>CFBundleExecutable</key>
-    <string>erizo</string>
+    <string>Erizo</string>
     <key>CFBundleIdentifier</key>
     <string>com.impraxical.erizo</string>
     <key>CFBundleVersion</key>

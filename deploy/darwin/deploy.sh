@@ -22,14 +22,15 @@ mkdir -p $APP/Contents/MacOS
 mkdir -p $APP/Contents/Resources
 mkdir -p $APP/Contents/Frameworks
 
-cp erizo $APP/Contents/MacOS
-cp deploy/darwin/erizo.icns $APP/Contents/Resources
+ERIZO=$APP/Contents/MacOS/$EXE
+cp erizo $ERIZO
+cp deploy/darwin/$EXE.icns $APP/Contents/Resources
 sed "s/VERSION/$VERSION/g" deploy/darwin/Info.plist > $APP/Contents/Info.plist
 
-for LIB in $(otool -L erizo | grep /usr/local | awk '{print $1}')
+for LIB in $(otool -L $ERIZO | grep /usr/local | awk '{print $1}')
 do
     cp $LIB $APP/Contents/Frameworks/$(basename $LIB)
-    install_name_tool -change $LIB @executable_path/../Frameworks/$(basename $LIB) $APP/Contents/MacOS/erizo
+    install_name_tool -change $LIB @executable_path/../Frameworks/$(basename $LIB) $ERIZO
 done
 
 if [ "$1" == "dmg" ]
