@@ -49,7 +49,11 @@ extern "C" {
     if (window) {
         InstanceHandle* handle = objc_getAssociatedObject(
             window, "WINDOW_INSTANCE");
-        glfwSetWindowShouldClose(handle->instance->window, 1);
+        if (handle) {
+            glfwSetWindowShouldClose(handle->instance->window, 1);
+        } else {
+            [window close];
+        }
     }
 }
 @end
