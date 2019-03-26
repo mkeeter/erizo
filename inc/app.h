@@ -5,7 +5,9 @@ struct theme_;
 
 typedef struct app_ {
     struct instance_** instances;
-    unsigned num_instances;
+    unsigned instance_count;
+    unsigned instances_size;
+
     struct theme_* theme;
 } app_t;
 

@@ -4,12 +4,18 @@
 #include "log.h"
 
 static void app_close_instance(app_t* app, unsigned i) {
-    if (i >= app->num_instances) {
+    if (i >= app->instance_count) {
         log_error_and_abort("Invalid index (%u > %u)",
-                            i, app->num_instances);
+                            i, app->instance_count);
     }
     instance_delete(app->instances[i]);
-    app->instances[i] = NULL;
+
+    /*  Shift the remaining instances by one */
+    app->instance_count--;
+    while (i < app->instance_count) {
+        app->instances[i] = app->instances[i + 1];
+        i++;
+    }
 }
 
 instance_t* app_open(app_t* app, const char* filename) {
@@ -25,34 +31,28 @@ instance_t* app_open(app_t* app, const char* filename) {
         glfwSetWindowShouldClose(instance->window, 1);
     }
 
-    /*  Search for an unused instance slot, which is marked
-     *  by a NULL pointer in the instances array */
-    unsigned i;
-    for (i=0; i < app->num_instances; ++i) {
-        if (app->instances[i] == NULL) {
-            break;
+    /*  Add this instance at the back of the array */
+    if (app->instance_count == app->instances_size) {
+        if (app->instances_size) {
+            app->instances_size *= 2;
+        } else {
+            app->instances_size = 1;
         }
-    }
-    /*  Otherwise, extend the array by one */
-    if (i == app->num_instances) {
         app->instances = (instance_t**)realloc(
-                app->instances, sizeof(instance_t*) * (i + 1));
-        app->num_instances++;
+                app->instances, sizeof(instance_t*) * app->instances_size);
     }
-    app->instances[i] = instance;
+    app->instances[app->instance_count++] = instance;
     return instance;
 }
 
 bool app_run(app_t* app) {
     bool any_active = false;
-    for (unsigned i=0; i < app->num_instances; ++i) {
-        if (app->instances[i] != NULL) {
-            instance_draw(app->instances[i], app->theme);
-            if (glfwWindowShouldClose(app->instances[i]->window)) {
-                app_close_instance(app, i);
-            } else {
-                any_active = true;
-            }
+    for (unsigned i=0; i < app->instance_count; ++i) {
+        instance_draw(app->instances[i], app->theme);
+        if (glfwWindowShouldClose(app->instances[i]->window)) {
+            app_close_instance(app, i);
+        } else {
+            any_active = true;
         }
     }
     return any_active;

@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv) {
     log_info("Startup!");
-    app_t app = { NULL, 0, NULL };
+    app_t app = { NULL, 0, 0, NULL };
     app.theme = theme_new_solarized();
 
     if (argc != 2) {

@@ -88,14 +88,14 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
     class_addMethod(delegate_class, @selector(application:openFiles:),
                     (IMP)fopenFiles, "v@:@@");
 
-    if (app->num_instances == 0) {
+    if (app->instance_count == 0) {
         //  Construct a dummy window, which triggers GLFW initialization
         //  and may cause the application to open a file (if it was
         //  double-clicked or dragged onto the icon).
         window_new("", 1.0f, 1.0f);
 
         //  If no file was opened, then load the default
-        if (app->num_instances == 0) {
+        if (app->instance_count == 0) {
             app_open(app, ":/sphere");
         }
     }
