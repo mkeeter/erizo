@@ -3,5 +3,6 @@ erizo
 version.c
 sphere.c
 Erizo.app
+Erizo.dmg
 local/*
 .DS_Store
