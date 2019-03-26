@@ -34,13 +34,13 @@ done
 
 if [ "$1" == "dmg" ]
 then
-    rm -rf deploy $EXE.dmg
-    mkdir deploy
-    cp -r $APP deploy
-    hdiutil create $EXE.dmg -volname "$EXE $VERSION" -srcfolder deploy
+    rm -rf dmg $EXE.dmg
+    mkdir dmg
+    cp -r $APP dmg
+    hdiutil create $EXE.dmg -volname "$EXE $VERSION" -srcfolder dmg
 
     # Clean up
-    rm -rf deploy
+    rm -rf dmg
 fi
 
 make clean
