@@ -27,6 +27,7 @@ instance_t* app_open(app_t* app, const char* filename) {
                 app->instances, sizeof(instance_t*) * app->instances_size);
     }
     app->instances[app->instance_count++] = instance;
+    instance_cb_focus(instance, true);
     return instance;
 }
 

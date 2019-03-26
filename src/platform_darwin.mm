@@ -46,8 +46,11 @@ extern "C" {
 
 -(void) onClose {
     NSWindow* window = [[NSApplication sharedApplication] keyWindow];
-    InstanceHandle* handle = objc_getAssociatedObject(window, "WINDOW_INSTANCE");
-    glfwSetWindowShouldClose(handle->instance->window, 1);
+    if (window) {
+        InstanceHandle* handle = objc_getAssociatedObject(
+            window, "WINDOW_INSTANCE");
+        glfwSetWindowShouldClose(handle->instance->window, 1);
+    }
 }
 @end
 

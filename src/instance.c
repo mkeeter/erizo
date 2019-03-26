@@ -36,7 +36,6 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
     instance->camera = camera;
     instance->model = model;
     instance->parent = parent;
-    instance->focused = true;
 
     camera_update_proj(instance->camera);
     camera_reset_view(instance->camera);
