@@ -63,9 +63,7 @@ static Glue* GLUE = NULL;
 void fopenFiles(id self, SEL _cmd, NSApplication* application,
                 NSArray<NSString *>* openFiles) {
     for (NSString* t in openFiles) {
-        instance_t* instance = app_open(GLUE->app, [t UTF8String]);
-        NSWindow* window = glfwGetCocoaWindow(instance->window);
-        [window makeKeyWindow];
+        app_open(GLUE->app, [t UTF8String]);
     }
 }
 
