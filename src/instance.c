@@ -96,6 +96,14 @@ void instance_cb_mouse_scroll(instance_t* instance,
     camera_zoom(instance->camera, yoffset);
 }
 
+void instance_cb_focus(instance_t* instance, bool focus)
+{
+    instance->focused = focus;
+    if (focus) {
+        app_set_front(instance->parent, instance);
+    }
+}
+
 void instance_draw(instance_t* instance, theme_t* theme) {
     glfwMakeContextCurrent(instance->window);
     glClear(GL_DEPTH_BUFFER_BIT);

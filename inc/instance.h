@@ -14,6 +14,8 @@ typedef struct instance_ {
     const char* error;
     struct app_* parent;
 
+    bool focused;
+
     GLFWwindow* window;
 } instance_t;
 
@@ -26,3 +28,4 @@ void instance_cb_window_size(instance_t* instance, int width, int height);
 void instance_cb_mouse_pos(instance_t* instance, float xpos, float ypos);
 void instance_cb_mouse_click(instance_t* instance, int button, int action, int mods);
 void instance_cb_mouse_scroll(instance_t* instance, float xoffset, float yoffset);
+void instance_cb_focus(instance_t* instance, bool focus);

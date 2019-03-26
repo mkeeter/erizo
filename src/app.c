@@ -3,21 +3,6 @@
 #include "instance.h"
 #include "log.h"
 
-static void app_close_instance(app_t* app, unsigned i) {
-    if (i >= app->instance_count) {
-        log_error_and_abort("Invalid index (%u > %u)",
-                            i, app->instance_count);
-    }
-    instance_delete(app->instances[i]);
-
-    /*  Shift the remaining instances by one */
-    app->instance_count--;
-    while (i < app->instance_count) {
-        app->instances[i] = app->instances[i + 1];
-        i++;
-    }
-}
-
 instance_t* app_open(app_t* app, const char* filename) {
     instance_t* instance = instance_new(app, filename);
 
@@ -45,15 +30,35 @@ instance_t* app_open(app_t* app, const char* filename) {
     return instance;
 }
 
+void app_set_front(app_t* app, instance_t* instance) {
+    for (unsigned i=0; i < app->instance_count; ++i) {
+        if (app->instances[i] == instance) {
+            memmove(&app->instances[1], &app->instances[0],
+                    i * sizeof(instance_t*));
+            app->instances[0] = instance;
+            return;
+        }
+    }
+    log_error_and_abort("Could not find instance in app_set_front");
+}
+
 bool app_run(app_t* app) {
-    bool any_active = false;
     for (unsigned i=0; i < app->instance_count; ++i) {
         instance_draw(app->instances[i], app->theme);
         if (glfwWindowShouldClose(app->instances[i]->window)) {
-            app_close_instance(app, i);
-        } else {
-            any_active = true;
+            const bool focused = app->instances[i]->focused;
+            instance_delete(app->instances[i]);
+
+            /*  Shift the remaining instances by one */
+            app->instance_count--;
+            for (unsigned j=i; j < app->instance_count; ++j) {
+                app->instances[j] = app->instances[j + 1];
+            }
+
+            if (focused && app->instance_count) {
+                glfwFocusWindow(app->instances[0]->window);
+            }
         }
     }
-    return any_active;
+    return app->instance_count;
 }

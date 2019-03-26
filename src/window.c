@@ -34,6 +34,12 @@ static void cb_drop(GLFWwindow* window, int count, const char** paths)
     }
 }
 
+static void cb_focus(GLFWwindow* window, int focus)
+{
+    instance_t* instance = (instance_t*)glfwGetWindowUserPointer(window);
+    instance_cb_focus(instance, focus);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void window_bind(GLFWwindow* window, instance_t* instance) {
@@ -46,6 +52,7 @@ void window_bind(GLFWwindow* window, instance_t* instance) {
     glfwSetScrollCallback(window, cb_mouse_scroll);
     glfwSetMouseButtonCallback(window, cb_mouse_click);
     glfwSetDropCallback(window, cb_drop);
+    glfwSetWindowFocusCallback(window, cb_focus);
 
     platform_window_bind(window);
 }
