@@ -1,6 +1,7 @@
 #include "platform.h"
 
 #include "mat.h"
+#include "log.h"
 
 void mat4_identity(float out[4][4]) {
     memset(out, 0, sizeof(float) * 4 * 4);
@@ -85,6 +86,7 @@ void mat4_inv(const float in[4][4], float out[4][4]) {
                    - a03*a10*a21*a32 - a03*a11*a22*a30 - a03*a12*a20*a31;
 
    if (det == 0.0f) {
+       log_warn("Tried to invert noninvertible matrix");
        return;
    }
 
