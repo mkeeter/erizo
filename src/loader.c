@@ -140,8 +140,22 @@ static void* loader_run(void* loader_) {
         return NULL;
     }
 
-    /*  Check whether this is an ASCII stl */
-    if (size >= 6 && !strncmp("solid ", mapped, 6)) {
+    /*  Check whether this is an ASCII stl.  Some binary STL files
+     *  still start with the word 'solid', so we check the file size
+     *  as a second heuristic.  */
+    bool is_ascii = (size >= 6 && !strncmp("solid ", mapped, 6));
+    if (is_ascii && size >= 84) {
+        uint32_t tentative_num_triangles;
+        memcpy(&tentative_num_triangles, &mapped[80],
+               sizeof(tentative_num_triangles));
+        if (size == tentative_num_triangles * 50 + 84) {
+            log_warn("File begins with 'solid' but appears to be "
+                     "a binary STL file");
+            is_ascii = false;
+        }
+    }
+
+    if (is_ascii) {
         size_t new_size;
         const char* new_mapped = loader_parse_ascii(mapped, &new_size);
         if (new_mapped) {
