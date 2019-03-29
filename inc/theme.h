@@ -1,14 +1,16 @@
 typedef struct theme_ {
-    const char* upper_left;
-    const char* upper_right;
-    const char* lower_left;
-    const char* lower_right;
+    float upper_left[3];
+    float upper_right[3];
+    float lower_left[3];
+    float lower_right[3];
 
-    const char* key;
-    const char* fill;
-    const char* base;
+    float key[3];
+    float fill[3];
+    float base[3];
 } theme_t;
 
 theme_t* theme_new_solarized();
 theme_t* theme_new_nord();
 theme_t* theme_new_gruvbox();
+
+#define THEME_UNIFORM_COLOR(m, u) glUniform3fv(m->u_##u, 1, theme->u)

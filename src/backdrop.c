@@ -1,5 +1,4 @@
 #include "backdrop.h"
-#include "color.h"
 #include "log.h"
 #include "object.h"
 #include "shader.h"
@@ -80,10 +79,10 @@ void backdrop_delete(backdrop_t* backdrop) {
 void backdrop_draw(backdrop_t* backdrop, theme_t* theme) {
     glDisable(GL_DEPTH_TEST);
     glUseProgram(backdrop->prog);
-    color_uniform_hex(backdrop->u_upper_left,  theme->upper_left);
-    color_uniform_hex(backdrop->u_upper_right, theme->upper_right);
-    color_uniform_hex(backdrop->u_lower_left,  theme->lower_left);
-    color_uniform_hex(backdrop->u_lower_right, theme->lower_right);
+    THEME_UNIFORM_COLOR(backdrop, upper_left);
+    THEME_UNIFORM_COLOR(backdrop, upper_right);
+    THEME_UNIFORM_COLOR(backdrop, lower_left);
+    THEME_UNIFORM_COLOR(backdrop, lower_right);
     glBindVertexArray(backdrop->vao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

@@ -1,5 +1,4 @@
 #include "camera.h"
-#include "color.h"
 #include "log.h"
 #include "model.h"
 #include "object.h"
@@ -111,9 +110,9 @@ void model_draw(model_t* model, camera_t* camera, theme_t* theme) {
     glUniformMatrix4fv(model->u_view, 1, GL_FALSE, (float*)camera->view);
     glUniformMatrix4fv(model->u_model, 1, GL_FALSE, (float*)camera->model);
 
-    color_uniform_hex(model->u_key,  theme->key);
-    color_uniform_hex(model->u_fill, theme->fill);
-    color_uniform_hex(model->u_base, theme->base);
+    THEME_UNIFORM_COLOR(model, key);
+    THEME_UNIFORM_COLOR(model, fill);
+    THEME_UNIFORM_COLOR(model, base);
 
     glDrawArrays(GL_TRIANGLES, 0, model->num_triangles * 3);
 }
