@@ -52,3 +52,5 @@ void camera_zoom(camera_t* camera, float amount);
 /*  Assigns the current mouse position, causing a rotation or
  *  pan if the button was already held down. */
 void camera_set_mouse_pos(camera_t* camera, float x, float y);
+
+#define CAMERA_UNIFORM_MAT(m, u) glUniformMatrix4fv(m->u_##u, 1, GL_FALSE, (float*)camera->u)

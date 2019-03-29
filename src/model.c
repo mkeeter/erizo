@@ -106,9 +106,10 @@ void model_draw(model_t* model, camera_t* camera, theme_t* theme) {
     glEnable(GL_DEPTH_TEST);
     glUseProgram(model->prog);
     glBindVertexArray(model->vao);
-    glUniformMatrix4fv(model->u_proj, 1, GL_FALSE, (float*)camera->proj);
-    glUniformMatrix4fv(model->u_view, 1, GL_FALSE, (float*)camera->view);
-    glUniformMatrix4fv(model->u_model, 1, GL_FALSE, (float*)camera->model);
+
+    CAMERA_UNIFORM_MAT(model, proj);
+    CAMERA_UNIFORM_MAT(model, view);
+    CAMERA_UNIFORM_MAT(model, model);
 
     THEME_UNIFORM_COLOR(model, key);
     THEME_UNIFORM_COLOR(model, fill);
