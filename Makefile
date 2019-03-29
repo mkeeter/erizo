@@ -1,7 +1,3 @@
-# Force the version-generation script to run before
-# anything else, generating version.c
-_VERSION := $(shell sh version.sh)
-
 # Source files
 SRC :=       \
 	app      \
@@ -19,6 +15,10 @@ SRC :=       \
 	window   \
 	worker   \
 	# end of source files
+
+# Force the version-generation script to run before
+# anything else, generating version.c and log_align.h
+_GEN := $(shell sh gen.sh $(SRC))
 
 # Generated files
 GEN :=       \

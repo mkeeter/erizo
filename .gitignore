@@ -1,7 +1,8 @@
 build/*
 erizo
-version.c
-sphere.c
+src/version.c
+src/sphere.c
+inc/log_align.h
 Erizo.app
 Erizo.dmg
 local/*

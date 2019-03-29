@@ -1,20 +1,17 @@
 #include "platform.h"
-
-typedef enum {
-    LOG_TRACE,
-    LOG_INFO,
-    LOG_ERROR,
-} log_type_t;
+#include "log.h"
+#include "log_align.h"
 
 platform_terminal_color_t log_message_color(log_type_t t) {
     switch (t) {
         case LOG_TRACE: return TERM_COLOR_BLUE;
         case LOG_INFO: return TERM_COLOR_GREEN;
+        case LOG_WARN: return TERM_COLOR_YELLOW;
         case LOG_ERROR: return TERM_COLOR_RED;
     }
 }
 
-void log_print(log_type_t t, const char *fmt, va_list args)
+void log_print(log_type_t t, const char* file, int line, const char *fmt, ...)
 {
     static int64_t start_sec = -1;
     static int32_t start_usec = -1;
@@ -37,6 +34,15 @@ void log_print(log_type_t t, const char *fmt, va_list args)
     }
 
     FILE* out = (t == LOG_ERROR) ? stderr : stdout;
+
+    const char* filename = platform_filename(file);
+
+    /*  Figure out how much to pad the filename + line number */
+    int pad = 0;
+    for (int i=line; i; i /= 10, pad++);
+    pad += strlen(filename);
+    pad = LOG_ALIGN - pad;
+
     platform_mutex_lock(&mut);
         platform_set_terminal_color(out, log_message_color(t));
         fprintf(out, "[erizo]");
@@ -45,37 +51,19 @@ void log_print(log_type_t t, const char *fmt, va_list args)
         fprintf(out, " (%li.%06i) ", dt_sec, dt_usec);
 
         platform_clear_terminal_color(out);
+        fprintf(out, "%s:%i ", filename, line);
+
+        while (pad--) {
+            fputc(' ', out);
+        }
+
+        fprintf(out, "| ");
+
+        va_list args;
+        va_start(args, fmt);
         vfprintf(out, fmt, args);
+        va_end(args);
+
         fprintf(out, "\n");
     platform_mutex_unlock(&mut);
 }
-
-void log_trace(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    log_print(LOG_TRACE, fmt, args);
-    va_end(args);
-}
-
-void log_info(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    log_print(LOG_INFO, fmt, args);
-    va_end(args);
-}
-
-void log_error(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    log_print(LOG_ERROR, fmt, args);
-    va_end(args);
-}
-
-void log_error_and_abort(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    log_print(LOG_ERROR, fmt, args);
-    va_end(args);
-    exit(-1);
-}
-
