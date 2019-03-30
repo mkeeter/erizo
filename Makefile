@@ -11,6 +11,7 @@ SRC :=       \
 	model    \
 	shader   \
 	theme    \
+	vset     \
 	window   \
 	worker   \
 	# end of source files
