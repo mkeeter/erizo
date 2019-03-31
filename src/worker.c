@@ -15,31 +15,47 @@ static void* worker_run(void* worker_) {
     worker_t* const worker = (worker_t*)worker_;
     loader_t* const loader = worker->loader;
 
-    loader_wait(loader, LOADER_RAM_BUFFER);
+    /*  Build the deduplicated set of indexed vertices + triangles */
+    vset_t* vset = vset_with_capacity(worker->tri_count * 3);
+    uint32_t* tris = (uint32_t*)malloc(sizeof(uint32_t) * 3 * worker->tri_count);
+    for (size_t i=0; i < worker->tri_count; ++i) {
+        vset_insert_tri(vset, (const char*)&worker->stl[i], &tris[i * 3]);
+    }
 
+    worker->vert_count = vset->count;
+
+    /*  Increment the number of finished worker threads */
+    platform_mutex_lock(&loader->mutex);
+    loader->count++;
+    platform_cond_broadcast(&loader->cond);
+    platform_mutex_unlock(&loader->mutex);
+
+    /*  Find our model's bounds by iterating over deduplicated vertices */
     memcpy(worker->min, worker->stl, sizeof(worker->min));
     memcpy(worker->max, worker->stl, sizeof(worker->max));
-
-    /*  Copy from the memmapped STL to flat RAM, finding bounds */
-    for (size_t i=0; i < worker->count; ++i) {
-        /*  Copy the three vertices into RAM */
-        memcpy(&worker->ram[i], &worker->stl[i], 36);
-        for (unsigned t=0; t < 3; ++t) {
-            for (unsigned a=0; a < 3; ++a) {
-                const float v = worker->ram[i][3 * t + a];
-                if (v < worker->min[a]) {
-                    worker->min[a] = v;
-                }
-                if (v > worker->max[a]) {
-                    worker->max[a] = v;
-                }
+    for (size_t i=0; i < vset->count; ++i) {
+        for (unsigned j=0; j < 3; ++j) {
+            const float v = vset->data[i][j];
+            if (v < worker->min[j]) {
+                worker->min[j] = v;
+            }
+            if (v > worker->max[j]) {
+                worker->max[j] = v;
             }
         }
     }
 
-    /*  Wait for GPU buffer pointers to be assigned, then deploy data */
+    /*  Wait for GPU buffer pointers to be assigned */
     loader_wait(loader, LOADER_WORKER_GPU);
-    memcpy(worker->gpu, worker->ram, 36 * worker->count);
+
+    /*  Send the vertex data to the GPU buffer */
+    memcpy(worker->vertex_buf, &vset->data[1], 3 * sizeof(float) * vset->count);
+
+    /*  Send the indexed triangles to the GPU buffer */
+    memcpy(worker->index_buf, tris, 3 * sizeof(uint32_t) * worker->tri_count);
+
+    free(tris);
+    vset_delete(vset);
 
     return NULL;
 }

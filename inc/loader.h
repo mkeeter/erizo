@@ -5,10 +5,17 @@ struct camera_;
 
 typedef enum loader_state_ {
     LOADER_START,
-    LOADER_TRIANGLE_COUNT,
-    LOADER_RAM_BUFFER,
+
+    /*  The loader has populated the triangle and vertex counts, so the
+     *  OpenGL thread can allocate and map buffers */
+    LOADER_MODEL_SIZE,
+
+    /*  The OpenGL thread has allocated and mapped buffers */
     LOADER_GPU_BUFFER,
+
+    /*  The loader thread has split the GPU buffer to each worker */
     LOADER_WORKER_GPU,
+
     LOADER_DONE,
 
     LOADER_ERROR, /* Lower bound for error codes */
@@ -22,17 +29,25 @@ typedef struct loader_ {
 
     /*  Model parameters */
     GLuint vbo;
-    uint32_t num_triangles;
+    GLuint ibo;
+    uint32_t tri_count;
+    uint32_t vert_count;
     float mat[4][4];
 
-    /*  GPU-mapped buffer, populated by main thread */
-    float* buffer;
+    /*  GPU-mapped buffers, populated by main thread */
+    float* vertex_buf;
+    uint32_t* index_buf;
 
     /*  Synchronization system */
     platform_thread_t thread;
     loader_state_t state;
     platform_mutex_t mutex;
     platform_cond_t cond;
+
+    /*  Each worker thread increments count when they are
+     *  done building their vertex set, using the same mutex
+     *  and condition variable. */
+    unsigned count;
 
 } loader_t;
 

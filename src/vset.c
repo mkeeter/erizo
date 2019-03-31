@@ -14,7 +14,7 @@ vset_t* vset_with_capacity(size_t num_verts) {
     /* We overallocate this struct so that all of the arrays
      * are close together, then set up the pointers so that
      * they point to the right locations within the struct */
-    vset_t* v = (vset_t*)malloc(sizeof(vset_t) + num_verts * (
+    vset_t* v = (vset_t*)calloc(1, sizeof(vset_t) + num_verts * (
                 sizeof(*v->data) +
                 sizeof(*v->parent) +
                 sizeof(*v->child) +
