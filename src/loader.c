@@ -195,7 +195,7 @@ static void* loader_run(void* loader_) {
 
     /*  The worker threads deduplicate a subset of the vertices, then
      *  increment loader->count to indicate that they're done. */
-    const size_t NUM_WORKERS = 8;
+    const size_t NUM_WORKERS = 6;
     worker_t workers[NUM_WORKERS];
     for (unsigned i=0; i < NUM_WORKERS; ++i) {
         const size_t start = i * loader->tri_count / NUM_WORKERS;
@@ -214,6 +214,7 @@ static void* loader_run(void* loader_) {
         platform_cond_wait(&loader->cond, &loader->mutex);
     }
     platform_mutex_unlock(&loader->mutex);
+    log_trace("Workers have deduplicated vertices");
 
     /*  Accumulate the total vertex count, then wait for the OpenGL thread
      *  to allocate the vertex and triangle buffers */
@@ -302,18 +303,18 @@ void loader_allocate_vbo(loader_t* loader) {
 
     /*  Allocate and map index buffer */
     const size_t ibo_bytes = loader->tri_count * 3 * sizeof(uint32_t);
-    glBufferData(GL_ARRAY_BUFFER, ibo_bytes, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ibo_bytes, NULL, GL_STATIC_DRAW);
     loader->index_buf = (uint32_t*)glMapBufferRange(
-            GL_ARRAY_BUFFER, 0, ibo_bytes,
+            GL_ELEMENT_ARRAY_BUFFER, 0, ibo_bytes,
             GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
                              | GL_MAP_INVALIDATE_BUFFER_BIT
                              | GL_MAP_UNSYNCHRONIZED_BIT);
 
     /*  Allocate and map vertex buffer */
     const size_t vbo_bytes = loader->vert_count * 3 * sizeof(float);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, vbo_bytes, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vbo_bytes, NULL, GL_STATIC_DRAW);
     loader->vertex_buf = (float*)glMapBufferRange(
-            GL_ELEMENT_ARRAY_BUFFER, 0, vbo_bytes,
+            GL_ARRAY_BUFFER, 0, vbo_bytes,
             GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
                              | GL_MAP_INVALIDATE_BUFFER_BIT
                              | GL_MAP_UNSYNCHRONIZED_BIT);
@@ -337,10 +338,13 @@ void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
      *  GL buffers, matrices, etc. */
     if (loader->state == LOADER_DONE) {
         glBindVertexArray(model->vao);
+
         glBindBuffer(GL_ARRAY_BUFFER, loader->vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, loader->ibo);
         glUnmapBuffer(GL_ARRAY_BUFFER);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, loader->ibo);
         glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
