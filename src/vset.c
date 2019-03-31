@@ -11,12 +11,17 @@ vset_t* vset_with_capacity(size_t num_verts) {
     /* Reserve index 0 for unassigned nodes */
     num_verts += 1;
 
+    /*  Work out the max depth for this tree, to decide how long the
+     *  history array should be */
+    unsigned max_depth = ceil(2.0 * log2(num_verts + 1.0) + 4.0);
+
     /* We overallocate this struct so that all of the arrays
      * are close together, then set up the pointers so that
      * they point to the right locations within the struct */
-    vset_t* v = (vset_t*)calloc(1, sizeof(vset_t) + num_verts * (
+    vset_t* v = (vset_t*)calloc(1, sizeof(vset_t) +
+            max_depth * sizeof(*v->history) +
+            num_verts * (
                 sizeof(*v->data) +
-                sizeof(*v->parent) +
                 sizeof(*v->child) +
                 sizeof(*v->color)));
 
@@ -26,8 +31,8 @@ vset_t* vset_with_capacity(size_t num_verts) {
     ptr += sizeof(vset_t);
     v->data = (float(*)[3])ptr;
     ptr += num_verts * sizeof(*v->data);
-    v->parent = (uint32_t*)ptr;
-    ptr += num_verts * sizeof(*v->parent);
+    v->history = (uint32_t*)ptr;
+    ptr += max_depth * sizeof(*v->history);
     v->child = (uint32_t(*)[2])ptr;
     ptr += num_verts * sizeof(*v->child);
     v->color = (uint8_t*)ptr;
@@ -69,7 +74,10 @@ static uint8_t cmp(const float a[3], const float b[3]) {
     return 2;
 }
 
-static void vset_rotate_left(vset_t* v, uint32_t p) {
+static void vset_rotate_left(vset_t* v, const uint32_t* const ptr) {
+    assert(ptr);
+
+    const uint32_t p = *ptr;
     assert(p);
 
     const uint32_t q = v->child[p][RIGHT];
@@ -88,7 +96,7 @@ static void vset_rotate_left(vset_t* v, uint32_t p) {
     const uint32_t b = v->child[q][LEFT];
     const uint32_t c = v->child[q][RIGHT];
 
-    const uint32_t r = v->parent[p];
+    const uint32_t r = ptr[-1];
 
     /*  Many of these operations could potentially mess with the
      *  parent and child pointer of the 0 element in our data,
@@ -96,27 +104,16 @@ static void vset_rotate_left(vset_t* v, uint32_t p) {
      *  never look for the leaf's parent or children, so it
      *  doesn't matter if they contain invalid data. */
     v->child[r][v->child[r][0] != p] = q;
-    v->parent[q] = r;
-
     v->child[q][LEFT] = p;
-    v->parent[p] = q;
-
     v->child[q][RIGHT] = c;
-    v->parent[c] = q;
-
     v->child[p][LEFT] = a;
-    v->parent[a] = p;
-
     v->child[p][RIGHT] = b;
-    v->parent[b] = p;
-
-    /*  Swap the root pointer as needed */
-    if (v->root == p) {
-        v->root = q;
-    }
 }
 
-static void vset_rotate_right(vset_t* v, uint32_t q) {
+static void vset_rotate_right(vset_t* v, const uint32_t* const ptr) {
+    assert(ptr);
+
+    const uint32_t q = *ptr;
     assert(q);
 
     const uint32_t p = v->child[q][LEFT];
@@ -135,35 +132,24 @@ static void vset_rotate_right(vset_t* v, uint32_t q) {
     const uint32_t b = v->child[p][RIGHT];
     const uint32_t c = v->child[q][RIGHT];
 
-    const uint32_t r = v->parent[q];
+    const uint32_t r = ptr[-1];
 
     v->child[r][v->child[r][0] != q] = p;
-    v->parent[p] = r;
-
     v->child[p][LEFT] = a;
-    v->parent[a] = p;
-
     v->child[p][RIGHT] = q;
-    v->parent[q] = p;
-
     v->child[q][LEFT] = b;
-    v->parent[b] = q;
-
     v->child[q][RIGHT] = c;
-    v->parent[c] = q;
-
-    /*  Swap the root pointer as needed */
-    if (v->root == q) {
-        v->root = p;
-    }
 }
 
-static void vset_repair(vset_t* v, uint32_t n) {
-    assert(v->color[n] == RED);
+static void vset_repair(vset_t* v, const uint32_t* const ptr) {
+    assert(ptr);
+
+    uint32_t n = *ptr;
     assert(n);
+    assert(v->color[n] == RED);
 
     /*  The root node must be black */
-    uint32_t p = v->parent[n];
+    uint32_t p = ptr[-1];
     if (!p) {
         v->color[n] = BLACK;
         return;
@@ -176,7 +162,7 @@ static void vset_repair(vset_t* v, uint32_t n) {
 
     /*  The grandparent must exist, because otherwise the parent
      *  would be the root (and hence would be black) */
-    const uint32_t gp = v->parent[p];
+    const uint32_t gp = ptr[-2];
     assert(gp);
 
     /*  Pick out the uncle node, which may be a leaf (0) */
@@ -189,18 +175,18 @@ static void vset_repair(vset_t* v, uint32_t n) {
         v->color[u] = BLACK;
         v->color[p] = BLACK;
         v->color[gp] = RED;
-        vset_repair(v, gp);
+        vset_repair(v, ptr - 2);
         return;
     }
 
     /*  First stage of fancy repairs */
     if (n == v->child[p][RIGHT] && p == v->child[gp][LEFT]) {
-        vset_rotate_left(v, p);
+        vset_rotate_left(v, ptr - 1);
         const uint32_t temp = n;
         n = p;
         p = temp;
     } else if (n == v->child[p][LEFT] && p == v->child[gp][RIGHT]) {
-        vset_rotate_right(v, p);
+        vset_rotate_right(v, ptr - 1);
         const uint32_t temp = n;
         n = p;
         p = temp;
@@ -208,9 +194,9 @@ static void vset_repair(vset_t* v, uint32_t n) {
 
     /*  Second stage of fancy repairs */
     if (v->child[p][LEFT] == n) {
-        vset_rotate_right(v, gp);
+        vset_rotate_right(v, ptr - 2);
     } else {
-        vset_rotate_left(v, gp);
+        vset_rotate_left(v, ptr - 2);
     }
     v->color[p] = BLACK;
     v->color[gp] = RED;
@@ -218,18 +204,23 @@ static void vset_repair(vset_t* v, uint32_t n) {
 
 uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
     /*  If the tree is empty, then insert a single black node
-     *  (with no children or parent) */
-    if (!v->root) {
+     *  (with no children or parent).  The root is stored implicitly
+     *  as the LEFT child of the empty node. */
+    if (!v->child[0][LEFT]) {
         assert(v->count == 0);
 
         const size_t n = ++v->count;
         memcpy(v->data[n], f, sizeof(*v->data));
-        v->root = n;
+        v->child[0][LEFT] = n;
         return n;
     }
 
-    uint32_t n = v->root;
+    uint32_t n = v->child[0][LEFT];
+    uint32_t* ptr = v->history;
     while (true) {
+        /*  Record the current node in the history */
+        *++ptr = n;
+
         /*  If we find the same vertex, then return immediately */
         const uint8_t c = cmp(v->data[n], f);
         if (c == 2) {
@@ -242,11 +233,13 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
             memcpy(v->data[j], f, sizeof(*v->data));
             v->child[n][c] = j;
 
-            v->parent[j] = n;
             v->color[j] = RED;
 
+            /*  Push our new node to the end of the history stack */
+            *++ptr = j;
+
             /*  Handle tree rebalancing */
-            vset_repair(v, j);
+            vset_repair(v, ptr);
             return j;
         } else {
             n = v->child[n][c];
@@ -296,12 +289,12 @@ void vset_validate(vset_t* v) {
     assert(v->color[0] == BLACK);
 
     /*  Root node must be black */
-    assert(v->color[v->root] == BLACK);
+    assert(v->color[v->child[0][0]] == BLACK);
 
     /*  Recursively validate the tree */
-    vset_validate_recurse(v, v->root);
+    vset_validate_recurse(v, v->child[0][LEFT]);
 
     log_trace("vset has %lu nodes", v->count);
-    log_trace("   min depth %u", vset_min_depth(v, v->root));
-    log_trace("   max depth %u", vset_max_depth(v, v->root));
+    log_trace("   min depth %u", vset_min_depth(v, v->child[0][LEFT]));
+    log_trace("   max depth %u", vset_max_depth(v, v->child[0][LEFT]));
 }

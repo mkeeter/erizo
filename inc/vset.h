@@ -5,11 +5,10 @@
 typedef struct vset_ {
     float (*data)[3];
 
-    uint32_t* parent;
+    uint32_t* history;
     uint32_t (*child)[2];
     uint8_t *color;
 
-    uint32_t root;
     size_t count;
 } vset_t;
 
