@@ -20,5 +20,5 @@ void vset_delete(vset_t* v);
 /*  Inserts a raw-data vertex into the tree.
  *  d must be a pointer to 3 consecutive floats */
 uint32_t vset_insert_raw(vset_t* restrict v, const char* restrict d);
-uint32_t vset_insert(vset_t* v);
+uint32_t vset_insert(vset_t* restrict v, const float* restrict f);
 void vset_validate(vset_t* v);

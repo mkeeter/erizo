@@ -46,8 +46,12 @@ uint32_t vset_insert_raw(vset_t* restrict v, const char* restrict data) {
     /*  Deploy the data to the next available spot,
      *  even if we don't know that it will be inserted
      *  (since we've got to put it somewhere) */
-    memcpy(v->data[v->count + 1], data, 3 * sizeof(float));
-    return vset_insert(v);
+    float tri[9];
+    memcpy(tri, data, sizeof(tri));
+    for (unsigned i=0; i < 3; ++i) {
+        vset_insert(v, &tri[i * 3]);
+    }
+    return 0;
 }
 
 static uint8_t cmp(const float a[3], const float b[3]) {
@@ -208,7 +212,7 @@ static void vset_repair(vset_t* v, uint32_t n) {
     v->color[gp] = RED;
 }
 
-uint32_t vset_insert(vset_t* v) {
+uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
     /*  If the tree is empty, then insert a single black node
      *  (with no children or parent) */
     if (!v->root) {
@@ -220,17 +224,17 @@ uint32_t vset_insert(vset_t* v) {
     }
 
     uint32_t n = v->root;
-    const size_t j = v->count + 1;
     while (true) {
         /*  If we find the same vertex, then return immediately */
-        const uint8_t c = cmp(v->data[n], v->data[j]);
+        const uint8_t c = cmp(v->data[n], f);
         if (c == 2) {
             return n;
         }
         /* If we've reached a leaf node, then insert a new
          * node and exit. */
         if (v->child[n][c] == 0) {
-            ++v->count;
+            uint32_t j = ++v->count;
+            memcpy(v->data[j], f, sizeof(*v->data));
             v->child[n][c] = j;
 
             v->parent[j] = n;
