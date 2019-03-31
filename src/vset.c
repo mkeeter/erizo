@@ -223,6 +223,7 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
         assert(v->count == 0);
 
         const size_t n = ++v->count;
+        memcpy(v->data[n], f, sizeof(*v->data));
         v->root = n;
         return n;
     }
