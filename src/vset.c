@@ -44,25 +44,6 @@ void vset_delete(vset_t* v) {
     free(v);
 }
 
-void vset_insert_tri(vset_t* restrict v, const char* restrict data,
-                     uint32_t* restrict out)
-{
-    assert(v);
-    assert(data);
-
-    if (((uintptr_t)data & 0x1f) == 0) {
-        for (unsigned i=0; i < 3; ++i) {
-            out[i] = vset_insert(v, &((const float*)data)[i * 3]);
-        }
-    } else {
-        float tri[9];
-        memcpy(tri, data, sizeof(tri));
-        for (unsigned i=0; i < 3; ++i) {
-            out[i] = vset_insert(v, &tri[i * 3]);
-        }
-    }
-}
-
 static uint8_t cmp(const float a[3], const float b[3]) {
     for (unsigned i=0; i < 3; ++i) {
         if (a[i] < b[i]) {

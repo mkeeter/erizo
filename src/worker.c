@@ -15,11 +15,30 @@ static void* worker_run(void* worker_) {
     worker_t* const worker = (worker_t*)worker_;
     loader_t* const loader = worker->loader;
 
-    /*  Build the deduplicated set of indexed vertices + triangles */
+    /*  Prepare to build the deduplicated set of indexed verts + tris */
     vset_t* vset = vset_with_capacity(worker->tri_count * 3);
     uint32_t* tris = (uint32_t*)malloc(sizeof(uint32_t) * 3 * worker->tri_count);
-    for (size_t i=0; i < worker->tri_count; ++i) {
-        vset_insert_tri(vset, (const char*)&worker->stl[i], &tris[i * 3]);
+
+    /*  This part is exciting, because STL files have 36 float-bytes
+     *  (representing 3 vertices of 3 floats each) at 50-byte intervals.
+     *
+     *  This means that every other set of float-bytes is aligned, which
+     *  lets us save a memcpy.  We check to see our parity, then iterate over
+     *  fast (aligned) floats and unaligned bytes in two separate loops. */
+    const bool unaligned = ((uintptr_t)worker->stl & 3);
+    /*  First, we do the aligned loads */
+    for (size_t i=unaligned; i < worker->tri_count; i += 2) {
+        for (unsigned j=0; j < 3; ++j) {
+            tris[i*3 + j] = vset_insert(vset, (float*)worker->stl[i] + 3*j);
+        }
+    }
+    /*  Then, the unaligned loads (which require a memcpy) */
+    for (size_t i=!unaligned; i < worker->tri_count; i += 2) {
+        float vert3[9];
+        memcpy(vert3, &worker->stl[i], sizeof(vert3));
+        for (unsigned j=0; j < 3; ++j) {
+            tris[i*3 + j] = vset_insert(vset, &vert3[j * 3]);
+        }
     }
     worker->vert_count = vset->count;
 
