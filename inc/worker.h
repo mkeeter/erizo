@@ -19,6 +19,10 @@ typedef struct worker_ {
     /*  Calculated vertex count (after deduplication) */
     size_t vert_count;
 
+    /*  Offset applied to triangle indices before loading them into the GPU
+     *  buffer, since each worker starts numbering at 0 */
+    int32_t tri_offset;
+
     /*  Bounds for this set of vertices */
     float min[3];
     float max[3];

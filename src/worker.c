@@ -21,7 +21,6 @@ static void* worker_run(void* worker_) {
     for (size_t i=0; i < worker->tri_count; ++i) {
         vset_insert_tri(vset, (const char*)&worker->stl[i], &tris[i * 3]);
     }
-
     worker->vert_count = vset->count;
 
     /*  Increment the number of finished worker threads */
@@ -31,9 +30,9 @@ static void* worker_run(void* worker_) {
     platform_mutex_unlock(&loader->mutex);
 
     /*  Find our model's bounds by iterating over deduplicated vertices */
-    memcpy(worker->min, worker->stl, sizeof(worker->min));
-    memcpy(worker->max, worker->stl, sizeof(worker->max));
-    for (size_t i=0; i < vset->count; ++i) {
+    memcpy(worker->min, vset->data[1], sizeof(worker->min));
+    memcpy(worker->max, vset->data[1], sizeof(worker->max));
+    for (size_t i=1; i <= vset->count; ++i) {
         for (unsigned j=0; j < 3; ++j) {
             const float v = vset->data[i][j];
             if (v < worker->min[j]) {
@@ -45,11 +44,18 @@ static void* worker_run(void* worker_) {
         }
     }
 
+    /*  Wait for the loader to set up our triangle offsets, so that
+     *  each worker is referring to the correct part of the buffer. */
+    loader_wait(loader, LOADER_MODEL_SIZE);
+    for (unsigned i=0; i < worker->tri_count * 3; ++i) {
+        tris[i] += worker->tri_offset - 1;
+    }
+
     /*  Wait for GPU buffer pointers to be assigned */
     loader_wait(loader, LOADER_WORKER_GPU);
 
     /*  Send the vertex data to the GPU buffer */
-    memcpy(worker->vertex_buf, &vset->data[1], 3 * sizeof(float) * vset->count);
+    memcpy(worker->vertex_buf, vset->data[1], 3 * sizeof(float) * vset->count);
 
     /*  Send the indexed triangles to the GPU buffer */
     memcpy(worker->index_buf, tris, 3 * sizeof(uint32_t) * worker->tri_count);

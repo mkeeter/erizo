@@ -219,6 +219,7 @@ static void* loader_run(void* loader_) {
      *  to allocate the vertex and triangle buffers */
     loader->vert_count = 0;
     for (unsigned i=0; i < NUM_WORKERS; ++i) {
+        workers[i].tri_offset = loader->vert_count;
         loader->vert_count += workers[i].vert_count;
     }
     log_trace("Got %lu vertices (%lu triangles)", loader->vert_count,
