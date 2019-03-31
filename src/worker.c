@@ -1,6 +1,7 @@
 #include "loader.h"
 #include "log.h"
 #include "worker.h"
+#include "vset.h"
 
 static void* worker_run(void* worker_);
 

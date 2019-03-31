@@ -8,29 +8,34 @@
 #define RED     1
 
 vset_t* vset_with_capacity(size_t num_verts) {
-    vset_t* v = (vset_t*)malloc(sizeof(vset_t));
-
     /* Reserve index 0 for unassigned nodes */
     num_verts += 1;
 
-    /*  Allocate all of the data!
-     *  By default, nodes are BLACK with null parents and leaf children;
-     *  the data array is left unallocated. */
-    v->data   =    (float(*)[3])malloc(num_verts * sizeof(*v->data));
-    v->parent =      (uint32_t*)calloc(num_verts,  sizeof(*v->parent));
-    v->child  = (uint32_t(*)[2])calloc(num_verts,  sizeof(*v->child));
-    v->color  =       (uint8_t*)calloc(num_verts,  sizeof(*v->color));
-    v->count = 0;
-    v->root = 0;
+    /* We overallocate this struct so that all of the arrays
+     * are close together, then set up the pointers so that
+     * they point to the right locations within the struct */
+    vset_t* v = (vset_t*)malloc(sizeof(vset_t) + num_verts * (
+                sizeof(*v->data) +
+                sizeof(*v->parent) +
+                sizeof(*v->child) +
+                sizeof(*v->color)));
+
+    /*  Now, do the exciting math to position internal pointers */
+    const char* ptr = (const char*)v;
+
+    ptr += sizeof(vset_t);
+    v->data = (float(*)[3])ptr;
+    ptr += num_verts * sizeof(*v->data);
+    v->parent = (uint32_t*)ptr;
+    ptr += num_verts * sizeof(*v->parent);
+    v->child = (uint32_t(*)[2])ptr;
+    ptr += num_verts * sizeof(*v->child);
+    v->color = (uint8_t*)ptr;
 
     return v;
 }
 
 void vset_delete(vset_t* v) {
-    free(v->data);
-    free(v->parent);
-    free(v->parent);
-    free(v->color);
     free(v);
 }
 
