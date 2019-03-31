@@ -39,19 +39,23 @@ void vset_delete(vset_t* v) {
     free(v);
 }
 
-uint32_t vset_insert_raw(vset_t* restrict v, const char* restrict data) {
+void vset_insert_tri(vset_t* restrict v, const char* restrict data,
+                     uint32_t* restrict out)
+{
     assert(v);
     assert(data);
 
-    /*  Deploy the data to the next available spot,
-     *  even if we don't know that it will be inserted
-     *  (since we've got to put it somewhere) */
-    float tri[9];
-    memcpy(tri, data, sizeof(tri));
-    for (unsigned i=0; i < 3; ++i) {
-        vset_insert(v, &tri[i * 3]);
+    if (((uintptr_t)data & 0x1f) == 0) {
+        for (unsigned i=0; i < 3; ++i) {
+            out[i] = vset_insert(v, &((const float*)data)[i * 3]);
+        }
+    } else {
+        float tri[9];
+        memcpy(tri, data, sizeof(tri));
+        for (unsigned i=0; i < 3; ++i) {
+            out[i] = vset_insert(v, &tri[i * 3]);
+        }
     }
-    return 0;
 }
 
 static uint8_t cmp(const float a[3], const float b[3]) {
