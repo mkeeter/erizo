@@ -336,11 +336,11 @@ void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
     /*  If the loader succeeded, then set up all of the
      *  GL buffers, matrices, etc. */
     if (loader->state == LOADER_DONE) {
-        glUnmapBuffer(GL_ARRAY_BUFFER);
-        glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
         glBindVertexArray(model->vao);
         glBindBuffer(GL_ARRAY_BUFFER, loader->vbo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, loader->ibo);
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+        glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
