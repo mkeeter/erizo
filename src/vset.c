@@ -39,13 +39,15 @@ void vset_delete(vset_t* v) {
     free(v);
 }
 
-uint32_t vset_insert_raw(vset_t* v, const char* data) {
+uint32_t vset_insert_raw(vset_t* restrict v, const char* restrict data) {
     assert(v);
     assert(data);
 
-    float f[3];
-    memcpy(f, data, sizeof(f));
-    return vset_insert(v, f);
+    /*  Deploy the data to the next available spot,
+     *  even if we don't know that it will be inserted
+     *  (since we've got to put it somewhere) */
+    memcpy(v->data[v->count + 1], data, 3 * sizeof(float));
+    return vset_insert(v);
 }
 
 static uint8_t cmp(const float a[3], const float b[3]) {
@@ -186,12 +188,14 @@ static void vset_repair(vset_t* v, uint32_t n) {
     /*  First stage of fancy repairs */
     if (n == v->child[p][RIGHT] && p == v->child[gp][LEFT]) {
         vset_rotate_left(v, p);
-        n = v->child[n][LEFT];
-        p = v->parent[n];
+        const uint32_t temp = n;
+        n = p;
+        p = temp;
     } else if (n == v->child[p][LEFT] && p == v->child[gp][RIGHT]) {
         vset_rotate_right(v, p);
-        n = v->child[n][RIGHT];
-        p = v->parent[n];
+        const uint32_t temp = n;
+        n = p;
+        p = temp;
     }
 
     /*  Second stage of fancy repairs */
@@ -204,7 +208,7 @@ static void vset_repair(vset_t* v, uint32_t n) {
     v->color[gp] = RED;
 }
 
-uint32_t vset_insert(vset_t* v, const float f[3]) {
+uint32_t vset_insert(vset_t* v) {
     /*  If the tree is empty, then insert a single black node
      *  (with no children or parent) */
     if (!v->root) {
@@ -212,26 +216,25 @@ uint32_t vset_insert(vset_t* v, const float f[3]) {
 
         const size_t n = ++v->count;
         v->root = n;
-        memcpy(v->data[n], f, sizeof(*v->data));
         return n;
     }
 
     uint32_t n = v->root;
+    const size_t j = v->count + 1;
     while (true) {
         /*  If we find the same vertex, then return immediately */
-        const uint8_t c = cmp(v->data[n], f);
+        const uint8_t c = cmp(v->data[n], v->data[j]);
         if (c == 2) {
             return n;
         }
         /* If we've reached a leaf node, then insert a new
          * node and exit. */
         if (v->child[n][c] == 0) {
-            const size_t j = ++v->count;
+            ++v->count;
             v->child[n][c] = j;
 
             v->parent[j] = n;
             v->color[j] = RED;
-            memcpy(v->data[j], f, sizeof(*v->data));
 
             /*  Handle tree rebalancing */
             vset_repair(v, j);
