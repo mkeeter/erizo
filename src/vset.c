@@ -148,14 +148,14 @@ static void vset_rotate_right(vset_t* v, uint32_t q) {
     }
 }
 
-static void vset_repair(vset_t* v, uint32_t i) {
-    assert(v->color[i] == RED);
-    assert(i);
+static void vset_repair(vset_t* v, uint32_t n) {
+    assert(v->color[n] == RED);
+    assert(n);
 
     /*  The root node must be black */
-    uint32_t p = v->parent[i];
+    uint32_t p = v->parent[n];
     if (!p) {
-        v->color[i] = BLACK;
+        v->color[n] = BLACK;
         return;
     }
 
@@ -184,18 +184,18 @@ static void vset_repair(vset_t* v, uint32_t i) {
     }
 
     /*  First stage of fancy repairs */
-    if (i == v->child[p][RIGHT] && p == v->child[gp][LEFT]) {
+    if (n == v->child[p][RIGHT] && p == v->child[gp][LEFT]) {
         vset_rotate_left(v, p);
-        i = v->child[i][LEFT];
-        p = v->parent[i];
-    } else if (i == v->child[p][LEFT] && p == v->child[gp][RIGHT]) {
+        n = v->child[n][LEFT];
+        p = v->parent[n];
+    } else if (n == v->child[p][LEFT] && p == v->child[gp][RIGHT]) {
         vset_rotate_right(v, p);
-        i = v->child[i][RIGHT];
-        p = v->parent[i];
+        n = v->child[n][RIGHT];
+        p = v->parent[n];
     }
 
     /*  Second stage of fancy repairs */
-    if (v->child[p][LEFT] == i) {
+    if (v->child[p][LEFT] == n) {
         vset_rotate_right(v, gp);
     } else {
         vset_rotate_left(v, gp);
@@ -210,26 +210,26 @@ uint32_t vset_insert(vset_t* v, const float f[3]) {
     if (!v->root) {
         assert(v->count == 0);
 
-        const size_t i = ++v->count;
-        v->root = i;
-        memcpy(v->data[i], f, sizeof(*v->data));
-        return i;
+        const size_t n = ++v->count;
+        v->root = n;
+        memcpy(v->data[n], f, sizeof(*v->data));
+        return n;
     }
 
-    uint32_t i = v->root;
+    uint32_t n = v->root;
     while (true) {
         /*  If we find the same vertex, then return immediately */
-        const uint8_t c = cmp(v->data[i], f);
+        const uint8_t c = cmp(v->data[n], f);
         if (c == 2) {
-            return i;
+            return n;
         }
         /* If we've reached a leaf node, then insert a new
          * node and exit. */
-        if (v->child[i][c] == 0) {
+        if (v->child[n][c] == 0) {
             const size_t j = ++v->count;
-            v->child[i][c] = j;
+            v->child[n][c] = j;
 
-            v->parent[j] = i;
+            v->parent[j] = n;
             v->color[j] = RED;
             memcpy(v->data[j], f, sizeof(*v->data));
 
@@ -237,7 +237,7 @@ uint32_t vset_insert(vset_t* v, const float f[3]) {
             vset_repair(v, j);
             return j;
         } else {
-            i = v->child[i][c];
+            n = v->child[n][c];
         }
     }
 
@@ -245,37 +245,37 @@ uint32_t vset_insert(vset_t* v, const float f[3]) {
     return 0;
 }
 
-static uint32_t vset_validate_recurse(vset_t* v, uint32_t i) {
-    if (v->color[i] == RED) {
-        assert(v->color[v->child[i][0]] == BLACK);
-        assert(v->color[v->child[i][1]] == BLACK);
+static uint32_t vset_validate_recurse(vset_t* v, uint32_t n) {
+    if (v->color[n] == RED) {
+        assert(v->color[v->child[n][0]] == BLACK);
+        assert(v->color[v->child[n][1]] == BLACK);
     }
 
     /*  If this is the leaf node, then there's one black node in the path */
-    if (i == 0) {
+    if (n == 0) {
         return 1;
     }
-    const uint32_t a = vset_validate_recurse(v, v->child[i][0]);
+    const uint32_t a = vset_validate_recurse(v, v->child[n][0]);
 
-    assert(a == vset_validate_recurse(v, v->child[i][1]));
-    return a + (v->color[i] == BLACK);
+    assert(a == vset_validate_recurse(v, v->child[n][1]));
+    return a + (v->color[n] == BLACK);
 }
 
-static uint32_t vset_min_depth(vset_t* v, uint32_t i) {
-    if (i == 0) {
+static uint32_t vset_min_depth(vset_t* v, uint32_t n) {
+    if (n == 0) {
         return 1;
     }
-    const uint32_t a = vset_min_depth(v, v->child[i][0]);
-    const uint32_t b = vset_min_depth(v, v->child[i][1]);
+    const uint32_t a = vset_min_depth(v, v->child[n][0]);
+    const uint32_t b = vset_min_depth(v, v->child[n][1]);
     return 1 + ((a < b) ? a : b);
 }
 
-static uint32_t vset_max_depth(vset_t* v, uint32_t i) {
-    if (i == 0) {
+static uint32_t vset_max_depth(vset_t* v, uint32_t n) {
+    if (n == 0) {
         return 1;
     }
-    const uint32_t a = vset_max_depth(v, v->child[i][0]);
-    const uint32_t b = vset_max_depth(v, v->child[i][1]);
+    const uint32_t a = vset_max_depth(v, v->child[n][0]);
+    const uint32_t b = vset_max_depth(v, v->child[n][1]);
     return 1 + ((a > b) ? a : b);
 }
 
