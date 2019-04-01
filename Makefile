@@ -31,6 +31,20 @@ BUILD_DIR := build
 CFLAGS := -Wall -Werror -g -O3 -pedantic -Iinc
 LDFLAGS := -lglfw -lglew -framework OpenGL $(CFLAGS)
 
+# Build with Clang's undefined behavior sanitizer:
+# make clean; env UBSAN=1 make
+ifeq ($(UBSAN),1)
+	CFLAGS := $(CFLAGS) -fsanitize=undefined
+	LDFLAGS := $(LDFLAGS) -fsanitize=undefined -lstdc++ -lc++abi
+endif
+
+# Build with Clang's address sanitizer:
+# make clean; env ASAN=1 make
+ifeq ($(ASAN),1)
+	CFLAGS := $(CFLAGS) -fsanitize=address
+	LDFLAGS := $(LDFLAGS) -fsanitize=address
+endif
+
 # Platform detection
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
