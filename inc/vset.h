@@ -1,13 +1,17 @@
 #include "platform.h"
 
-/*  Structure-of-arrays encoding for a red-black tree which
- *  stores a deduplicated set of vertices */
+/*  Single node in the vset tree */
+typedef struct vset_node_ {
+    uint32_t child[2];
+    uint8_t color;
+} vset_node_t;
+
+/*  Tree which stores a deduplicated set of vertices */
 typedef struct vset_ {
     float (*data)[3];
 
     uint32_t* history;
-    uint32_t (*child)[2];
-    uint8_t *color;
+    vset_node_t* node;
 
     size_t count;
 } vset_t;
