@@ -3,7 +3,7 @@
 /*  Single node in the vset tree */
 typedef struct vset_node_ {
     uint32_t child[2];
-    uint8_t color;
+    int8_t balance;
 } vset_node_t;
 
 /*  Tree which stores a deduplicated set of vertices */

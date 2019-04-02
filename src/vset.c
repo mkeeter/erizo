@@ -4,9 +4,6 @@
 #define LEFT    0
 #define RIGHT   1
 
-#define BLACK   0
-#define RED     1
-
 vset_t* vset_with_capacity(size_t num_verts) {
     /* Reserve index 0 for unassigned nodes */
     num_verts += 1;
@@ -118,6 +115,7 @@ static void vset_rotate_right(vset_t* v, const uint32_t* const ptr) {
 }
 
 static void vset_repair(vset_t* v, const uint32_t* const ptr) {
+#if 0
     assert(ptr);
 
     uint32_t n = *ptr;
@@ -176,6 +174,7 @@ static void vset_repair(vset_t* v, const uint32_t* const ptr) {
     }
     v->node[p].color = BLACK;
     v->node[gp].color = RED;
+#endif
 }
 
 uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
@@ -209,10 +208,30 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
             memcpy(v->data[j], f, sizeof(*v->data));
             v->node[n].child[c] = j;
 
-            v->node[j].color = RED;
+            /*  A leaf is perfectly balanced */
+            v->node[j].balance = 0;
 
             /*  Push our new node to the end of the history stack */
             *++ptr = j;
+
+            /*  Walk up the tree, adjusting balance as needed */
+            for (uint32_t* p=(ptr - 1); *p; --p) {
+                if (p[1] == v->node[*p].child[LEFT]) {
+                    v->node[*p].balance--;
+                } else {
+                    assert(p[1] == v->node[*p].child[RIGHT]);
+                    v->node[*p].balance++;
+                }
+                if (v->node[*p].balance == 0) {
+                    break;
+                } else if (v->node[*p].balance == -2) {
+                    /* Left-heavy rebalancing */
+                    break;
+                } else if (v->node[*p].balance == -2) {
+                    /* Right-heavy rebalancing */
+                    break;
+                }
+            }
 
             /*  Handle tree rebalancing */
             vset_repair(v, ptr);
