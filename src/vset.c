@@ -114,20 +114,139 @@ static void vset_rotate_right(vset_t* v, const uint32_t* const ptr) {
     v->node[q].child[RIGHT] = c;
 }
 
+#define VSET_ROOT(v) v->node[0].child[LEFT]
+
+static void vset_repair(vset_t* v, const uint32_t* const ptr) {
+    /*  ptr points to a tree in the history that has just gotten taller,
+     *  which means that it must be unbalanced or a a leaf node. */
+    assert(v->node[*ptr].balance != 0 ||
+               (v->node[*ptr].child[LEFT] == 0 &&
+                v->node[*ptr].child[RIGHT] == 0));
+
+    /*  We start by adjusting the balance of its parent. */
+    const uint32_t y = ptr[-1];
+    assert(y);
+    if (ptr[0] == v->node[y].child[LEFT]) {
+        v->node[y].balance--;
+    } else {
+        assert(ptr[0] == v->node[y].child[RIGHT]);
+        v->node[y].balance++;
+    }
+
+    /*  If we have balanced the parent node, then max height
+     *  has not changed and we can stop recursing up the tree. */
+    if (v->node[y].balance == 0) {
+        return;
+    }
+
+    /*  If the balance of the parent node has shifted, then one of
+     *  its children has gotten taller, and we need to recurse up the tree. */
+    else if (v->node[y].balance == 1 || v->node[y].balance == -1) {
+        /*  Stop recursing when we hit the root node */
+        if (ptr[-1] != VSET_ROOT(v)) {
+            vset_repair(v, ptr - 1);
+        }
+        return;
+    }
+
+    /*  Otherwise, we need to handle the various rebalancing operations */
+    else if (v->node[y].balance == -2) {
+        const uint32_t x = v->node[y].child[LEFT];
+        assert(ptr[0] == x);
+
+        if (v->node[x].balance == -1) {
+            /*
+             *  a* is the modified tree, which unbalances x and y
+             *         y--          x0
+             *         / \         /  \
+             *       x-   c  =>  a*   y0
+             *      / \              /  \
+             *    a*   b            b    c
+             */
+            vset_rotate_right(v, ptr - 1);
+            v->node[y].balance = 0;
+            v->node[x].balance = 0;
+        } else {
+            /*
+             *         y--              y--            w0
+             *         / \             / \            /  \
+             *       x+   d           w   d          x    y
+             *      / \       ==>    / \      ==>   / \  / \
+             *    a    w            x   c           a b  c d
+             *        / \          / \
+             *       b   c        a   b
+             */
+            assert(v->node[x].balance == 1);
+
+            const uint32_t w = v->node[x].child[RIGHT];
+            assert(w);
+
+            vset_rotate_left(v, ptr);
+            assert(w == v->node[y].child[LEFT]);
+
+            vset_rotate_right(v, ptr - 1);
+            if (v->node[w].balance == -1) {
+                v->node[x].balance =  0;
+                v->node[y].balance = +1;
+            } else if (v->node[w].balance == 0) {
+                v->node[x].balance =  0;
+                v->node[y].balance =  0;
+            } else if (v->node[w].balance == 1) {
+                v->node[x].balance = -1;
+                v->node[y].balance =  0;
+            }
+            v->node[w].balance = 0;
+        }
+    /* Symmetric case */
+    } else if (v->node[y].balance == 2) {
+        const uint32_t x = v->node[y].child[RIGHT];
+        assert(ptr[0] == x);
+
+        if (v->node[x].balance == +1) {
+            vset_rotate_left(v, ptr - 1);
+            v->node[y].balance = 0;
+            v->node[x].balance = 0;
+        } else {
+            assert(v->node[x].balance == -1);
+
+            const uint32_t w = v->node[x].child[LEFT];
+            assert(w);
+
+            vset_rotate_right(v, ptr);
+            assert(w == v->node[y].child[RIGHT]);
+
+            vset_rotate_left(v, ptr - 1);
+            if (v->node[w].balance == 1) {
+                v->node[x].balance =  0;
+                v->node[y].balance = -1;
+            } else if (v->node[w].balance == 0) {
+                v->node[x].balance =  0;
+                v->node[y].balance =  0;
+            } else if (v->node[w].balance == -1) {
+                v->node[x].balance = +1;
+                v->node[y].balance =  0;
+            }
+            v->node[w].balance = 0;
+        }
+    } else {
+        log_error_and_abort("Invalid balance %i", v->node[y].balance);
+    }
+}
+
 uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
     /*  If the tree is empty, then insert a single black node
      *  (with no children or parent).  The root is stored implicitly
      *  as the LEFT child of the empty node. */
-    if (!v->node[0].child[LEFT]) {
+    if (!VSET_ROOT(v)) {
         assert(v->count == 0);
 
         const size_t n = ++v->count;
         memcpy(v->data[n], f, sizeof(*v->data));
-        v->node[0].child[LEFT] = n;
+        VSET_ROOT(v) = n;
         return n;
     }
 
-    uint32_t n = v->node[0].child[LEFT];
+    uint32_t n = VSET_ROOT(v);
     uint32_t* ptr = v->history;
     while (true) {
         /*  Record the current node in the history */
@@ -152,63 +271,8 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
             *++ptr = j;
 
             /*  Walk up the tree, adjusting balance as needed */
-            for (uint32_t* p=(ptr - 1); *p; --p) {
-                const uint32_t y = *p;
-                if (p[1] == v->node[y].child[LEFT]) {
-                    v->node[y].balance--;
-                } else {
-                    assert(p[1] == v->node[y].child[RIGHT]);
-                    v->node[y].balance++;
-                }
+            vset_repair(v, ptr);
 
-                if (v->node[y].balance == 0) {
-                    break;
-                } else if (v->node[y].balance == -2) {
-
-                    const uint32_t x = v->node[y].child[LEFT];
-                    assert(p[1] == x);
-
-                    if (v->node[x].balance == -1) {
-                        /*
-                         *  a* is the modified tree, which unbalances x and p
-                         *         y--          x0
-                         *         / \         /  \
-                         *       x-   \  =>  a*   y0
-                         *      / \    c         /  \
-                         *    a*   b            b    c
-                         */
-                        vset_rotate_right(v, p);
-                        v->node[y].balance = 0;
-                        v->node[x].balance = 0;
-                    } else {
-                        assert(v->node[x].balance == 1);
-
-                        const uint32_t w = v->node[x].child[RIGHT];
-                        assert(w);
-
-                        vset_rotate_left(v, p + 1);
-                        assert(w == v->node[y].child[LEFT]);
-
-                        vset_rotate_right(v, p);
-                        if (v->node[w].balance == -1) {
-                            v->node[x].balance =  0;
-                            v->node[y].balance = +1;
-                        } else if (v->node[w].balance == 0) {
-                            v->node[x].balance =  0;
-                            v->node[y].balance =  0;
-                        } else if (v->node[w].balance == 1) {
-                            v->node[x].balance = -1;
-                            v->node[y].balance =  0;
-                        }
-                        v->node[w].balance = 0;
-                    }
-                    /* Left-heavy rebalancing */
-                    break;
-                } else if (v->node[y].balance == -2) {
-                    /* Right-heavy rebalancing */
-                    break;
-                }
-            }
             return j;
         } else {
             n = v->node[n].child[c];
@@ -219,51 +283,39 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
     return 0;
 }
 
-static uint32_t vset_validate_recurse(vset_t* v, uint32_t n) {
-    if (v->node[n].color == RED) {
-        assert(v->node[v->node[n].child[0]].color == BLACK);
-        assert(v->node[v->node[n].child[1]].color == BLACK);
-    }
-
-    /*  If this is the leaf node, then there's one black node in the path */
+static int32_t vset_validate_recurse(vset_t* v, uint32_t n) {
     if (n == 0) {
-        return 1;
+        return 0;
     }
-    const uint32_t a = vset_validate_recurse(v, v->node[n].child[0]);
+    const int32_t a = vset_validate_recurse(v, v->node[n].child[LEFT]);
+    const int32_t b = vset_validate_recurse(v, v->node[n].child[RIGHT]);
 
-    assert(a == vset_validate_recurse(v, v->node[n].child[1]));
-    return a + (v->node[n].color == BLACK);
+    const int32_t balance = b - a;
+    assert(v->node[n].balance == balance);
+    assert(balance >= -1);
+    assert(balance <=  1);
+    (void)balance;
+
+    return 1 + ((a > b) ? a : b);
 }
 
 static uint32_t vset_min_depth(vset_t* v, uint32_t n) {
     if (n == 0) {
-        return 1;
+        return 0;
     }
     const uint32_t a = vset_min_depth(v, v->node[n].child[0]);
     const uint32_t b = vset_min_depth(v, v->node[n].child[1]);
     return 1 + ((a < b) ? a : b);
 }
 
-static uint32_t vset_max_depth(vset_t* v, uint32_t n) {
-    if (n == 0) {
-        return 1;
-    }
-    const uint32_t a = vset_max_depth(v, v->node[n].child[0]);
-    const uint32_t b = vset_max_depth(v, v->node[n].child[1]);
-    return 1 + ((a > b) ? a : b);
-}
-
 void vset_validate(vset_t* v) {
-    /*  Leaf nodes must be black */
-    assert(v->node[0].color == BLACK);
-
-    /*  Root node must be black */
-    assert(v->node[v->node[0].child[0]].color == BLACK);
+    /*  Leaf nodes must be balanced */
+    assert(v->node[0].balance == 0);
 
     /*  Recursively validate the tree */
-    vset_validate_recurse(v, v->node[0].child[LEFT]);
+    int32_t max_depth = vset_validate_recurse(v, VSET_ROOT(v));
 
     log_trace("vset has %lu nodes", v->count);
-    log_trace("   min depth %u", vset_min_depth(v, v->node[0].child[LEFT]));
-    log_trace("   max depth %u", vset_max_depth(v, v->node[0].child[LEFT]));
+    log_trace("   min depth %u", vset_min_depth(v, VSET_ROOT(v)));
+    log_trace("   max depth %u", max_depth);
 }
