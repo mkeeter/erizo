@@ -114,69 +114,6 @@ static void vset_rotate_right(vset_t* v, const uint32_t* const ptr) {
     v->node[q].child[RIGHT] = c;
 }
 
-static void vset_repair(vset_t* v, const uint32_t* const ptr) {
-#if 0
-    assert(ptr);
-
-    uint32_t n = *ptr;
-    assert(n);
-    assert(v->node[n].color == RED);
-
-    /*  The root node must be black */
-    uint32_t p = ptr[-1];
-    if (!p) {
-        v->node[n].color = BLACK;
-        return;
-    }
-
-    /*  Red below black is fine */
-    if (v->node[p].color == BLACK) {
-        return;
-    }
-
-    /*  The grandparent must exist, because otherwise the parent
-     *  would be the root (and hence would be black) */
-    const uint32_t gp = ptr[-2];
-    assert(gp);
-
-    /*  Pick out the uncle node, which may be a leaf (0) */
-    const uint32_t u = v->node[gp].child[v->node[gp].child[0] == p];
-
-    /*  If parent and uncle are red, then color them both black,
-     *  make the grand-parent red, and recursively repair up from
-     *  the grandparent. */
-    if (v->node[u].color == RED) {
-        v->node[u].color = BLACK;
-        v->node[p].color = BLACK;
-        v->node[gp].color = RED;
-        vset_repair(v, ptr - 2);
-        return;
-    }
-
-    /*  First stage of fancy repairs */
-    if (n == v->node[p].child[RIGHT] && p == v->node[gp].child[LEFT]) {
-        vset_rotate_left(v, ptr - 1);
-        const uint32_t temp = n;
-        n = p;
-        p = temp;
-    } else if (n == v->node[p].child[LEFT] && p == v->node[gp].child[RIGHT]) {
-        vset_rotate_right(v, ptr - 1);
-        const uint32_t temp = n;
-        n = p;
-        p = temp;
-    }
-
-    /*  Second stage of fancy repairs */
-    if (v->node[p].child[LEFT] == n) {
-        vset_rotate_right(v, ptr - 2);
-    } else {
-        vset_rotate_left(v, ptr - 2);
-    }
-    v->node[p].color = BLACK;
-    v->node[gp].color = RED;
-#endif
-}
-
 uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
     /*  If the tree is empty, then insert a single black node
      *  (with no children or parent).  The root is stored implicitly
@@ -216,25 +153,62 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
 
             /*  Walk up the tree, adjusting balance as needed */
             for (uint32_t* p=(ptr - 1); *p; --p) {
-                if (p[1] == v->node[*p].child[LEFT]) {
-                    v->node[*p].balance--;
+                const uint32_t y = *p;
+                if (p[1] == v->node[y].child[LEFT]) {
+                    v->node[y].balance--;
                 } else {
-                    assert(p[1] == v->node[*p].child[RIGHT]);
-                    v->node[*p].balance++;
+                    assert(p[1] == v->node[y].child[RIGHT]);
+                    v->node[y].balance++;
                 }
-                if (v->node[*p].balance == 0) {
+
+                if (v->node[y].balance == 0) {
                     break;
-                } else if (v->node[*p].balance == -2) {
+                } else if (v->node[y].balance == -2) {
+
+                    const uint32_t x = v->node[y].child[LEFT];
+                    assert(p[1] == x);
+
+                    if (v->node[x].balance == -1) {
+                        /*
+                         *  a* is the modified tree, which unbalances x and p
+                         *         y--          x0
+                         *         / \         /  \
+                         *       x-   \  =>  a*   y0
+                         *      / \    c         /  \
+                         *    a*   b            b    c
+                         */
+                        vset_rotate_right(v, p);
+                        v->node[y].balance = 0;
+                        v->node[x].balance = 0;
+                    } else {
+                        assert(v->node[x].balance == 1);
+
+                        const uint32_t w = v->node[x].child[RIGHT];
+                        assert(w);
+
+                        vset_rotate_left(v, p + 1);
+                        assert(w == v->node[y].child[LEFT]);
+
+                        vset_rotate_right(v, p);
+                        if (v->node[w].balance == -1) {
+                            v->node[x].balance =  0;
+                            v->node[y].balance = +1;
+                        } else if (v->node[w].balance == 0) {
+                            v->node[x].balance =  0;
+                            v->node[y].balance =  0;
+                        } else if (v->node[w].balance == 1) {
+                            v->node[x].balance = -1;
+                            v->node[y].balance =  0;
+                        }
+                        v->node[w].balance = 0;
+                    }
                     /* Left-heavy rebalancing */
                     break;
-                } else if (v->node[*p].balance == -2) {
+                } else if (v->node[y].balance == -2) {
                     /* Right-heavy rebalancing */
                     break;
                 }
             }
-
-            /*  Handle tree rebalancing */
-            vset_repair(v, ptr);
             return j;
         } else {
             n = v->node[n].child[c];
