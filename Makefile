@@ -51,11 +51,13 @@ build/%.o: src/%.c | $(BUILD_DIR)
 build/%.o: src/%.mm | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ $<
 
+ifneq ($(MAKECMDGOALS),clean)
 -include $(DEP)
 build/%.d: src/%.c | $(BUILD_DIR)
 	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
 build/%.d: src/%.mm | $(BUILD_DIR)
 	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
+endif
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -65,6 +67,6 @@ src/sphere.c: sphere.stl
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJ) $(DEP) $(addprefix src,$(GEN:=.c))
-	rmdir $(BUILD_DIR)
+	rm -rf $(BUILD_DIR)
+	rm -rf $(addprefix src/,$(GEN:=.c))
 	rm -f erizo
