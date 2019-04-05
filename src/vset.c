@@ -261,7 +261,7 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
         const vset_handle_t n = HANDLE(++v->count);
         memcpy(DATA(n), f, sizeof(*v->data));
         ROOT() = n;
-        return INDEX(n);;
+        return INDEX(n);
     }
 
     vset_handle_t n = ROOT();
@@ -273,7 +273,7 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
         /*  If we find the same vertex, then return immediately */
         const uint32_t c = cmp(DATA(n), f);
         if (c == 2) {
-            return INDEX(n);;
+            return INDEX(n);
         }
         /* If we've reached a leaf node, then insert a new
          * node and exit. */
