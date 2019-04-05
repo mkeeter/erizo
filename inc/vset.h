@@ -1,8 +1,11 @@
 #include "platform.h"
 
+/*  Used to refer to nodes within the tree */
+typedef uint32_t vset_handle_t;
+
 /*  Single node in the vset tree */
 typedef struct vset_node_ {
-    uint32_t child[2];
+    vset_handle_t child[2];
     int8_t balance;
 } vset_node_t;
 
@@ -10,7 +13,7 @@ typedef struct vset_node_ {
 typedef struct vset_ {
     float (*data)[3];
 
-    uint32_t* history;
+    vset_handle_t* history;
     vset_node_t* node;
 
     size_t count;
