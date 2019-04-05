@@ -1,7 +1,18 @@
 #include "platform.h"
 
+/*  We implement the vset such that there are two valid implementations:
+ *  a)  Define nodes as indexes into the data / nodes array
+ *  b)  Define nodes as pointers into the nodes array
+ *
+ *  We control which of the implementations is compiled with this macro */
+
 /*  Used to refer to nodes within the tree */
+#ifdef VSET_USE_POINTERS
+struct vset_node_;
+typedef struct vset_node_* vset_handle_t;
+#else
 typedef uint32_t vset_handle_t;
+#endif
 
 /*  Single node in the vset tree */
 typedef struct vset_node_ {

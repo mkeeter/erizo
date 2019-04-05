@@ -4,11 +4,22 @@
 #define LEFT    0
 #define RIGHT   1
 
-#define INDEX(h) i                      /* handle to index */
+#ifdef VSET_USE_POINTERS
+#define INDEX(h) (h - v->node)          /* Handle to index */
+#define NODE(h) (*h)                    /* handle to node */
+#define DATA(h) (v->data[INDEX(h)])     /* handle to data */
+#define HANDLE(i) (v->node + i)         /* index to handle */
+#define ROOT()  (NODE(HANDLE(0)).child[0]) /* root handle */
+#define LEAF() NULL                     /* leaf handle */
+#else
+#define INDEX(h) h                      /* handle to index */
 #define NODE(h) (v->node[h])            /* handle to node */
 #define DATA(h) (v->data[h])            /* handle to data */
-#define ROOT()  (NODE(0).child[LEFT])   /* root handle */
 #define HANDLE(i) i                     /* index to handle */
+#define ROOT()  (NODE(0).child[LEFT])   /* root handle */
+#define LEAF() 0                        /* leaf handle */
+#endif
+
 
 vset_t* vset_with_capacity(size_t num_verts) {
     /* Reserve index 0 for unassigned nodes */
@@ -127,8 +138,8 @@ static void vset_repair(vset_t* v, vset_handle_t const* const ptr) {
     /*  ptr points to a tree in the history that has just gotten taller,
      *  which means that it must be unbalanced or a a leaf node. */
     assert(NODE(*ptr).balance != 0 ||
-               (NODE(*ptr).child[LEFT] == 0 &&
-                NODE(*ptr).child[RIGHT] == 0));
+               (NODE(*ptr).child[LEFT]  == LEAF() &&
+                NODE(*ptr).child[RIGHT] == LEAF()));
 
     /*  We start by adjusting the balance of its parent. */
     vset_handle_t const y = ptr[-1];
@@ -250,7 +261,7 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
         const vset_handle_t n = HANDLE(++v->count);
         memcpy(DATA(n), f, sizeof(*v->data));
         ROOT() = n;
-        return n;
+        return INDEX(n);;
     }
 
     vset_handle_t n = ROOT();
@@ -262,11 +273,11 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
         /*  If we find the same vertex, then return immediately */
         const uint32_t c = cmp(DATA(n), f);
         if (c == 2) {
-            return n;
+            return INDEX(n);;
         }
         /* If we've reached a leaf node, then insert a new
          * node and exit. */
-        if (NODE(n).child[c] == 0) {
+        if (NODE(n).child[c] == LEAF()) {
             vset_handle_t j = HANDLE(++v->count);
             memcpy(DATA(j), f, sizeof(*v->data));
             NODE(n).child[c] = j;
@@ -280,7 +291,7 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
             /*  Walk up the tree, adjusting balance as needed */
             vset_repair(v, ptr);
 
-            return j;
+            return INDEX(j);
         } else {
             n = NODE(n).child[c];
         }
@@ -291,7 +302,7 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
 }
 
 static int32_t vset_validate_recurse(vset_t* v, vset_handle_t n) {
-    if (n == 0) {
+    if (n == LEAF()) {
         return 0;
     }
     const int32_t a = vset_validate_recurse(v, NODE(n).child[LEFT]);
@@ -307,18 +318,15 @@ static int32_t vset_validate_recurse(vset_t* v, vset_handle_t n) {
 }
 
 static uint32_t vset_min_depth(vset_t* v, vset_handle_t n) {
-    if (n == 0) {
+    if (n == LEAF()) {
         return 0;
     }
-    vset_handle_t const a = vset_min_depth(v, NODE(n).child[0]);
-    vset_handle_t const b = vset_min_depth(v, NODE(n).child[1]);
+    uint32_t a = vset_min_depth(v, NODE(n).child[0]);
+    uint32_t b = vset_min_depth(v, NODE(n).child[1]);
     return 1 + ((a < b) ? a : b);
 }
 
 void vset_validate(vset_t* v) {
-    /*  Leaf nodes must be balanced */
-    assert(v->node[0].balance == 0);
-
     /*  Recursively validate the tree */
     int32_t max_depth = vset_validate_recurse(v, ROOT());
 
