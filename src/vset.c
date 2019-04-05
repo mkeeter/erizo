@@ -4,9 +4,11 @@
 #define LEFT    0
 #define RIGHT   1
 
-#define INDEX(h) i
-#define NODE(h) (v->node[h])
-#define ROOT()  (NODE(0).child[LEFT])
+#define INDEX(h) i                      /* handle to index */
+#define NODE(h) (v->node[h])            /* handle to node */
+#define DATA(h) (v->data[h])            /* handle to data */
+#define ROOT()  (NODE(0).child[LEFT])   /* root handle */
+#define HANDLE(i) i                     /* index to handle */
 
 vset_t* vset_with_capacity(size_t num_verts) {
     /* Reserve index 0 for unassigned nodes */
@@ -33,7 +35,8 @@ vset_t* vset_with_capacity(size_t num_verts) {
     ptr += max_depth * sizeof(*v->history);
     v->node = (vset_node_t*)ptr;
 
-    v->history[0] = 0;
+    /*  Mark the super-root as the 0th handle */
+    v->history[0] = HANDLE(0);
 
     return v;
 }
@@ -244,28 +247,28 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
     if (!ROOT()) {
         assert(v->count == 0);
 
-        const size_t n = ++v->count;
-        memcpy(v->data[n], f, sizeof(*v->data));
+        const vset_handle_t n = HANDLE(++v->count);
+        memcpy(DATA(n), f, sizeof(*v->data));
         ROOT() = n;
         return n;
     }
 
-    uint32_t n = ROOT();
-    uint32_t* ptr = v->history;
+    vset_handle_t n = ROOT();
+    vset_handle_t* ptr = v->history;
     while (true) {
         /*  Record the current node in the history */
         *++ptr = n;
 
         /*  If we find the same vertex, then return immediately */
-        vset_handle_t const c = cmp(v->data[n], f);
+        const uint32_t c = cmp(DATA(n), f);
         if (c == 2) {
             return n;
         }
         /* If we've reached a leaf node, then insert a new
          * node and exit. */
         if (NODE(n).child[c] == 0) {
-            uint32_t j = ++v->count;
-            memcpy(v->data[j], f, sizeof(*v->data));
+            vset_handle_t j = HANDLE(++v->count);
+            memcpy(DATA(j), f, sizeof(*v->data));
             NODE(n).child[c] = j;
 
             /*  A leaf is perfectly balanced */
@@ -287,15 +290,15 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
     return 0;
 }
 
-static int32_t vset_validate_recurse(vset_t* v, uint32_t n) {
+static int32_t vset_validate_recurse(vset_t* v, vset_handle_t n) {
     if (n == 0) {
         return 0;
     }
-    const int32_t a = vset_validate_recurse(v, v->node[n].child[LEFT]);
-    const int32_t b = vset_validate_recurse(v, v->node[n].child[RIGHT]);
+    const int32_t a = vset_validate_recurse(v, NODE(n).child[LEFT]);
+    const int32_t b = vset_validate_recurse(v, NODE(n).child[RIGHT]);
 
     const int32_t balance = b - a;
-    assert(v->node[n].balance == balance);
+    assert(NODE(n).balance == balance);
     assert(balance >= -1);
     assert(balance <=  1);
     (void)balance;
@@ -303,12 +306,12 @@ static int32_t vset_validate_recurse(vset_t* v, uint32_t n) {
     return 1 + ((a > b) ? a : b);
 }
 
-static uint32_t vset_min_depth(vset_t* v, uint32_t n) {
+static uint32_t vset_min_depth(vset_t* v, vset_handle_t n) {
     if (n == 0) {
         return 0;
     }
-    vset_handle_t const a = vset_min_depth(v, v->node[n].child[0]);
-    vset_handle_t const b = vset_min_depth(v, v->node[n].child[1]);
+    vset_handle_t const a = vset_min_depth(v, NODE(n).child[0]);
+    vset_handle_t const b = vset_min_depth(v, NODE(n).child[1]);
     return 1 + ((a < b) ? a : b);
 }
 
