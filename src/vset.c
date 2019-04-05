@@ -5,19 +5,19 @@
 #define RIGHT   1
 
 #ifdef VSET_USE_POINTERS
-#define INDEX(h) (h - v->node)          /* Handle to index */
-#define NODE(h) (*h)                    /* handle to node */
-#define DATA(h) (v->data[INDEX(h)])     /* handle to data */
-#define HANDLE(i) (v->node + i)         /* index to handle */
-#define ROOT()  (NODE(HANDLE(0)).child[0]) /* root handle */
-#define LEAF() NULL                     /* leaf handle */
+    #define INDEX(h) (h - v->node)              /* Handle to index */
+    #define NODE(h) (*h)                        /* handle to node */
+    #define DATA(h) (v->data[INDEX(h)])         /* handle to data */
+    #define HANDLE(i) (v->node + i)             /* index to handle */
+    #define ROOT()  (NODE(HANDLE(0)).child[0])  /* root handle */
+    #define LEAF() NULL                         /* leaf handle */
 #else
-#define INDEX(h) h                      /* handle to index */
-#define NODE(h) (v->node[h])            /* handle to node */
-#define DATA(h) (v->data[h])            /* handle to data */
-#define HANDLE(i) i                     /* index to handle */
-#define ROOT()  (NODE(0).child[LEFT])   /* root handle */
-#define LEAF() 0                        /* leaf handle */
+    #define INDEX(h) h                          /* handle to index */
+    #define NODE(h) (v->node[h])                /* handle to node */
+    #define DATA(h) (v->data[h])                /* handle to data */
+    #define HANDLE(i) i                         /* index to handle */
+    #define ROOT()  (NODE(0).child[LEFT])       /* root handle */
+    #define LEAF() 0                            /* leaf handle */
 #endif
 
 
