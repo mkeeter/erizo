@@ -25,24 +25,14 @@ void log_unlock() {
 
 FILE* log_preamble(log_type_t t, const char* file, int line)
 {
-    static int64_t start_sec = -1;
-    static int32_t start_usec = -1;
+    static int64_t start_usec = -1;
 
-    if (start_sec == -1) {
-        platform_get_time(&start_sec, &start_usec);
+    if (start_usec == -1) {
+        start_usec = platform_get_time();
         mut = platform_mutex_new();
     }
 
-    int64_t now_sec;
-    int32_t now_usec;
-    platform_get_time(&now_sec, &now_usec);
-
-    long int dt_sec = now_sec - start_sec;
-    int dt_usec = now_usec - start_usec;
-    if (dt_usec < 0) {
-        dt_usec += 1000000;
-        dt_sec -= 1;
-    }
+    const int64_t dt_usec = platform_get_time() - start_usec;
 
     FILE* out = (t == LOG_ERROR) ? stderr : stdout;
 
@@ -58,7 +48,7 @@ FILE* log_preamble(log_type_t t, const char* file, int line)
     fprintf(out, "[erizo]");
 
     platform_set_terminal_color(out, TERM_COLOR_WHITE);
-    fprintf(out, " (%li.%06i) ", dt_sec, dt_usec);
+    fprintf(out, " (%lli.%06lli) ", dt_usec / 1000000, dt_usec % 1000000);
 
     platform_clear_terminal_color(out);
     fprintf(out, "%s:%i ", filename, line);

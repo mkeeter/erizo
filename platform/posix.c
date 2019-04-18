@@ -37,12 +37,11 @@ void platform_munmap(const char* data, size_t size) {
     munmap((void*)data, size);
 }
 
-void platform_get_time(int64_t* sec, int32_t* usec) {
+int64_t platform_get_time() {
     static struct timeval t;
     gettimeofday(&t, NULL);
 
-    *sec = t.tv_sec;
-    *usec = t.tv_usec;
+    return t.tv_sec * 1000000 + t.tv_usec;
 }
 
 void platform_set_terminal_color(FILE* f, platform_terminal_color_t c) {
