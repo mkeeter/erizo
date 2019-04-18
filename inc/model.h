@@ -4,10 +4,11 @@ struct camera_;
 struct theme_;
 
 typedef struct model_ {
-    uint32_t num_triangles;
+    uint32_t tri_count;
 
     GLuint vao;
     GLuint vbo;
+    GLuint ibo;
 
     /*  Shader program */
     GLuint vs;

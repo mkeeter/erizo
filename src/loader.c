@@ -113,7 +113,6 @@ static const char* loader_parse_ascii(const char* data, size_t* size) {
 
 static void* loader_run(void* loader_) {
     loader_t* loader = (loader_t*)loader_;
-    loader->buffer = NULL;
     loader_next(loader, LOADER_START);
 
     /*  Filesize in bytes; needed to munmap file at the end */
@@ -145,16 +144,18 @@ static void* loader_run(void* loader_) {
      *  as a second heuristic.  */
     bool is_ascii = (size >= 6 && !strncmp("solid ", mapped, 6));
     if (is_ascii && size >= 84) {
-        uint32_t tentative_num_triangles;
-        memcpy(&tentative_num_triangles, &mapped[80],
-               sizeof(tentative_num_triangles));
-        if (size == tentative_num_triangles * 50 + 84) {
+        uint32_t tentative_tri_count;
+        memcpy(&tentative_tri_count, &mapped[80],
+               sizeof(tentative_tri_count));
+        if (size == tentative_tri_count * 50 + 84) {
             log_warn("File begins with 'solid' but appears to be "
                      "a binary STL file");
             is_ascii = false;
         }
     }
 
+    /*  Convert from an ASCII STL to a binary STL so that the rest of the
+     *  loader can run unobstructed. */
     if (is_ascii) {
         size_t new_size;
         const char* new_mapped = loader_parse_ascii(mapped, &new_size);
@@ -178,50 +179,65 @@ static void* loader_run(void* loader_) {
         return NULL;
     }
 
-    memcpy(&loader->num_triangles, &mapped[80],
-           sizeof(loader->num_triangles));
+    /*  Pull the number of triangles from the raw STL data */
+    memcpy(&loader->tri_count, &mapped[80],
+           sizeof(loader->tri_count));
 
     /*  Compare the actual file size with the expected size */
-    const uint32_t expected_size = loader->num_triangles * 50 + 84;
+    const uint32_t expected_size = loader->tri_count * 50 + 84;
     if (expected_size != size) {
         log_error("Invalid file size for %u triangles (expected %u, got %u)",
-                  loader->num_triangles, expected_size, size);
+                  loader->tri_count, expected_size, size);
         loader_next(loader, LOADER_ERROR_WRONG_SIZE);
         loader_free(mapped, size, allocation_type);
         return NULL;
     }
 
-    /*  Inform the main thread that it can now create an OpenGL buffer
-     *  for the given number of triangles. */
-    loader_next(loader, LOADER_TRIANGLE_COUNT);
-    float* ram = (float*)malloc(loader->num_triangles * 3 * 3 * sizeof(float));
-    loader_next(loader, LOADER_RAM_BUFFER);
-
-    /*  We kick off our mmap-to-OpenGL copying workers here, even though the
-     *  buffer won't be ready for a little while.  This means that as soon
-     *  as the buffer is ready, they'll start! */
-    const size_t NUM_WORKERS = 8;
+    /*  The worker threads deduplicate a subset of the vertices, then
+     *  increment loader->count to indicate that they're done. */
+    const size_t NUM_WORKERS = 6;
     worker_t workers[NUM_WORKERS];
     for (unsigned i=0; i < NUM_WORKERS; ++i) {
-        const size_t start = i * loader->num_triangles / NUM_WORKERS;
-        const size_t end = (i + 1) * loader->num_triangles / NUM_WORKERS;
+        const size_t start = i * loader->tri_count / NUM_WORKERS;
+        const size_t end = (i + 1) * loader->tri_count / NUM_WORKERS;
 
         workers[i].loader = loader;
-        workers[i].count = end - start;
+        workers[i].tri_count = end - start;
         workers[i].stl = (const char (*)[50])&mapped[80 + 4 + 12 + 50 * start];
-        workers[i].ram = (float (*)[9])&ram[start * 9];
-        workers[i].gpu = NULL;
 
         worker_start(&workers[i]);
     }
+
+    /*  Wait for all of the worker threads to finish deduplicating vertices */
+    platform_mutex_lock(&loader->mutex);
+    while (loader->count != NUM_WORKERS) {
+        platform_cond_wait(&loader->cond, &loader->mutex);
+    }
+    platform_mutex_unlock(&loader->mutex);
+    log_trace("Workers have deduplicated vertices");
+
+    /*  Accumulate the total vertex count, then wait for the OpenGL thread
+     *  to allocate the vertex and triangle buffers */
+    loader->vert_count = 0;
+    for (unsigned i=0; i < NUM_WORKERS; ++i) {
+        workers[i].tri_offset = loader->vert_count;
+        loader->vert_count += workers[i].vert_count;
+    }
+    log_trace("Got %lu vertices (%lu triangles)", loader->vert_count,
+            loader->tri_count);
+    loader_next(loader, LOADER_MODEL_SIZE);
 
     log_trace("Waiting for buffer...");
     loader_wait(loader, LOADER_GPU_BUFFER);
 
     /*  Populate GPU pointers, then kick off workers copying triangles */
+    size_t tri_offset = 0;
+    size_t vert_offset = 0;
     for (unsigned i=0; i < NUM_WORKERS; ++i) {
-        const size_t start = i * loader->num_triangles / NUM_WORKERS;
-        workers[i].gpu = (float (*)[9])&loader->buffer[start * 9];
+        workers[i].vertex_buf = &loader->vertex_buf[vert_offset];
+        workers[i].index_buf  = &loader->index_buf[tri_offset];
+        vert_offset += workers[i].vert_count * 3;
+        tri_offset  += workers[i].tri_count  * 3;
     }
     loader_next(loader, LOADER_WORKER_GPU);
     log_trace("Sent buffers to worker threads");
@@ -267,15 +283,16 @@ static void* loader_run(void* loader_) {
 
     /*  Release any allocated file data */
     loader_free(mapped, size, allocation_type);
-    free(ram);
 
     return NULL;
 }
 
 void loader_allocate_vbo(loader_t* loader) {
     glGenBuffers(1, &loader->vbo);
+    glGenBuffers(1, &loader->ibo);
     glBindBuffer(GL_ARRAY_BUFFER, loader->vbo);
-    loader_wait(loader, LOADER_TRIANGLE_COUNT);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, loader->ibo);
+    loader_wait(loader, LOADER_MODEL_SIZE);
 
     /*  Early return if there is an error in the loader;
      *  we leave the buffer allocated so it can be cleaned
@@ -284,10 +301,20 @@ void loader_allocate_vbo(loader_t* loader) {
         return;
     }
 
-    glBufferData(GL_ARRAY_BUFFER, loader->num_triangles * 36,
-                 NULL, GL_STATIC_DRAW);
-    loader->buffer = (float*)glMapBufferRange(
-            GL_ARRAY_BUFFER, 0, loader->num_triangles * 36,
+    /*  Allocate and map index buffer */
+    const size_t ibo_bytes = loader->tri_count * 3 * sizeof(uint32_t);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ibo_bytes, NULL, GL_STATIC_DRAW);
+    loader->index_buf = (uint32_t*)glMapBufferRange(
+            GL_ELEMENT_ARRAY_BUFFER, 0, ibo_bytes,
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
+                             | GL_MAP_INVALIDATE_BUFFER_BIT
+                             | GL_MAP_UNSYNCHRONIZED_BIT);
+
+    /*  Allocate and map vertex buffer */
+    const size_t vbo_bytes = loader->vert_count * 3 * sizeof(float);
+    glBufferData(GL_ARRAY_BUFFER, vbo_bytes, NULL, GL_STATIC_DRAW);
+    loader->vertex_buf = (float*)glMapBufferRange(
+            GL_ARRAY_BUFFER, 0, vbo_bytes,
             GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
                              | GL_MAP_INVALIDATE_BUFFER_BIT
                              | GL_MAP_UNSYNCHRONIZED_BIT);
@@ -299,24 +326,31 @@ void loader_allocate_vbo(loader_t* loader) {
 void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
     if (!loader->vbo) {
         log_error_and_abort("Invalid loader VBO");
+    } else if (!loader->ibo) {
+        log_error_and_abort("Invalid loader IBO");
     } else if (!model->vao) {
         log_error_and_abort("Invalid model VAO");
     }
 
-    glBindBuffer(GL_ARRAY_BUFFER, loader->vbo);
     loader_wait(loader, LOADER_DONE);
 
     /*  If the loader succeeded, then set up all of the
      *  GL buffers, matrices, etc. */
     if (loader->state == LOADER_DONE) {
-        glUnmapBuffer(GL_ARRAY_BUFFER);
         glBindVertexArray(model->vao);
+
+        glBindBuffer(GL_ARRAY_BUFFER, loader->vbo);
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, loader->ibo);
+        glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
         model->vbo = loader->vbo;
-        model->num_triangles = loader->num_triangles;
-        loader->vbo = 0;
+        model->ibo = loader->ibo;
+        model->tri_count = loader->tri_count;
 
         memcpy(camera->model, loader->mat, sizeof(loader->mat));
         log_trace("Copied model from loader");
@@ -338,8 +372,7 @@ void loader_delete(loader_t* loader) {
 const char* loader_error_string(loader_state_t state) {
     switch(state) {
         case LOADER_START:
-        case LOADER_TRIANGLE_COUNT:
-        case LOADER_RAM_BUFFER:
+        case LOADER_MODEL_SIZE:
         case LOADER_GPU_BUFFER:
         case LOADER_WORKER_GPU:
         case LOADER_DONE:

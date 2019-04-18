@@ -71,8 +71,9 @@ void main() {
 
 model_t* model_new() {
     OBJECT_ALLOC(model);
-    model->num_triangles = 0;
+    model->tri_count = 0;
     model->vbo = 0;
+    model->ibo = 0;
     glGenVertexArrays(1, &model->vao);
 
     model->vs = shader_build(MODEL_VS_SRC, GL_VERTEX_SHADER);
@@ -95,6 +96,7 @@ model_t* model_new() {
 void model_delete(model_t* model) {
     glDeleteBuffers(1, &model->vbo);
     glDeleteVertexArrays(1, &model->vao);
+    glDeleteVertexArrays(1, &model->vbo);
     glDeleteShader(model->vs);
     glDeleteShader(model->gs);
     glDeleteShader(model->fs);
@@ -115,5 +117,5 @@ void model_draw(model_t* model, camera_t* camera, theme_t* theme) {
     THEME_UNIFORM_COLOR(model, fill);
     THEME_UNIFORM_COLOR(model, base);
 
-    glDrawArrays(GL_TRIANGLES, 0, model->num_triangles * 3);
+    glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, (void*)0);
 }
