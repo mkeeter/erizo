@@ -11,11 +11,22 @@ platform_terminal_color_t log_message_color(log_type_t t) {
     }
 }
 
-void log_print(log_type_t t, const char* file, int line, const char *fmt, ...)
+static struct platform_mutex_* mut = NULL;
+
+void log_lock() {
+    if (mut == NULL) {
+        mut = platform_mutex_new();
+    }
+    platform_mutex_lock(mut);
+}
+void log_unlock() {
+    platform_mutex_unlock(mut);
+}
+
+FILE* log_preamble(log_type_t t, const char* file, int line)
 {
     static int64_t start_sec = -1;
     static int32_t start_usec = -1;
-    static struct platform_mutex_* mut;
 
     if (start_sec == -1) {
         platform_get_time(&start_sec, &start_usec);
@@ -43,27 +54,19 @@ void log_print(log_type_t t, const char* file, int line, const char *fmt, ...)
     pad += strlen(filename);
     pad = LOG_ALIGN - pad;
 
-    platform_mutex_lock(mut);
-        platform_set_terminal_color(out, log_message_color(t));
-        fprintf(out, "[erizo]");
+    platform_set_terminal_color(out, log_message_color(t));
+    fprintf(out, "[erizo]");
 
-        platform_set_terminal_color(out, TERM_COLOR_WHITE);
-        fprintf(out, " (%li.%06i) ", dt_sec, dt_usec);
+    platform_set_terminal_color(out, TERM_COLOR_WHITE);
+    fprintf(out, " (%li.%06i) ", dt_sec, dt_usec);
 
-        platform_clear_terminal_color(out);
-        fprintf(out, "%s:%i ", filename, line);
+    platform_clear_terminal_color(out);
+    fprintf(out, "%s:%i ", filename, line);
 
-        while (pad--) {
-            fputc(' ', out);
-        }
+    while (pad--) {
+        fputc(' ', out);
+    }
 
-        fprintf(out, "| ");
-
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(out, fmt, args);
-        va_end(args);
-
-        fprintf(out, "\n");
-    platform_mutex_unlock(mut);
+    fprintf(out, "| ");
+    return out;
 }

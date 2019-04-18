@@ -91,7 +91,7 @@ static const char* loader_parse_ascii(const char* data, size_t* size) {
             SKIP_WHILE(!isspace);
         }
     }
-    log_trace("Parsed ASCII STL", buf_count);
+    log_trace("Parsed ASCII STL");
 
     ABORT_IF(buf_count % 9 != 0, "Total vertex count isn't divisible by 9");
     const uint32_t triangle_count = buf_count / 9;
@@ -171,7 +171,7 @@ static void* loader_run(void* loader_) {
 
     /*  Check whether the file is a valid size. */
     if (size < 84) {
-        log_error("File is too small to be an STL (%i < 84)", size);
+        log_error("File is too small to be an STL (%zu < 84)", size);
         loader_next(loader, LOADER_ERROR_WRONG_SIZE);
         loader_free(mapped, size, allocation_type);
         return NULL;
@@ -184,7 +184,7 @@ static void* loader_run(void* loader_) {
     /*  Compare the actual file size with the expected size */
     const uint32_t expected_size = loader->tri_count * 50 + 84;
     if (expected_size != size) {
-        log_error("Invalid file size for %u triangles (expected %u, got %u)",
+        log_error("Invalid file size for %u triangles (expected %u, got %zu)",
                   loader->tri_count, expected_size, size);
         loader_next(loader, LOADER_ERROR_WRONG_SIZE);
         loader_free(mapped, size, allocation_type);
@@ -221,7 +221,7 @@ static void* loader_run(void* loader_) {
         workers[i].tri_offset = loader->vert_count;
         loader->vert_count += workers[i].vert_count;
     }
-    log_trace("Got %lu vertices (%lu triangles)", loader->vert_count,
+    log_trace("Got %u vertices (%u triangles)", loader->vert_count,
             loader->tri_count);
     loader_next(loader, LOADER_MODEL_SIZE);
 

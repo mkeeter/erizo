@@ -72,7 +72,9 @@ ifneq ($(MAKECMDGOALS),clean)
 -include $(DEP)
 build/%.d: src/%.c | $(BUILD_DIR)
 	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
-build/%.d: src/%.mm | $(BUILD_DIR)
+build/%.d: platform/%.c | $(BUILD_DIR)
+	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
+build/%.d: platform/%.mm | $(BUILD_DIR)
 	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
 endif
 
