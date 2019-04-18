@@ -55,12 +55,12 @@ endif
 OBJ := $(addprefix build/,$(SRC:=.o) $(GEN:=.o))
 DEP := $(OBJ:.o=.d)
 
-all: erizo
+all: erizo erizo-test
 
 erizo: build/main.o $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^
 
-vset-benchmark: build/vset-benchmark.o $(OBJ)
+erizo-test: build/test.o $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^
 
 build/%.o: src/%.c | $(BUILD_DIR)
@@ -93,3 +93,4 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(addprefix src/,$(GEN:=.c))
 	rm -f erizo
+	rm -f erizo-test

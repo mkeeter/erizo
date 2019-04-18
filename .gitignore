@@ -1,5 +1,7 @@
 build/*
 erizo
+erizo-test
+erizo-test.dSYM
 src/version.c
 src/sphere.c
 inc/log_align.h
