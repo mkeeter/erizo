@@ -269,9 +269,6 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
             memcpy(DATA(j), f, sizeof(*v->data));
             NODE(n).child[c] = j;
 
-            /*  A leaf is perfectly balanced */
-            NODE(j).balance = 0;
-
             /*  Push our new node to the end of the history stack */
             *++ptr = j;
 
