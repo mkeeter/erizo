@@ -6,7 +6,6 @@ SRC :=       \
 	instance \
 	loader   \
 	log      \
-	main     \
 	mat      \
 	model    \
 	shader   \
@@ -58,7 +57,10 @@ DEP := $(OBJ:.o=.d)
 
 all: erizo
 
-erizo: $(OBJ)
+erizo: build/main.o $(OBJ)
+	$(CC) -o $@ $(LDFLAGS) $^
+
+vset-benchmark: build/vset-benchmark.o $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^
 
 build/%.o: src/%.c | $(BUILD_DIR)
@@ -67,6 +69,8 @@ build/%.o: platform/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
 build/%.o: platform/%.mm | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ $<
+build/%.o: test/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(DEP)
