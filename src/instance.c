@@ -7,6 +7,7 @@
 #include "mat.h"
 #include "model.h"
 #include "object.h"
+#include "platform.h"
 #include "theme.h"
 #include "window.h"
 

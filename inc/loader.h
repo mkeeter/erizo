@@ -1,4 +1,4 @@
-#include "platform.h"
+#include "base.h"
 
 struct model_;
 struct camera_;
@@ -39,10 +39,10 @@ typedef struct loader_ {
     uint32_t* index_buf;
 
     /*  Synchronization system */
-    platform_thread_t thread;
+    struct platform_thread_* thread;
     loader_state_t state;
-    platform_mutex_t mutex;
-    platform_cond_t cond;
+    struct platform_mutex_* mutex;
+    struct platform_cond_* cond;
 
     /*  Each worker thread increments count when they are
      *  done building their vertex set, using the same mutex

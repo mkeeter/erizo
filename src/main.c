@@ -2,6 +2,7 @@
 #include "instance.h"
 #include "theme.h"
 #include "log.h"
+#include "platform.h"
 #include "window.h"
 
 int main(int argc, char** argv) {

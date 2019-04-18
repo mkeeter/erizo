@@ -4,36 +4,34 @@
 #include "mat.h"
 #include "model.h"
 #include "object.h"
+#include "platform.h"
 #include "sphere.h"
 #include "worker.h"
 
 static void* loader_run(void* loader_);
 
 void loader_wait(loader_t* loader, loader_state_t target) {
-    platform_mutex_lock(&loader->mutex);
+    platform_mutex_lock(loader->mutex);
     while (loader->state < target) {
-        platform_cond_wait(&loader->cond, &loader->mutex);
+        platform_cond_wait(loader->cond, loader->mutex);
     }
-    platform_mutex_unlock(&loader->mutex);
+    platform_mutex_unlock(loader->mutex);
 }
 
 void loader_next(loader_t* loader, loader_state_t target) {
-    platform_mutex_lock(&loader->mutex);
+    platform_mutex_lock(loader->mutex);
     loader->state = target;
-    platform_cond_broadcast(&loader->cond);
-    platform_mutex_unlock(&loader->mutex);
+    platform_cond_broadcast(loader->cond);
+    platform_mutex_unlock(loader->mutex);
 }
 
 loader_t* loader_new(const char* filename) {
     OBJECT_ALLOC(loader);
-    platform_mutex_init(&loader->mutex);
-    platform_cond_init(&loader->cond);
+    loader->mutex = platform_mutex_new();
+    loader->cond = platform_cond_new();
 
     loader->filename = filename;
-
-    if (platform_thread_create(&loader->thread, loader_run, loader)) {
-        log_error_and_abort("Error creating loader thread");
-    }
+    loader->thread = platform_thread_new(loader_run, loader);
     return loader;
 }
 
@@ -209,11 +207,11 @@ static void* loader_run(void* loader_) {
     }
 
     /*  Wait for all of the worker threads to finish deduplicating vertices */
-    platform_mutex_lock(&loader->mutex);
+    platform_mutex_lock(loader->mutex);
     while (loader->count != NUM_WORKERS) {
-        platform_cond_wait(&loader->cond, &loader->mutex);
+        platform_cond_wait(loader->cond, loader->mutex);
     }
-    platform_mutex_unlock(&loader->mutex);
+    platform_mutex_unlock(loader->mutex);
     log_trace("Workers have deduplicated vertices");
 
     /*  Accumulate the total vertex count, then wait for the OpenGL thread
@@ -243,9 +241,7 @@ static void* loader_run(void* loader_) {
     log_trace("Sent buffers to worker threads");
 
     for (unsigned i=0; i < NUM_WORKERS; ++i) {
-        if (platform_thread_join(&workers[i].thread)) {
-            log_error_and_abort("Error joining worker thread");
-        }
+        worker_finish(&workers[i]);
     }
     log_trace("Joined worker threads");
 
@@ -360,11 +356,12 @@ void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
 }
 
 void loader_delete(loader_t* loader) {
-    if (platform_thread_join(&loader->thread)) {
+    if (platform_thread_join(loader->thread)) {
         log_error_and_abort("Failed to join loader thread");
     }
-    platform_mutex_destroy(&loader->mutex);
-    platform_cond_destroy(&loader->cond);
+    platform_mutex_delete(loader->mutex);
+    platform_cond_delete(loader->cond);
+    platform_thread_delete(loader->thread);
     free(loader);
     log_trace("Destroyed loader");
 }

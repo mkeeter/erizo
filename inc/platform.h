@@ -1,27 +1,6 @@
-#ifndef PLATFORM_H
-#define PLATFORM_H
-
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
-#include <assert.h>
-#include <ctype.h>
-#include <math.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#if defined(PLATFORM_DARWIN)
-#include "platform_unix.h"
-#else
-#error "Not yet ported to this platform!"
-#endif
+#include "base.h"
 
 struct app_;
-struct instance_;
 
 const char* platform_mmap(const char* filename, size_t* size);
 void platform_munmap(const char* data, size_t size);
@@ -42,21 +21,30 @@ typedef enum {
 void platform_set_terminal_color(FILE* f, platform_terminal_color_t c);
 void platform_clear_terminal_color(FILE* f);
 
+////////////////////////////////////////////////////////////////////////////////
+
 /*  Threading API is a thin wrapper around pthreads */
-int platform_mutex_init(platform_mutex_t* mutex);
-int platform_mutex_destroy(platform_mutex_t* mutex);
-int platform_mutex_lock(platform_mutex_t* mutex);
-int platform_mutex_unlock(platform_mutex_t* mutex);
+struct platform_mutex_;
+struct platform_cond_;
+struct platform_thread_;
 
-int platform_cond_init(platform_cond_t* cond);
-int platform_cond_destroy(platform_cond_t* cond);
-int platform_cond_wait(platform_cond_t* cond,
-                       platform_mutex_t* mutex);
-int platform_cond_broadcast(platform_cond_t* cond);
+struct platform_mutex_* platform_mutex_new();
+void platform_mutex_delete(struct platform_mutex_* mutex);
+int platform_mutex_lock(struct platform_mutex_* mutex);
+int platform_mutex_unlock(struct platform_mutex_* mutex);
 
-int platform_thread_create(platform_thread_t* thread,
-                           void *(*run)(void *), void* data);
-int platform_thread_join(platform_thread_t* thread);
+struct platform_cond_* platform_cond_new();
+void platform_cond_delete(struct platform_cond_* cond);
+int platform_cond_wait(struct platform_cond_* cond,
+                       struct platform_mutex_* mutex);
+int platform_cond_broadcast(struct platform_cond_* cond);
+
+struct platform_thread_*  platform_thread_new(void *(*run)(void *),
+                                              void* data);
+void platform_thread_delete(struct platform_thread_* mutex);
+int platform_thread_join(struct platform_thread_* thread);
+
+////////////////////////////////////////////////////////////////////////////////
 
 /*  Initializes the menu and other native features */
 void platform_init(struct app_* app, int argc, char** argv);
@@ -67,5 +55,3 @@ void platform_warning(const char* title, const char* text);
 
 /*  Returns the filename portion of a full path */
 const char* platform_filename(const char* filepath);
-
-#endif

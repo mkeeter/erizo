@@ -1,4 +1,4 @@
-#include "platform.h"
+#include "base.h"
 
 #define GLSL(version, shader)  "#version " #version "\n" #shader
 

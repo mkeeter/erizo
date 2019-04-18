@@ -1,14 +1,20 @@
 #include "loader.h"
 #include "log.h"
+#include "platform.h"
 #include "worker.h"
 #include "vset.h"
 
 static void* worker_run(void* worker_);
 
 void worker_start(worker_t* worker) {
-    if (platform_thread_create(&worker->thread, worker_run, worker)) {
-        log_error_and_abort("Error creating worker thread");
+    worker->thread = platform_thread_new(worker_run, worker);
+}
+
+void worker_finish(worker_t* worker) {
+    if (platform_thread_join(worker->thread)) {
+        log_error_and_abort("Error joining worker thread");
     }
+    platform_thread_delete(worker->thread);
 }
 
 static void* worker_run(void* worker_) {
@@ -43,10 +49,10 @@ static void* worker_run(void* worker_) {
     worker->vert_count = vset->count;
 
     /*  Increment the number of finished worker threads */
-    platform_mutex_lock(&loader->mutex);
+    platform_mutex_lock(loader->mutex);
     loader->count++;
-    platform_cond_broadcast(&loader->cond);
-    platform_mutex_unlock(&loader->mutex);
+    platform_cond_broadcast(loader->cond);
+    platform_mutex_unlock(loader->mutex);
 
     /*  Find our model's bounds by iterating over deduplicated vertices */
     memcpy(worker->min, vset->data[1], sizeof(worker->min));

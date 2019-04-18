@@ -48,7 +48,7 @@ endif
 # Platform detection
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
-	SRC := $(SRC) platform_unix platform_darwin
+	SRC := $(SRC) darwin posix
 	LDFLAGS := $(LDFLAGS) -framework Foundation -framework Cocoa
 	PLATFORM := -DPLATFORM_DARWIN
 endif
@@ -63,7 +63,9 @@ erizo: $(OBJ)
 
 build/%.o: src/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
-build/%.o: src/%.mm | $(BUILD_DIR)
+build/%.o: platform/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
+build/%.o: platform/%.mm | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ $<
 
 ifneq ($(MAKECMDGOALS),clean)

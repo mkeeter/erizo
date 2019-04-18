@@ -15,11 +15,11 @@ void log_print(log_type_t t, const char* file, int line, const char *fmt, ...)
 {
     static int64_t start_sec = -1;
     static int32_t start_usec = -1;
-    static platform_mutex_t mut;
+    static struct platform_mutex_* mut;
 
     if (start_sec == -1) {
         platform_get_time(&start_sec, &start_usec);
-        platform_mutex_init(&mut);
+        mut = platform_mutex_new();
     }
 
     int64_t now_sec;
@@ -43,7 +43,7 @@ void log_print(log_type_t t, const char* file, int line, const char *fmt, ...)
     pad += strlen(filename);
     pad = LOG_ALIGN - pad;
 
-    platform_mutex_lock(&mut);
+    platform_mutex_lock(mut);
         platform_set_terminal_color(out, log_message_color(t));
         fprintf(out, "[erizo]");
 
@@ -65,5 +65,5 @@ void log_print(log_type_t t, const char* file, int line, const char *fmt, ...)
         va_end(args);
 
         fprintf(out, "\n");
-    platform_mutex_unlock(&mut);
+    platform_mutex_unlock(mut);
 }

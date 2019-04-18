@@ -1,9 +1,7 @@
-#include "platform.h"
-
-struct loader_;
+#include "base.h"
 
 typedef struct worker_ {
-    platform_thread_t thread;
+    struct platform_thread_* thread;
     struct loader_* loader;
 
     /*  Mesh input */
@@ -29,3 +27,4 @@ typedef struct worker_ {
 } worker_t;
 
 void worker_start(worker_t* worker);
+void worker_finish(worker_t* worker);

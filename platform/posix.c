@@ -1,12 +1,14 @@
 #include <errno.h>
+#include <fcntl.h>
+#include <pthread.h>
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include <fcntl.h>
 #include <unistd.h>
 
-#include "platform.h"
 #include "log.h"
+#include "object.h"
+#include "platform.h"
 
 const char* platform_mmap(const char* filename, size_t* size) {
     int stl_fd = open(filename, O_RDONLY);
@@ -51,20 +53,46 @@ void platform_clear_terminal_color(FILE* f) {
     fprintf(f, "\x1b[0m");
 }
 
-int platform_mutex_init(platform_mutex_t* mutex) {
-    return pthread_mutex_init(&mutex->data, NULL);
+typedef struct platform_thread_ {
+    pthread_t data;
+} platform_thread_t;
+
+typedef struct platform_mutex_ {
+    pthread_mutex_t data;
+} platform_mutex_t;
+
+typedef struct platform_cond_ {
+    pthread_cond_t data;
+} platform_cond_t;
+
+platform_mutex_t* platform_mutex_new() {
+    OBJECT_ALLOC(platform_mutex);
+    if (pthread_mutex_init(&platform_mutex->data, NULL)) {
+        log_error_and_abort("Failed to initialize mutex");
+    }
+    return platform_mutex;
 }
 
-int platform_mutex_destroy(platform_mutex_t* mutex) {
-    return pthread_mutex_destroy(&mutex->data);
+void platform_mutex_delete(platform_mutex_t* mutex) {
+    if (pthread_mutex_destroy(&mutex->data)) {
+        log_error_and_abort("Failed to destroy mutex");
+    }
+    free(mutex);
 }
 
-int platform_cond_init(platform_cond_t* cond) {
-    return pthread_cond_init(&cond->data, NULL);
+platform_cond_t* platform_cond_new() {
+    OBJECT_ALLOC(platform_cond);
+    if (pthread_cond_init(&platform_cond->data, NULL)) {
+        log_error_and_abort("Failed to initialize condition variable");
+    }
+    return platform_cond;
 }
 
-int platform_cond_destroy(platform_cond_t* cond) {
-    return pthread_cond_destroy(&cond->data);
+void platform_cond_delete(platform_cond_t* cond) {
+    if (pthread_cond_destroy(&cond->data)) {
+        log_error_and_abort("Failed to destroy condition variable");
+    }
+    free(cond);
 }
 
 int platform_mutex_lock(platform_mutex_t* mutex) {
@@ -83,14 +111,21 @@ int platform_cond_broadcast(platform_cond_t* cond) {
     return pthread_cond_broadcast(&cond->data);
 }
 
-int platform_thread_create(platform_thread_t* thread,
-                           void *(*run)(void *), void* data)
+platform_thread_t* platform_thread_new(void *(*run)(void *), void* data)
 {
-    return pthread_create(&thread->data, NULL, run, data);
+    OBJECT_ALLOC(platform_thread);
+    if (pthread_create(&platform_thread->data, NULL, run, data)) {
+        log_error_and_abort("Failed to create thread");
+    }
+    return platform_thread;
 }
 
 int platform_thread_join(platform_thread_t* thread) {
     return pthread_join(thread->data, NULL);
+}
+
+void platform_thread_delete(platform_thread_t* thread) {
+    free(thread);
 }
 
 const char* platform_filename(const char* filepath) {

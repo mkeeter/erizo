@@ -1,6 +1,7 @@
 #include "app.h"
 #include "instance.h"
 #include "log.h"
+#include "platform.h"
 #include "window.h"
 
 static void cb_window_size(GLFWwindow* window, int width, int height) {

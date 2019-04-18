@@ -2,6 +2,7 @@
 #include "backdrop.h"
 #include "instance.h"
 #include "log.h"
+#include "platform.h"
 
 instance_t* app_open(app_t* app, const char* filename) {
     instance_t* instance = instance_new(app, filename);

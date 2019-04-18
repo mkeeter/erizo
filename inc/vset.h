@@ -1,4 +1,4 @@
-#include "platform.h"
+#include "base.h"
 
 /*  Used to refer to nodes within the tree */
 typedef uint32_t vset_handle_t;
