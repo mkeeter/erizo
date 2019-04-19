@@ -12,26 +12,16 @@ vset_t* vset_with_capacity(size_t num_verts) {
     /* Reserve index 0 for unassigned nodes */
     num_verts += 1;
 
+    vset_t* v = (vset_t*)calloc(1, sizeof(vset_t));
+
+    /*  Allocate node data */
+    v->data = calloc(num_verts, sizeof(*v->data));
+    v->node = calloc(num_verts, sizeof(*v->node));
+
     /*  Work out the max depth for this tree, to decide how long the
      *  history array should be */
     unsigned max_depth = ceil(2.0 * log2(num_verts + 1.0) + 4.0);
-
-    /* We overallocate this struct so that all of the arrays
-     * are close together, then set up the pointers so that
-     * they point to the right locations within the struct */
-    vset_t* v = (vset_t*)calloc(1, sizeof(vset_t) +
-            max_depth * sizeof(*v->history) +
-            num_verts * (sizeof(*v->data) + sizeof(*v->node)));
-
-    /*  Now, do the exciting math to position internal pointers */
-    const char* ptr = (const char*)v;
-
-    ptr += sizeof(vset_t);
-    v->data = (float(*)[3])ptr;
-    ptr += num_verts * sizeof(*v->data);
-    v->history = (vset_handle_t*)ptr;
-    ptr += max_depth * sizeof(*v->history);
-    v->node = (vset_node_t*)ptr;
+    v->history = calloc(max_depth, sizeof(*v->history));
 
     /*  Mark the super-root as the 0th handle */
     v->history[0] = 0;
@@ -40,6 +30,9 @@ vset_t* vset_with_capacity(size_t num_verts) {
 }
 
 void vset_delete(vset_t* v) {
+    free(v->data);
+    free(v->node);
+    free(v->history);
     free(v);
 }
 
