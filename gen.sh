@@ -29,7 +29,7 @@ fi
 LARGEST=0
 for s in "$@"
 do
-    LINECOUNT=`wc -l src/$s.c | awk '{print $1}'`
+    LINECOUNT=`wc -l $s.c | awk '{print $1}'`
     let "LENGTH = ${#s} + ${#LINECOUNT} + 2"
     if (( $LENGTH > $LARGEST ))
     then

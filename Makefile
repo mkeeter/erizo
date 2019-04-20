@@ -1,18 +1,18 @@
 # Source files
 SRC :=       \
-	app      \
-	backdrop \
-	camera   \
-	instance \
-	loader   \
-	log      \
-	mat      \
-	model    \
-	shader   \
-	theme    \
-	vset     \
-	window   \
-	worker   \
+	src/app      \
+	src/backdrop \
+	src/camera   \
+	src/instance \
+	src/loader   \
+	src/log      \
+	src/mat      \
+	src/model    \
+	src/shader   \
+	src/theme    \
+	src/vset     \
+	src/window   \
+	src/worker   \
 	# end of source files
 
 # Force the version-generation script to run before
@@ -20,9 +20,10 @@ SRC :=       \
 _GEN := $(shell sh gen.sh $(SRC))
 
 # Generated files
+# (listed separately so that 'make clean' deletes them)
 GEN :=       \
-	sphere   \
-	version  \
+	src/sphere   \
+	src/version  \
 	# end of generated files
 
 BUILD_DIR := build
@@ -47,43 +48,37 @@ endif
 # Platform detection
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
-	SRC := $(SRC) darwin posix
+	SRC := $(SRC) platform/darwin platform/posix
 	LDFLAGS := $(LDFLAGS) -framework Foundation -framework Cocoa
 	PLATFORM := -DPLATFORM_DARWIN
 endif
 
-OBJ := $(addprefix build/,$(SRC:=.o) $(GEN:=.o))
+OBJ := $(addprefix $(BUILD_DIR)/,$(SRC:=.o) $(GEN:=.o))
 DEP := $(OBJ:.o=.d)
 
 all: erizo erizo-test
 
-erizo: build/main.o $(OBJ)
+erizo: $(BUILD_DIR)/src/main.o $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^
 
-erizo-test: build/test.o $(OBJ)
+erizo-test: $(BUILD_DIR)/src/test.o $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $^
 
-build/%.o: src/%.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
-build/%.o: platform/%.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
-build/%.o: platform/%.mm | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: %.mm | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ $<
-build/%.o: test/%.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(DEP)
-build/%.d: src/%.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.d: %.c | $(BUILD_DIR)
 	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
-build/%.d: platform/%.c | $(BUILD_DIR)
-	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
-build/%.d: platform/%.mm | $(BUILD_DIR)
+$(BUILD_DIR)/%.d: %.mm | $(BUILD_DIR)
 	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
 endif
 
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+	mkdir -p $(sort $(dir $(OBJ)))
 
 src/sphere.c: sphere.stl
 	xxd -i $< > $@
@@ -91,6 +86,6 @@ src/sphere.c: sphere.stl
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -rf $(addprefix src/,$(GEN:=.c))
+	rm -rf $(GEN:=.c)
 	rm -f erizo
 	rm -f erizo-test
