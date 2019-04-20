@@ -6,6 +6,7 @@
 
 #define NODE(h) (v->node[h])                /* handle to node */
 #define DATA(h) (v->data[h])                /* handle to data */
+#define BALANCE(h) (v->balance[h])          /* handle to data */
 #define ROOT()  (NODE(0).child[LEFT])       /* root handle */
 
 vset_t* vset_with_capacity(size_t num_verts) {
@@ -18,6 +19,7 @@ vset_t* vset_with_capacity(size_t num_verts) {
     v->size = 128;
     v->data = calloc(v->size, sizeof(*v->data));
     v->node = calloc(v->size, sizeof(*v->node));
+    v->balance = calloc(v->size, sizeof(*v->balance));
 
     /*  Work out the max depth for this tree, to decide how long the
      *  history array should be */
@@ -33,6 +35,7 @@ vset_t* vset_with_capacity(size_t num_verts) {
 void vset_delete(vset_t* v) {
     free(v->data);
     free(v->node);
+    free(v->balance);
     free(v->history);
     free(v);
 }
@@ -40,15 +43,16 @@ void vset_delete(vset_t* v) {
 static vset_handle_t vset_next(vset_t* v) {
     const vset_handle_t n = ++v->count;
     if (n == v->size) {
-        void* new_data = calloc(v->size * 2, sizeof(*v->data));
-        memcpy(new_data, v->data, v->size * sizeof(*v->data));
-        free(v->data);
-        v->data = new_data;
-
-        void* new_node = calloc(v->size * 2, sizeof(*v->node));
-        memcpy(new_node, v->node, v->size * sizeof(*v->node));
-        free(v->node);
-        v->node = new_node;
+#define REALLOC(t) do {                                     \
+            void* n = calloc(v->size * 2, sizeof(*v->t));   \
+            memcpy(n, v->t, v->size * sizeof(*v->t));       \
+            free(v->t);                                     \
+            v->t = n;                                       \
+        } while(0);
+        REALLOC(data);
+        REALLOC(node);
+        REALLOC(balance);
+#undef REALLOC
 
         v->size *= 2;
     }
@@ -136,7 +140,7 @@ static void vset_rotate_right(vset_t* v, vset_handle_t const* const ptr) {
 static void vset_repair(vset_t* v, vset_handle_t const* const ptr) {
     /*  ptr points to a tree in the history that has just gotten taller,
      *  which means that it must be unbalanced or a a leaf node. */
-    assert(NODE(*ptr).balance != 0 ||
+    assert(BALANCE(*ptr) != 0 ||
                (NODE(*ptr).child[LEFT]  == 0 &&
                 NODE(*ptr).child[RIGHT] == 0));
 
@@ -144,21 +148,21 @@ static void vset_repair(vset_t* v, vset_handle_t const* const ptr) {
     vset_handle_t const y = ptr[-1];
     assert(y);
     if (ptr[0] == NODE(y).child[LEFT]) {
-        NODE(y).balance--;
+        BALANCE(y)--;
     } else {
         assert(ptr[0] == NODE(y).child[RIGHT]);
-        NODE(y).balance++;
+        BALANCE(y)++;
     }
 
     /*  If we have balanced the parent node, then max height
      *  has not changed and we can stop recursing up the tree. */
-    if (NODE(y).balance == 0) {
+    if (BALANCE(y) == 0) {
         return;
     }
 
     /*  If the balance of the parent node has shifted, then one of
      *  its children has gotten taller, and we need to recurse up the tree. */
-    else if (NODE(y).balance == +1 || NODE(y).balance == -1) {
+    else if (BALANCE(y) == +1 || BALANCE(y) == -1) {
         /*  Stop recursing when we hit the root node */
         if (ptr[-1] != ROOT()) {
             vset_repair(v, ptr - 1);
@@ -167,11 +171,11 @@ static void vset_repair(vset_t* v, vset_handle_t const* const ptr) {
     }
 
     /*  Otherwise, we need to handle the various rebalancing operations */
-    else if (NODE(y).balance == -2) {
+    else if (BALANCE(y) == -2) {
         vset_handle_t const x = NODE(y).child[LEFT];
         assert(ptr[0] == x);
 
-        if (NODE(x).balance == -1) {
+        if (BALANCE(x) == -1) {
             /*
              *  a* is the modified tree, which unbalances x and y
              *         y--          x0
@@ -181,8 +185,8 @@ static void vset_repair(vset_t* v, vset_handle_t const* const ptr) {
              *    a*   b            b    c
              */
             vset_rotate_right(v, ptr - 1);
-            NODE(y).balance = 0;
-            NODE(x).balance = 0;
+            BALANCE(y) = 0;
+            BALANCE(x) = 0;
         } else {
             /*
              *         y--              y--            w0
@@ -193,7 +197,7 @@ static void vset_repair(vset_t* v, vset_handle_t const* const ptr) {
              *        / \          / \
              *       b   c        a   b
              */
-            assert(NODE(x).balance == 1);
+            assert(BALANCE(x) == 1);
 
             vset_handle_t const w = NODE(x).child[RIGHT];
             assert(w);
@@ -202,29 +206,29 @@ static void vset_repair(vset_t* v, vset_handle_t const* const ptr) {
             assert(w == NODE(y).child[LEFT]);
 
             vset_rotate_right(v, ptr - 1);
-            if (NODE(w).balance == -1) {
-                NODE(x).balance =  0;
-                NODE(y).balance = +1;
-            } else if (NODE(w).balance == 0) {
-                NODE(x).balance =  0;
-                NODE(y).balance =  0;
-            } else if (NODE(w).balance == 1) {
-                NODE(x).balance = -1;
-                NODE(y).balance =  0;
+            if (BALANCE(w) == -1) {
+                BALANCE(x) =  0;
+                BALANCE(y) = +1;
+            } else if (BALANCE(w) == 0) {
+                BALANCE(x) =  0;
+                BALANCE(y) =  0;
+            } else if (BALANCE(w) == 1) {
+                BALANCE(x) = -1;
+                BALANCE(y) =  0;
             }
-            NODE(w).balance = 0;
+            BALANCE(w) = 0;
         }
     /* Symmetric case */
-    } else if (NODE(y).balance == 2) {
+    } else if (BALANCE(y) == 2) {
         vset_handle_t const x = NODE(y).child[RIGHT];
         assert(ptr[0] == x);
 
-        if (NODE(x).balance == +1) {
+        if (BALANCE(x) == +1) {
             vset_rotate_left(v, ptr - 1);
-            NODE(y).balance = 0;
-            NODE(x).balance = 0;
+            BALANCE(y) = 0;
+            BALANCE(x) = 0;
         } else {
-            assert(NODE(x).balance == -1);
+            assert(BALANCE(x) == -1);
 
             vset_handle_t const w = NODE(x).child[LEFT];
             assert(w);
@@ -233,20 +237,20 @@ static void vset_repair(vset_t* v, vset_handle_t const* const ptr) {
             assert(w == NODE(y).child[RIGHT]);
 
             vset_rotate_left(v, ptr - 1);
-            if (NODE(w).balance == 1) {
-                NODE(x).balance =  0;
-                NODE(y).balance = -1;
-            } else if (NODE(w).balance == 0) {
-                NODE(x).balance =  0;
-                NODE(y).balance =  0;
-            } else if (NODE(w).balance == -1) {
-                NODE(x).balance = +1;
-                NODE(y).balance =  0;
+            if (BALANCE(w) == 1) {
+                BALANCE(x) =  0;
+                BALANCE(y) = -1;
+            } else if (BALANCE(w) == 0) {
+                BALANCE(x) =  0;
+                BALANCE(y) =  0;
+            } else if (BALANCE(w) == -1) {
+                BALANCE(x) = +1;
+                BALANCE(y) =  0;
             }
-            NODE(w).balance = 0;
+            BALANCE(w) = 0;
         }
     } else {
-        log_error_and_abort("Invalid balance %i", NODE(y).balance);
+        log_error_and_abort("Invalid balance %i", BALANCE(y));
     }
 }
 
@@ -305,7 +309,7 @@ static int32_t vset_validate_recurse(vset_t* v, vset_handle_t n) {
     const int32_t b = vset_validate_recurse(v, NODE(n).child[RIGHT]);
 
     const int32_t balance = b - a;
-    assert(NODE(n).balance == balance);
+    assert(BALANCE(n) == balance);
     assert(balance >= -1);
     assert(balance <=  1);
     (void)balance;

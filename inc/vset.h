@@ -6,7 +6,6 @@ typedef uint32_t vset_handle_t;
 /*  Single node in the vset tree */
 typedef struct vset_node_ {
     vset_handle_t child[2];
-    int8_t balance;
 } vset_node_t;
 
 /*  Tree which stores a deduplicated set of vertices */
@@ -15,6 +14,7 @@ typedef struct vset_ {
 
     vset_handle_t* history;
     vset_node_t* node;
+    int8_t* balance;
 
     size_t size;
     size_t count;
