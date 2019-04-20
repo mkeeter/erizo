@@ -30,7 +30,7 @@ GEN :=       \
 
 BUILD_DIR := build
 
-CFLAGS := -Wall -Werror -g -O3 -pedantic -Iinc
+CFLAGS := -Wall -Werror -g -O3 -pedantic -Iinc -Ivendor
 LDFLAGS = -L/usr/local/lib -lglfw -lglew $(CFLAGS)
 
 # Build with Clang's undefined behavior sanitizer:
@@ -76,7 +76,7 @@ $(BUILD_DIR)/%.o: %.mm | $(BUILD_DIR)
 ifneq ($(MAKECMDGOALS),clean)
 -include $(DEP)
 $(BUILD_DIR)/%.d: %.c | $(BUILD_DIR)
-	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
+	$(CC) $< $(PLATFORM) $(CFLAGS) -MM -MT $(@:.d=.o) > $@
 $(BUILD_DIR)/%.d: %.mm | $(BUILD_DIR)
 	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
 endif

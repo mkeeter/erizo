@@ -245,7 +245,16 @@ static void vset_repair(vset_t* v, vset_handle_t const* const ptr) {
     }
 }
 
+#define XXH_INLINE_ALL
+#include "xxhash/xxhash.h"
+
 uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
+    unsigned h = XXH32(f, 12, 0);
+    /*  Use h to avoid it being compiled out */
+    if (h == 0) {
+        printf("Well, that was unlikely\n");
+    }
+
     /*  If the tree is empty, then insert a single balanced node
      *  (with no children or parent).  The root is stored implicitly
      *  as the LEFT child of the empty node. */
