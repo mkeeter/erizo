@@ -3,21 +3,16 @@
 /*  Used to refer to nodes within the tree */
 typedef uint32_t vset_handle_t;
 
-/*  Single node in the vset tree */
-typedef struct vset_node_ {
-    vset_handle_t child[2];
-} vset_node_t;
-
 /*  Tree which stores a deduplicated set of vertices */
 typedef struct vset_ {
-    float (*data)[3];
+    float (*data)[3];           /* Raw vertex data */
+    vset_handle_t (*child)[2];  /* Left and right child indexes */
+    int8_t* balance;            /* Node balance values */
 
-    vset_handle_t* history;
-    vset_node_t* node;
-    int8_t* balance;
+    vset_handle_t* history;     /* Used when traversing down the tree */
 
-    size_t size;
-    size_t count;
+    size_t size;                /* Maximum available nodes */
+    size_t count;               /* Number of used nodes */
 } vset_t;
 
 /*  Constructs a new vset with the given capacity */
