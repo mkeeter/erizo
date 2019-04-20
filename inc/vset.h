@@ -16,6 +16,7 @@ typedef struct vset_ {
     vset_handle_t* history;
     vset_node_t* node;
 
+    size_t size;
     size_t count;
 } vset_t;
 

@@ -15,8 +15,9 @@ vset_t* vset_with_capacity(size_t num_verts) {
     vset_t* v = (vset_t*)calloc(1, sizeof(vset_t));
 
     /*  Allocate node data */
-    v->data = calloc(num_verts, sizeof(*v->data));
-    v->node = calloc(num_verts, sizeof(*v->node));
+    v->size = 128;
+    v->data = calloc(v->size, sizeof(*v->data));
+    v->node = calloc(v->size, sizeof(*v->node));
 
     /*  Work out the max depth for this tree, to decide how long the
      *  history array should be */
@@ -34,6 +35,24 @@ void vset_delete(vset_t* v) {
     free(v->node);
     free(v->history);
     free(v);
+}
+
+static vset_handle_t vset_next(vset_t* v) {
+    const vset_handle_t n = ++v->count;
+    if (n == v->size) {
+        void* new_data = calloc(v->size * 2, sizeof(*v->data));
+        memcpy(new_data, v->data, v->size * sizeof(*v->data));
+        free(v->data);
+        v->data = new_data;
+
+        void* new_node = calloc(v->size * 2, sizeof(*v->node));
+        memcpy(new_node, v->node, v->size * sizeof(*v->node));
+        free(v->node);
+        v->node = new_node;
+
+        v->size *= 2;
+    }
+    return n;
 }
 
 static uint8_t cmp(const float a[3], const float b[3]) {
@@ -258,7 +277,7 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
         /* If we've reached a leaf node, then insert a new
          * node and exit. */
         if (NODE(n).child[c] == 0) {
-            vset_handle_t j = ++v->count;
+            vset_handle_t j = vset_next(v);
             memcpy(DATA(j), f, sizeof(*v->data));
             NODE(n).child[c] = j;
 
