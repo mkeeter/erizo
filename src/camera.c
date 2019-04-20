@@ -20,9 +20,9 @@ void camera_update_proj(camera_t* camera) {
     mat4_identity(camera->proj);
     const float aspect = (float)camera->width / (float)camera->height;
     if (aspect > 1) {
-        camera->proj[0][0] /= aspect;
+        camera->proj[0][0] = 1.0f / aspect;
     } else {
-        camera->proj[1][1] *= aspect;
+        camera->proj[1][1] = aspect;
     }
 }
 
@@ -158,6 +158,7 @@ void camera_zoom(camera_t* camera, float amount) {
 
     camera->scale *= powf(1.01f, amount);
     camera_update_view(camera);
+    camera->proj[2][2] = camera->scale;
 
     camera_vpi_mat(camera, mat);
     float after[3];
