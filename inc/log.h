@@ -27,3 +27,30 @@ FILE* log_preamble(log_type_t t, const char* file, int line);
     log_print(LOG_ERROR, __VA_ARGS__);                          \
     exit(-1);                                                   \
 } while (0)
+
+#define log_gl_error() do {                                         \
+    GLenum err = glGetError();                                      \
+    if (err != GL_NO_ERROR) {                                       \
+        const char* str = NULL;                                     \
+        switch (err) {                                              \
+            case GL_NO_ERROR:                                       \
+                str = "GL_NO_ERROR"; break;                         \
+            case GL_INVALID_ENUM:                                   \
+                str = "GL_INVALID_ENUM"; break;                     \
+            case GL_INVALID_VALUE:                                  \
+                str = "GL_INVALID_VALUE"; break;                    \
+            case GL_INVALID_OPERATION:                              \
+                str = "GL_INVALID_OPERATION"; break;                \
+            case GL_INVALID_FRAMEBUFFER_OPERATION:                  \
+                str = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;    \
+            case GL_OUT_OF_MEMORY:                                  \
+                str = "GL_OUT_OF_MEMORY"; break;                    \
+            default: break;                                         \
+        }                                                           \
+        if (str) {                                                  \
+            log_error("OpenGL error: %s (0x%x)", str, err);         \
+        } else {                                                    \
+            log_error("Unknown OpenGL error: %i", err);             \
+        }                                                           \
+    }                                                               \
+} while(0)
