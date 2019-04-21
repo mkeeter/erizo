@@ -1,3 +1,4 @@
+#include "ao.h"
 #include "app.h"
 #include "backdrop.h"
 #include "camera.h"
@@ -112,4 +113,9 @@ void instance_draw(instance_t* instance, theme_t* theme) {
 
     model_draw(instance->model, instance->camera, theme);
     glfwSwapBuffers(instance->window);
+
+    if (instance->ao == NULL) {
+        instance->ao = ao_new(512, 6);
+    }
+    ao_render(instance->ao, instance->model, instance->camera);
 }
