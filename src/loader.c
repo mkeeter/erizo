@@ -268,7 +268,7 @@ static void* loader_run(void* loader_) {
     float t[4][4];
     mat4_translation(center, t);
     float s[4][4];
-    mat4_scaling(1.0f / scale, s);
+    mat4_scaling(2.0f / scale, s);
     mat4_mul(t, s, loader->mat);
 
     /*  Mark the load as done and post an empty event, to make sure that

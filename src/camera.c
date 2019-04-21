@@ -27,7 +27,7 @@ void camera_update_proj(camera_t* camera) {
 }
 
 void camera_reset_view(camera_t* camera) {
-    camera->scale = 1.0f;
+    camera->scale = 1.2f;
     memset(camera->center, 0, sizeof(camera->center));
     camera_update_view(camera);
 }
