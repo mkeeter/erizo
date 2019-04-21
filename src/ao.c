@@ -8,13 +8,10 @@
 static const GLchar* AO_VS_SRC = GLSL(330,
 layout(location=0) in vec3 pos;
 
-uniform mat4 proj;
-uniform mat4 view;
 uniform mat4 model;
 
 void main() {
-    mat4 m = proj * view * model;
-    gl_Position = m * vec4(pos, 1.0f);
+    gl_Position = model * vec4(pos, 1.0f);
 }
 );
 
@@ -22,7 +19,7 @@ static const GLchar* AO_FS_SRC = GLSL(330,
 out vec4 out_color;
 
 void main() {
-    out_color = vec4(1.0f, 0.0f, 0.0f, 0.0f);
+    out_color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 });
 
 ao_t* ao_new(unsigned render_size, unsigned vol_logsize) {
@@ -79,6 +76,7 @@ ao_t* ao_new(unsigned render_size, unsigned vol_logsize) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
 
+    // Build and link the AO shader programs
     ao->vs = shader_build(AO_VS_SRC, GL_VERTEX_SHADER);
     ao->fs = shader_build(AO_FS_SRC, GL_FRAGMENT_SHADER);
     ao->prog = shader_link_vf(ao->vs, ao->fs);
@@ -97,6 +95,7 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
 
     CAMERA_UNIFORM_MAT(ao, model);
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ao->tex, 0);
     GLenum draw_buf = GL_COLOR_ATTACHMENT0;
     glDrawBuffers(1, &draw_buf);
@@ -122,10 +121,29 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
         }
     }
 
+    GLint prev_viewport_size[4];
+    glGetIntegerv(GL_VIEWPORT, prev_viewport_size);
+    log_gl_error();
+    glViewport(0, 0, ao->render_size, ao->render_size);
     glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, NULL);
+
+    // Restore previous render settings
+    glViewport(0, 0, prev_viewport_size[2], prev_viewport_size[3]);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     log_gl_error();
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // Read the texture back for debugging
+    glBindTexture(GL_TEXTURE_2D, ao->tex);
+    GLuint* pixels = malloc(ao->render_size * ao->render_size * sizeof(GLuint));
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_INT, pixels);
+    log_gl_error();
+    for (unsigned i=0; i < ao->render_size; ++i) {
+        for (unsigned j=0; j < ao->render_size; ++j) {
+            printf("%c", pixels[i * ao->render_size + j] ? 'X' : ' ');
+        }
+        printf("\n");
+    }
+    free(pixels);
 }
 
 void ao_delete(ao_t* ao) {
@@ -133,4 +151,8 @@ void ao_delete(ao_t* ao) {
     glDeleteRenderbuffers(1, &ao->depth);
     glDeleteTextures(1, &ao->tex);
     glDeleteTextures(2,  ao->vol);
+    glDeleteShader(ao->vs);
+    glDeleteShader(ao->fs);
+    glDeleteShader(ao->prog);
+    free(ao);
 }
