@@ -1,4 +1,5 @@
 #include "ao.h"
+#include "bitmap.h"
 #include "camera.h"
 #include "model.h"
 #include "log.h"
@@ -21,6 +22,26 @@ out vec4 out_color;
 void main() {
     out_color = vec4(gl_FragCoord.z, 0.0f, 0.0f, 0.0f);
 });
+
+static void ao_save_depth_bitmap(ao_t* ao, const char* filename) {
+    FILE* out = fopen(filename, "w");
+    if (!out) {
+        log_error_and_abort("Could not open '%s'", filename);
+    }
+
+    // Read back the texture from the GPU
+    glBindTexture(GL_TEXTURE_2D, ao->tex);
+    GLuint* pixels = malloc(ao->render_size * ao->render_size * sizeof(GLuint));
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_INT, pixels);
+
+    // Write the image
+    bitmap_write_header(out, ao->render_size, ao->render_size);
+    bitmap_write_depth(out, ao->render_size, ao->render_size, pixels);
+
+    free(pixels);
+    fclose(out);
+    return;
+}
 
 ao_t* ao_new(unsigned render_size, unsigned vol_logsize) {
     OBJECT_ALLOC(ao);
@@ -132,18 +153,7 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     log_gl_error();
 
-    // Read the texture back for debugging
-    glBindTexture(GL_TEXTURE_2D, ao->tex);
-    GLuint* pixels = malloc(ao->render_size * ao->render_size * sizeof(GLuint));
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_INT, pixels);
-    log_gl_error();
-    for (unsigned i=0; i < ao->render_size; ++i) {
-        for (unsigned j=0; j < ao->render_size; ++j) {
-            printf("%c", pixels[i * ao->render_size + j] ? 'X' : ' ');
-        }
-        printf("\n");
-    }
-    free(pixels);
+    ao_save_depth_bitmap(ao, "depth.bmp");
 }
 
 void ao_delete(ao_t* ao) {
