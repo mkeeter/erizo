@@ -20,7 +20,7 @@ static const GLchar* AO_FS_SRC = GLSL(330,
 out vec4 out_color;
 
 void main() {
-    out_color = vec4(gl_FragCoord.z, 0.0f, 0.0f, 0.0f);
+    out_color = vec4(1.0f - gl_FragCoord.z, 0.0f, 0.0f, 0.0f);
 });
 
 static void ao_save_depth_bitmap(ao_t* ao, const char* filename) {

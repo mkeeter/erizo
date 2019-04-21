@@ -2,7 +2,6 @@
 
 void bitmap_write_header(FILE* f, unsigned width, unsigned height) {
     const uint32_t size = width * 3 * height;
-    printf("%u\n", size + 54);
 
 #define BYTES_U32(i) (i), ((i) >> 8), ((i) >> 16), ((i) >> 24)
 #define BYTES_U16(i) (i), ((i) >> 8)
