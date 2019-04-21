@@ -5,7 +5,7 @@
 #include "shader.h"
 #include "theme.h"
 
-const GLchar* MODEL_VS_SRC = GLSL(330,
+static const GLchar* MODEL_VS_SRC = GLSL(330,
 layout(location=0) in vec3 pos;
 
 void main() {
@@ -13,7 +13,7 @@ void main() {
 }
 );
 
-const GLchar* MODEL_GS_SRC = GLSL(330,
+static const GLchar* MODEL_GS_SRC = GLSL(330,
 layout (triangles) in;
 layout (triangle_strip, max_vertices=3) out;
 
@@ -50,7 +50,7 @@ void main() {
 }
 );
 
-const GLchar* MODEL_FS_SRC = GLSL(330,
+static const GLchar* MODEL_FS_SRC = GLSL(330,
 in vec3 vert_norm;
 in vec3 pos_bary;
 
@@ -117,5 +117,5 @@ void model_draw(model_t* model, camera_t* camera, theme_t* theme) {
     THEME_UNIFORM_COLOR(model, fill);
     THEME_UNIFORM_COLOR(model, base);
 
-    glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, (void*)0);
+    glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, NULL);
 }

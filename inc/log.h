@@ -28,29 +28,25 @@ FILE* log_preamble(log_type_t t, const char* file, int line);
     exit(-1);                                                   \
 } while (0)
 
+#define LOG_GL_ERR_CASE(s) case s: err = #s; break
+
 #define log_gl_error() do {                                         \
-    GLenum err = glGetError();                                      \
-    if (err != GL_NO_ERROR) {                                       \
-        const char* str = NULL;                                     \
-        switch (err) {                                              \
-            case GL_NO_ERROR:                                       \
-                str = "GL_NO_ERROR"; break;                         \
-            case GL_INVALID_ENUM:                                   \
-                str = "GL_INVALID_ENUM"; break;                     \
-            case GL_INVALID_VALUE:                                  \
-                str = "GL_INVALID_VALUE"; break;                    \
-            case GL_INVALID_OPERATION:                              \
-                str = "GL_INVALID_OPERATION"; break;                \
-            case GL_INVALID_FRAMEBUFFER_OPERATION:                  \
-                str = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;    \
-            case GL_OUT_OF_MEMORY:                                  \
-                str = "GL_OUT_OF_MEMORY"; break;                    \
+    GLenum status = glGetError();                                   \
+    if (status != GL_NO_ERROR) {                                    \
+        const char* err = NULL;                                     \
+        switch (status) {                                           \
+            LOG_GL_ERR_CASE(GL_NO_ERROR);                           \
+            LOG_GL_ERR_CASE(GL_INVALID_ENUM);                       \
+            LOG_GL_ERR_CASE(GL_INVALID_VALUE);                      \
+            LOG_GL_ERR_CASE(GL_INVALID_OPERATION);                  \
+            LOG_GL_ERR_CASE(GL_INVALID_FRAMEBUFFER_OPERATION);      \
+            LOG_GL_ERR_CASE(GL_OUT_OF_MEMORY);                      \
             default: break;                                         \
         }                                                           \
-        if (str) {                                                  \
-            log_error("OpenGL error: %s (0x%x)", str, err);         \
+        if (err) {                                                  \
+            log_error("OpenGL error: %s (0x%x)", err, status);      \
         } else {                                                    \
-            log_error("Unknown OpenGL error: %i", err);             \
+            log_error("Unknown OpenGL error: 0x%x", status);        \
         }                                                           \
     }                                                               \
 } while(0)

@@ -4,7 +4,7 @@
 #include "shader.h"
 #include "theme.h"
 
-const GLchar* BACKDROP_VS_SRC = GLSL(330,
+static const GLchar* BACKDROP_VS_SRC = GLSL(330,
 layout(location=0) in vec2 pos;
 
 uniform vec3 upper_left;
@@ -29,7 +29,7 @@ void main() {
 }
 );
 
-const GLchar* BACKDROP_FS_SRC = GLSL(330,
+static const GLchar* BACKDROP_FS_SRC = GLSL(330,
 in vec4 grad_color;
 out vec4 out_color;
 
