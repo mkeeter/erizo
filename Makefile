@@ -1,5 +1,6 @@
 # Source files
 SRC :=       \
+	src/ao       \
 	src/app      \
 	src/backdrop \
 	src/camera   \
