@@ -24,6 +24,7 @@ void camera_update_proj(camera_t* camera) {
     } else {
         camera->proj[1][1] = aspect;
     }
+    camera->proj[2][2] = camera->scale / 2.0f;
 }
 
 void camera_reset_view(camera_t* camera) {
@@ -158,7 +159,7 @@ void camera_zoom(camera_t* camera, float amount) {
 
     camera->scale *= powf(1.01f, amount);
     camera_update_view(camera);
-    camera->proj[2][2] = camera->scale;
+    camera_update_proj(camera);
 
     camera_vpi_mat(camera, mat);
     float after[3];
