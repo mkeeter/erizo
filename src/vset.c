@@ -9,10 +9,7 @@
 #define BALANCE(h) (v->balance[h])          /* handle to data */
 #define ROOT()  (CHILD(0)[LEFT])       /* root handle */
 
-vset_t* vset_with_capacity(size_t num_verts) {
-    /* Reserve index 0 for unassigned nodes */
-    num_verts += 1;
-
+vset_t* vset_new() {
     vset_t* v = (vset_t*)calloc(1, sizeof(vset_t));
 
     /*  Allocate node data */
@@ -20,11 +17,6 @@ vset_t* vset_with_capacity(size_t num_verts) {
     v->data = calloc(v->size, sizeof(*v->data));
     v->child = calloc(v->size, sizeof(*v->child));
     v->balance = calloc(v->size, sizeof(*v->balance));
-
-    /*  Work out the max depth for this tree, to decide how long the
-     *  history array should be */
-    unsigned max_depth = ceil(2.0 * log2(num_verts + 1.0) + 4.0);
-    v->history = calloc(max_depth, sizeof(*v->history));
 
     /*  Mark the super-root as the 0th handle */
     v->history[0] = 0;
@@ -36,7 +28,6 @@ void vset_delete(vset_t* v) {
     free(v->data);
     free(v->child);
     free(v->balance);
-    free(v->history);
     free(v);
 }
 

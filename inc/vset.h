@@ -9,14 +9,14 @@ typedef struct vset_ {
     vset_handle_t (*child)[2];  /* Left and right child indexes */
     int8_t* balance;            /* Node balance values */
 
-    vset_handle_t* history;     /* Used when traversing down the tree */
+    vset_handle_t history[64];  /* Used when traversing down the tree */
 
     size_t size;                /* Maximum available nodes */
     size_t count;               /* Number of used nodes */
 } vset_t;
 
 /*  Constructs a new vset with the given capacity */
-vset_t* vset_with_capacity(size_t num_verts);
+vset_t* vset_new();
 void vset_delete(vset_t* v);
 
 /*  Inserts a vertex (three floats) into the set, returning an index */

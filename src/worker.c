@@ -22,7 +22,7 @@ static void* worker_run(void* worker_) {
     loader_t* const loader = worker->loader;
 
     /*  Prepare to build the deduplicated set of indexed verts + tris */
-    vset_t* vset = vset_with_capacity(worker->tri_count * 3);
+    vset_t* vset = vset_new();
     uint32_t* tris = (uint32_t*)malloc(sizeof(uint32_t) * 3 * worker->tri_count);
 
     /*  This part is exciting, because STL files have 36 float-bytes

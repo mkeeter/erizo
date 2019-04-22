@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
         fflush(stdout);
 
         const int64_t start_time = platform_get_time();
-        vset_t* v = vset_with_capacity(tri_count * 3);
+        vset_t* v = vset_new();
         for (unsigned i=0; i < tri_count; ++i) {
             float vert3[9];
             memcpy(vert3, &data[84 + 12 + i*50], sizeof(vert3));
