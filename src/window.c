@@ -41,6 +41,13 @@ static void cb_focus(GLFWwindow* window, int focus)
     instance_cb_focus(instance, focus);
 }
 
+static void cb_close(GLFWwindow* window)
+{
+    //  Kick the main loop, so that it exits if all windows are closed
+    (void)window;
+    glfwPostEmptyEvent();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void window_bind(GLFWwindow* window, instance_t* instance) {
@@ -54,6 +61,7 @@ void window_bind(GLFWwindow* window, instance_t* instance) {
     glfwSetMouseButtonCallback(window, cb_mouse_click);
     glfwSetDropCallback(window, cb_drop);
     glfwSetWindowFocusCallback(window, cb_focus);
+    glfwSetWindowCloseCallback(window, cb_close);
 
     platform_window_bind(window);
 }
