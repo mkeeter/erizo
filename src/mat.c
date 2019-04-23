@@ -129,3 +129,18 @@ void mat4_inv(const float in[4][4], float out[4][4]) {
        }
    }
 }
+
+float vec3_length(float v[3]) {
+    float length = 0.0f;
+    for (unsigned i=0; i < 3; ++i) {
+        length += v[i] * v[i];
+    }
+    return sqrtf(length);
+}
+
+void vec3_normalize(float v[3]) {
+    const float length = vec3_length(v);
+    for (unsigned i=0; i < 3; ++i) {
+        v[i] /= length;
+    }
+}

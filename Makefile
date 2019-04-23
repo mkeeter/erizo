@@ -6,6 +6,7 @@ SRC :=       \
 	src/bitmap   \
 	src/camera   \
 	src/instance \
+	src/icosphere\
 	src/loader   \
 	src/log      \
 	src/mat      \
