@@ -179,3 +179,26 @@ void icosphere_delete(icosphere_t* ico) {
     free(ico->ts);
     free(ico);
 }
+
+const char* icosphere_stl(unsigned depth, size_t* size) {
+    icosphere_t* ico = icosphere_new(depth);
+    *size = ico->num_ts * 50 + 84;
+    char* out = calloc(1, *size);
+
+    // Record the triangle count
+    char* ptr = out + 80;
+    memcpy(ptr, &ico->num_ts, 4);
+    ptr += 4;
+
+    // Copy over every triangle
+    for (unsigned i=0; i < ico->num_ts; ++i) {
+        ptr += 12;  // Skip normal vector
+        for (unsigned j=0; j < 3; ++j) {
+            memcpy(ptr, &ico->vs[ico->ts[i][j]], 12);
+            ptr += 12;
+        }
+        ptr += 2;   // Skip attribute bytes
+    }
+    icosphere_delete(ico);
+    return out;
+}

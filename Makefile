@@ -25,7 +25,6 @@ _GEN := $(shell sh gen.sh $(SRC))
 # Generated files
 # (listed separately so that 'make clean' deletes them)
 GEN :=       \
-	src/sphere   \
 	src/version  \
 	# end of generated files
 
@@ -84,9 +83,6 @@ endif
 
 $(BUILD_DIR):
 	mkdir -p $(sort $(dir $(OBJ)))
-
-src/sphere.c: sphere.stl
-	xxd -i $< > $@
 
 .PHONY: clean
 clean:

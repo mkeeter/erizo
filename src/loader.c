@@ -1,11 +1,11 @@
 #include "camera.h"
+#include "icosphere.h"
 #include "loader.h"
 #include "log.h"
 #include "mat.h"
 #include "model.h"
 #include "object.h"
 #include "platform.h"
-#include "sphere.h"
 #include "worker.h"
 
 static void* loader_run(void* loader_);
@@ -36,14 +36,13 @@ loader_t* loader_new(const char* filename) {
 }
 
 /*  Helper type and function to clean up loader data */
-typedef enum { MMAP, STATIC, DYNAMIC } loader_allocation_t;
+typedef enum { MMAP, DYNAMIC } loader_allocation_t;
 static void loader_free(const char* data, size_t size,
                         loader_allocation_t t)
 {
     switch (t) {
         case MMAP:      platform_munmap(data, size); break;
         case DYNAMIC:   free((void*)data); break;
-        case STATIC:    break;
     }
 }
 
@@ -121,9 +120,8 @@ static void* loader_run(void* loader_) {
     const char* mapped;
     loader_allocation_t allocation_type;
     if (!strcmp(loader->filename, ":/sphere")) {
-        allocation_type = STATIC;
-        mapped = (const char*)sphere_stl;
-        size = sphere_stl_len;
+        allocation_type = DYNAMIC;
+        mapped = icosphere_stl(1, &size);
     } else {
         allocation_type = MMAP;
         mapped = platform_mmap(loader->filename, &size);
