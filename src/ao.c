@@ -69,6 +69,27 @@ static void ao_depth_deinit(ao_depth_t* d) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static const GLchar* AO_VOL_VS_SRC = GLSL(330,
+layout(location=0) in vec2 pos;
+layout(location=1) in vec3 xyz_in;
+
+out vec3 xyz;
+
+void main() {
+    gl_Position = (vec4(pos.xy, 0.0f, 1.0f) - 0.5f) * 2.0f;
+    xyz = xyz_in;
+}
+);
+
+static const GLchar* AO_VOL_FS_SRC = GLSL(330,
+in vec3 xyz;
+out vec4 out_color;
+
+void main() {
+    out_color = vec4(xyz, 1.0f);
+}
+);
+
 static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
     v->logsize = logsize;
     if (logsize & 1) {
@@ -82,56 +103,79 @@ static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
     for (unsigned i=0; i < 2; ++i) {
         glBindTexture(GL_TEXTURE_2D, v->tex[i]);
         glTexImage2D(GL_TEXTURE_2D,
-                     0,                 // level
-                     GL_RGBA,           // internal format
-                     size,          // width
-                     size,          // height
-                     0,                 // border
-                     GL_RGBA,           // format
-                     GL_FLOAT,          // type
-                     NULL);             // data
+                     0,         // level
+                     GL_RGBA,   // internal format
+                     size,      // width
+                     size,      // height
+                     0,         // border
+                     GL_RGBA,   // format
+                     GL_FLOAT,  // type
+                     NULL);     // data
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
 
-    {   /*  We build a set of square tiles in X and Y, each representing a
-            single Z slice of the model, then upload this data to the GPU. */
-        float (*squares) = malloc(sizeof(float)
-                * 2 // triangles per square
-                * 3 // vertices per triangle
-                * 5 // data per vertex (x, y, vx, vy, vz)
-                * (1 << logsize));
-        float* ptr = squares;
-        const unsigned tiles_per_edge = 1 << (logsize / 2);
-        for (unsigned i=0; i < tiles_per_edge; ++i) {
-            const float xmin =  i      / (float)tiles_per_edge;
-            const float xmax = (i + 1) / (float)tiles_per_edge;
-            for (unsigned j=0; j < tiles_per_edge; ++j) {
-                const float ymin =  j      / (float)tiles_per_edge;
-                const float ymax = (j + 1) / (float)tiles_per_edge;
-                const float z = ((i * tiles_per_edge) + j) /
-                                (float)((1 << logsize) - 1);
+    // Build and link the shader program
+    v->vs = shader_build(AO_VOL_VS_SRC, GL_VERTEX_SHADER);
+    v->fs = shader_build(AO_VOL_FS_SRC, GL_FRAGMENT_SHADER);
+    v->prog = shader_link_vf(v->vs, v->fs);
+    glUseProgram(v->prog);
 
-                /* Vertices are as follows:
-                 *  2----3
-                 *  |    |
-                 *  0----1  */
-                const float vs[4][5] = {
-                //    x      y       vx      vy    vz
-                    {xmin,  ymin,   -1.0,   -1.0,   z},
-                    {xmax,  ymin,    1.0,   -1.0,   z},
-                    {xmin,  ymax,   -1.0,    1.0,   z},
-                    {xmax,  ymax,    1.0,    1.0,   z}};
-                const unsigned triangles[2][3] = {{0, 1, 2}, {2, 1, 3}};
-                for (unsigned t=0; t < 2; ++t) {
-                    for (unsigned v=0; v < 3; ++v) {
-                        memcpy(ptr, vs[triangles[t][v]], 5 * sizeof(float));
-                        ptr += 5;
-                    }
+    /*  We build a set of square tiles in X and Y, each representing a
+        single Z slice of the model, then upload this data to the GPU. */
+    const size_t bytes = sizeof(float)
+            * 2 // triangles per square
+            * 3 // vertices per triangle
+            * 5 // data per vertex (x, y, vx, vy, vz)
+            * (1 << logsize);
+    float* buf = malloc(bytes);
+    float* ptr = buf;
+    const unsigned tiles_per_edge = 1 << (logsize / 2);
+    for (unsigned i=0; i < tiles_per_edge; ++i) {
+        // xmin, xmax, ymin, ymax are in screen space (0 - 1 range)
+        const float xmin =  i      / (float)tiles_per_edge;
+        const float xmax = (i + 1) / (float)tiles_per_edge;
+        for (unsigned j=0; j < tiles_per_edge; ++j) {
+            const float ymin =  j      / (float)tiles_per_edge;
+            const float ymax = (j + 1) / (float)tiles_per_edge;
+            const float z = ((i * tiles_per_edge) + j) /
+                            (float)((1 << logsize) - 1);
+
+            /* Vertices are as follows:
+             *  2----3
+             *  |    |
+             *  0----1  */
+            const float vs[4][5] = {
+            //    sx     sy      vx      vy    vz
+                {xmin,  ymin,   -1.0,   -1.0,   z},
+                {xmax,  ymin,    1.0,   -1.0,   z},
+                {xmin,  ymax,   -1.0,    1.0,   z},
+                {xmax,  ymax,    1.0,    1.0,   z}};
+            const unsigned triangles[2][3] = {{0, 1, 2}, {2, 1, 3}};
+            for (unsigned t=0; t < 2; ++t) {
+                for (unsigned v=0; v < 3; ++v) {
+                    memcpy(ptr, vs[triangles[t][v]], 5 * sizeof(float));
+                    ptr += 5;
                 }
             }
         }
     }
+    glGenBuffers(1, &v->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, v->vbo);
+    glBufferData(GL_ARRAY_BUFFER, bytes, buf, GL_STATIC_DRAW);
+    log_gl_error();
+
+    glGenVertexArrays(1, &v->vao);
+    glBindVertexArray(v->vao);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+                          5 * sizeof(float), 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+                          5 * sizeof(float), (void*)(2 * sizeof(float)));
+    log_gl_error();
+
+    free(buf);
 }
 
 static void ao_vol_deinit(ao_vol_t* v) {
@@ -225,7 +269,7 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
     glGetIntegerv(GL_VIEWPORT, prev);
 
     ao_depth_render(&ao->depth, model, camera);
-    ao_save_depth_bitmap(ao, "depth.bmp");
+    //ao_save_depth_bitmap(ao, "depth.bmp");
 
     // Restore previous viewport settings
     glViewport(prev[0], prev[1], prev[2], prev[3]);
