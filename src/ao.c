@@ -269,7 +269,7 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
     glGetIntegerv(GL_VIEWPORT, prev);
 
     ao_depth_render(&ao->depth, model, camera);
-    //ao_save_depth_bitmap(ao, "depth.bmp");
+    (void)ao_save_depth_bitmap;
 
     // Restore previous viewport settings
     glViewport(prev[0], prev[1], prev[2], prev[3]);
