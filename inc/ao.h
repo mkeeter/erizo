@@ -6,15 +6,19 @@ struct camera_;
 typedef struct ao_ {
     GLuint fbo;
     GLuint depth;
-    GLuint tex;
-    GLuint vol[2];
 
-    unsigned render_size;
+    GLuint depth_tex;     // Render texture
+    GLuint vol_tex[2];  // AO textures
+
+    unsigned depth_size;
     unsigned vol_logsize;
 
-    GLuint vs;
-    GLuint fs;
-    GLuint prog;
+    GLuint vol_vao; // VAO for AO texture rendering
+    GLuint vol_vbo; // VBO for AO texture rendering
+
+    GLuint depth_vs;
+    GLuint depth_fs;
+    GLuint depth_prog;
     GLuint u_model;
 } ao_t;
 
