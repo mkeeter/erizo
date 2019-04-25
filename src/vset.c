@@ -75,6 +75,10 @@ static uint8_t cmp(const float a[3], const float b[3]) {
 uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
     const uint32_t hash = XXH32(f, 12, 0);
     const uint32_t mask = v->size - 1;
+
+    // Walk down the chain for this particular hash, looking for
+    // the identical value.  If the loop doesn't return early,
+    // then we're left pointing at the next link to assign.
     uint32_t* i = &v->buckets[hash & mask];
     while (*i) {
        if (v->links[*i].hash == hash && cmp(f, v->data[*i])) {
@@ -82,12 +86,19 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
        }
        i = &v->links[*i].next;
     }
+    // Record the index separately, because vset_expand could change
+    // the value of *i if the new item moves to a different bucket.
     const uint32_t index = ++v->count;
-    *i = index;
-    v->links[*i].hash = hash;
-    assert(v->links[*i].next == 0);
-    memcpy(v->data[*i], f, sizeof(*v->data));
 
+    // Record the hash and raw data
+    v->links[index].hash = hash;
+    memcpy(v->data[index], f, sizeof(*v->data));
+
+    // Link the new data into the chain
+    assert(v->links[index].next == 0);
+    *i = index;
+
+    // Resize if the load factor gets above 0.5
     if (v->count > v->size / 2) {
         vset_expand(v);
     }
