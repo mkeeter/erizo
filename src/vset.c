@@ -37,6 +37,13 @@ static void vset_expand(vset_t* v) {
 #undef REALLOC
     const uint32_t new_mask = (v->size * 2) - 1;
     const uint32_t old_mask =  v->size - 1;
+
+    // Walk through all of the data in the existing map, checking to see
+    // which items are now mapped to other buckets and moving them to
+    // the head of their new bucket's list.
+    //
+    // Since size is a power of two, we're adding a single bit to the hash,
+    // which means about half of the items should move.
     for (unsigned b=0; b < v->size; ++b) {
        uint32_t* i = &v->buckets[b];
        while (*i) {
