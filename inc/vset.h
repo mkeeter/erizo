@@ -9,11 +9,12 @@ typedef struct vset_link_ {
 
 /*  Tree which stores a deduplicated set of vertices */
 typedef struct vset_ {
-    float (*data)[3];           /* Raw vertex data */
-    vset_link_t* links;  /* Separate chaining data */
+    float (*vert)[3];           /* Raw vertex data */
+    vset_link_t* data;          /* Separate chaining data */
+    size_t data_size;
 
     uint32_t* buckets;
-    size_t size;
+    size_t num_buckets;
 
     size_t count;               /* Number of used nodes */
 } vset_t;

@@ -55,11 +55,11 @@ static void* worker_run(void* worker_) {
     platform_mutex_unlock(loader->mutex);
 
     /*  Find our model's bounds by iterating over deduplicated vertices */
-    memcpy(worker->min, vset->data[1], sizeof(worker->min));
-    memcpy(worker->max, vset->data[1], sizeof(worker->max));
+    memcpy(worker->min, vset->vert[1], sizeof(worker->min));
+    memcpy(worker->max, vset->vert[1], sizeof(worker->max));
     for (size_t i=1; i <= vset->count; ++i) {
         for (unsigned j=0; j < 3; ++j) {
-            const float v = vset->data[i][j];
+            const float v = vset->vert[i][j];
             if (v < worker->min[j]) {
                 worker->min[j] = v;
             }
@@ -80,7 +80,7 @@ static void* worker_run(void* worker_) {
     loader_wait(loader, LOADER_WORKER_GPU);
 
     /*  Send the vertex data to the GPU buffer */
-    memcpy(worker->vertex_buf, vset->data[1], 3 * sizeof(float) * vset->count);
+    memcpy(worker->vertex_buf, vset->vert[1], 3 * sizeof(float) * vset->count);
 
     /*  Send the indexed triangles to the GPU buffer */
     memcpy(worker->index_buf, tris, 3 * sizeof(uint32_t) * worker->tri_count);
