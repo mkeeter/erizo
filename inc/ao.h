@@ -18,16 +18,19 @@ typedef struct ao_depth_ {
 
 typedef struct ao_vol_ {
     GLuint fbo;
-    GLuint rbo;
     GLuint tex[2];
+    unsigned pingpong;
     unsigned logsize;
 
     GLuint vao;
     GLuint vbo;
+    unsigned tri_count;
 
     GLuint vs;
     GLuint fs;
     GLuint prog;
+
+    unsigned size;
 } ao_vol_t;
 
 typedef struct ao_ {

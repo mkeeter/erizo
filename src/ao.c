@@ -91,29 +91,31 @@ void main() {
 );
 
 static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
-    v->logsize = logsize;
     if (logsize & 1) {
         log_error_and_abort("vol_logsize (%u) must be divisible by 2",
                              logsize);
     }
+    //  Generate and bind a framebuffer
+    glGenFramebuffers(1, &v->fbo);
 
     // Generate and configure the volumetric textures
     glGenTextures(2, v->tex);
-    const unsigned size = 1 << (logsize / 2 * 3);
+    v->size = 1 << (logsize / 2 * 3);
     for (unsigned i=0; i < 2; ++i) {
         glBindTexture(GL_TEXTURE_2D, v->tex[i]);
         glTexImage2D(GL_TEXTURE_2D,
-                     0,         // level
-                     GL_RGBA,   // internal format
-                     size,      // width
-                     size,      // height
-                     0,         // border
-                     GL_RGBA,   // format
-                     GL_FLOAT,  // type
-                     NULL);     // data
+                     0,             // level
+                     GL_RGBA32F,    // internal format
+                     v->size,       // width
+                     v->size,       // height
+                     0,             // border
+                     GL_RGBA,       // format
+                     GL_FLOAT,      // type
+                     NULL);         // data
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
+    v->pingpong = 0;
 
     // Build and link the shader program
     v->vs = shader_build(AO_VOL_VS_SRC, GL_VERTEX_SHADER);
@@ -123,11 +125,11 @@ static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
 
     /*  We build a set of square tiles in X and Y, each representing a
         single Z slice of the model, then upload this data to the GPU. */
+    v->tri_count = 2 * (1 << logsize);
     const size_t bytes = sizeof(float)
-            * 2 // triangles per square
-            * 3 // vertices per triangle
-            * 5 // data per vertex (x, y, vx, vy, vz)
-            * (1 << logsize);
+            * v->tri_count
+            * 3     // vertices per triangle
+            * 5;    // data per vertex (x, y, vx, vy, vz)
     float* buf = malloc(bytes);
     float* ptr = buf;
     const unsigned tiles_per_edge = 1 << (logsize / 2);
@@ -180,6 +182,12 @@ static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
 
 static void ao_vol_deinit(ao_vol_t* v) {
     glDeleteTextures(2, v->tex);
+    glDeleteFramebuffers(1, &v->fbo);
+    glDeleteShader(v->vs);
+    glDeleteShader(v->fs);
+    glDeleteShader(v->prog);
+    glDeleteVertexArrays(1, &v->vao);
+    glDeleteBuffers(1, &v->vbo);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -248,7 +256,6 @@ static void ao_depth_render(ao_depth_t* d, model_t* model, camera_t* camera) {
 
     CAMERA_UNIFORM_MAT(d, model);
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                          d->tex, 0);
     GLenum draw_buf = GL_COLOR_ATTACHMENT0;
@@ -258,7 +265,32 @@ static void ao_depth_render(ao_depth_t* d, model_t* model, camera_t* camera) {
     log_gl_error();
 
     glViewport(0, 0, d->size, d->size);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, NULL);
+
+    log_gl_error();
+}
+
+static void ao_vol_render(ao_vol_t* v, camera_t* camera) {
+    (void)camera;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, v->fbo);
+
+    glEnable(GL_DEPTH_TEST);
+    glUseProgram(v->prog);
+    glBindVertexArray(v->vao);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                         v->tex[v->pingpong], 0);
+    GLenum draw_buf = GL_COLOR_ATTACHMENT0;
+    glDrawBuffers(1, &draw_buf);
+
+    check_framebuffer();
+    log_gl_error();
+
+    glViewport(0, 0, v->size, v->size);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDrawArrays(GL_TRIANGLES, 0, v->tri_count * 3);
 
     log_gl_error();
 }
@@ -270,6 +302,7 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
 
     ao_depth_render(&ao->depth, model, camera);
     (void)ao_save_depth_bitmap;
+    ao_vol_render(&ao->vol, camera);
 
     // Restore previous viewport settings
     glViewport(prev[0], prev[1], prev[2], prev[3]);
