@@ -290,11 +290,12 @@ static void ao_vol_render(ao_vol_t* v, GLuint depth, camera_t* camera) {
     glBindVertexArray(v->vao);
     CAMERA_UNIFORM_MAT(v, view);
 
+    // v->tex[v->pingpong] was the last render target, so we
+    // use it as a texture and render into the other texture.
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                          v->tex[!v->pingpong], 0);
     GLenum draw_buf = GL_COLOR_ATTACHMENT0;
     glDrawBuffers(1, &draw_buf);
-
     check_framebuffer();
     log_gl_error();
 
