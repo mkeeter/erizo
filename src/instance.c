@@ -114,8 +114,9 @@ void instance_draw(instance_t* instance, theme_t* theme) {
     model_draw(instance->model, instance->camera, theme);
     glfwSwapBuffers(instance->window);
 
-    if (instance->ao == NULL) {
-        instance->ao = ao_new(512, 6);
-    }
+#if INSTANCE_RENDER_AO
+    instance->ao = ao_new(512, 6);
     ao_render(instance->ao, instance->model, instance->camera);
+    ao_delete(instance->ao);
+#endif
 }
