@@ -166,11 +166,21 @@ uniform sampler2D depth;
 uniform sampler2D prev;
 
 void main() {
+    // This is the target XYZ position, projected into view coordinates
     vec4 pt = view * vec4(xyz, 0.0f);
-    float z = texture(depth, pt.xy).z * 2.0f - 1.0f;
-    vec4 prev = texture(prev, gl_FragCoord.xy);
-    if (z <= pt.z) {
-        out_color = prev + vec4(xyz, 1.0f);
+
+    // Here are the target and rendered Z positions, which we can compare
+    // to decide whether this particular ray made it through.
+    float tz = texture(depth, pt.xy / 2.0f + 0.5f).x * 2.0f - 1.0f;
+    float pz = pt.z;
+
+    // This is the actual ray's direction, which we accumulate
+    vec4 ray = view * vec4(0.0f, 0.0f, 1.0f, 0.0f);
+
+    // This is the previous accumulator value
+    vec4 prev = texture(prev, gl_FragCoord.xy / 2.0f + 0.5f);
+    if (pt.z >= tz) {
+        out_color = prev + vec4(ray.xyz, 1.0f);
     } else {
         out_color = prev;
     }
