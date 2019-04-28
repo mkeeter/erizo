@@ -6,6 +6,32 @@
 #include "object.h"
 #include "shader.h"
 
+// Utility function to check framebuffer status
+static void check_framebuffer() {
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE) {
+        const char* err = NULL;
+        switch (status) {
+            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_UNDEFINED);
+            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
+            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT);
+            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER);
+            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER);
+            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_UNSUPPORTED);
+            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE);
+            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS);
+            default: break;
+        }
+        if (err) {
+            log_error("Framebuffer error: %s (0x%x)", err, status);
+        } else {
+            log_error("Unknown framebuffer error: 0x%x", status);
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 static const GLchar* AO_DEPTH_VS_SRC = GLSL(330,
 layout(location=0) in vec3 pos;
 
@@ -65,6 +91,50 @@ static void ao_depth_deinit(ao_depth_t* d) {
     glDeleteShader(d->vs);
     glDeleteShader(d->fs);
     glDeleteShader(d->prog);
+}
+
+static void ao_depth_render(ao_depth_t* d, model_t* model, camera_t* camera) {
+    glBindFramebuffer(GL_FRAMEBUFFER, d->fbo);
+
+    glEnable(GL_DEPTH_TEST);
+    glUseProgram(d->prog);
+    glBindVertexArray(model->vao);
+
+    CAMERA_UNIFORM_MAT(d, model);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                         d->tex, 0);
+    GLenum draw_buf = GL_COLOR_ATTACHMENT0;
+    glDrawBuffers(1, &draw_buf);
+
+    check_framebuffer();
+    log_gl_error();
+
+    glViewport(0, 0, d->size, d->size);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, NULL);
+
+    log_gl_error();
+}
+
+static void ao_depth_save_bitmap(ao_depth_t* d, const char* filename) {
+    FILE* out = fopen(filename, "w");
+    if (!out) {
+        log_error_and_abort("Could not open '%s'", filename);
+    }
+
+    // Read back the texture from the GPU
+    glBindTexture(GL_TEXTURE_2D, d->tex);
+    GLuint* pixels = malloc(d->size * d->size * sizeof(GLuint));
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_INT, pixels);
+
+    // Write the image
+    bitmap_write_header(out, d->size, d->size);
+    bitmap_write_depth(out, d->size, d->size, pixels);
+
+    free(pixels);
+    fclose(out);
+    return;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -190,87 +260,6 @@ static void ao_vol_deinit(ao_vol_t* v) {
     glDeleteBuffers(1, &v->vbo);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-static void ao_save_depth_bitmap(ao_t* ao, const char* filename) {
-    FILE* out = fopen(filename, "w");
-    if (!out) {
-        log_error_and_abort("Could not open '%s'", filename);
-    }
-
-    // Read back the texture from the GPU
-    glBindTexture(GL_TEXTURE_2D, ao->depth.tex);
-    GLuint* pixels = malloc(ao->depth.size * ao->depth.size * sizeof(GLuint));
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_INT, pixels);
-
-    // Write the image
-    bitmap_write_header(out, ao->depth.size, ao->depth.size);
-    bitmap_write_depth(out, ao->depth.size, ao->depth.size, pixels);
-
-    free(pixels);
-    fclose(out);
-    return;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-ao_t* ao_new(unsigned depth_size, unsigned vol_logsize) {
-    OBJECT_ALLOC(ao);
-    ao_depth_init(&ao->depth, depth_size);
-    ao_vol_init(&ao->vol, vol_logsize);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    return ao;
-}
-
-static void check_framebuffer() {
-    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE) {
-        const char* err = NULL;
-        switch (status) {
-            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_UNDEFINED);
-            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
-            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT);
-            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER);
-            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER);
-            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_UNSUPPORTED);
-            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE);
-            LOG_GL_ERR_CASE(GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS);
-            default: break;
-        }
-        if (err) {
-            log_error("Framebuffer error: %s (0x%x)", err, status);
-        } else {
-            log_error("Unknown framebuffer error: 0x%x", status);
-        }
-    }
-}
-
-static void ao_depth_render(ao_depth_t* d, model_t* model, camera_t* camera) {
-    glBindFramebuffer(GL_FRAMEBUFFER, d->fbo);
-
-    glEnable(GL_DEPTH_TEST);
-    glUseProgram(d->prog);
-    glBindVertexArray(model->vao);
-
-    CAMERA_UNIFORM_MAT(d, model);
-
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                         d->tex, 0);
-    GLenum draw_buf = GL_COLOR_ATTACHMENT0;
-    glDrawBuffers(1, &draw_buf);
-
-    check_framebuffer();
-    log_gl_error();
-
-    glViewport(0, 0, d->size, d->size);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, NULL);
-
-    log_gl_error();
-}
-
 static void ao_vol_render(ao_vol_t* v, camera_t* camera) {
     (void)camera;
 
@@ -295,14 +284,48 @@ static void ao_vol_render(ao_vol_t* v, camera_t* camera) {
     log_gl_error();
 }
 
+static void ao_vol_save_bitmap(ao_vol_t* v, const char* filename) {
+    FILE* out = fopen(filename, "w");
+    if (!out) {
+        log_error_and_abort("Could not open '%s'", filename);
+    }
+
+    // Read back the texture from the GPU
+    glBindTexture(GL_TEXTURE_2D, v->tex[v->pingpong]);
+    float (*pixels)[4] = malloc(v->size * v->size * sizeof(*pixels));
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels);
+
+    // Write the image
+    bitmap_write_header(out, v->size, v->size);
+    bitmap_write_rays(out, v->size, v->size, pixels, 1);
+
+    free(pixels);
+    fclose(out);
+    return;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+ao_t* ao_new(unsigned depth_size, unsigned vol_logsize) {
+    OBJECT_ALLOC(ao);
+    ao_depth_init(&ao->depth, depth_size);
+    ao_vol_init(&ao->vol, vol_logsize);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    return ao;
+}
+
 void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
     // Save initial viewport settings
     GLint prev[4];
     glGetIntegerv(GL_VIEWPORT, prev);
 
     ao_depth_render(&ao->depth, model, camera);
-    (void)ao_save_depth_bitmap;
+    (void)ao_depth_save_bitmap;
+
     ao_vol_render(&ao->vol, camera);
+    (void)ao_vol_save_bitmap;
 
     // Restore previous viewport settings
     glViewport(prev[0], prev[1], prev[2], prev[3]);
