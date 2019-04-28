@@ -181,7 +181,7 @@ void main() {
     // Here are the target and rendered Z positions, which we can compare
     // to decide whether this particular ray made it through.
     float tz = texture(depth, pt.xy / 2.0f + 0.5f).x * 2.0f - 1.0f;
-    float pz = pt.z;
+    float pz = -pt.z;
 
     // This is the actual ray's direction, which we accumulate
     vec4 ray = inverse(view) * vec4(0.0f, 0.0f, 1.0f, 0.0f);
