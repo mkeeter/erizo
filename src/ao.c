@@ -404,9 +404,9 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
         vec3_cross(center, perp, ortho);
 
         for (unsigned i=0; i < 3; ++i) {
-            c.view[i][0] = center[i];
-            c.view[i][1] = perp[i];
-            c.view[i][2] = ortho[i];
+            c.view[i][0] = center[i] / 2.0f;
+            c.view[i][1] = perp[i]   / 2.0f;
+            c.view[i][2] = ortho[i]  / 2.0f;
         }
         ao_depth_render(&ao->depth, model, &c);
         ao_vol_render(&ao->vol, ao->depth.tex, &c);
