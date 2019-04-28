@@ -1,4 +1,5 @@
 #include "bitmap.h"
+#include "mat.h"
 
 void bitmap_write_header(FILE* f, unsigned width, unsigned height) {
     const uint32_t size = width * 3 * height;
@@ -32,11 +33,27 @@ void bitmap_write_header(FILE* f, unsigned width, unsigned height) {
     }
 }
 
-void bitmap_write_depth(FILE* f, unsigned w, unsigned h, uint32_t* data) {
+void bitmap_write_depth(FILE* f, unsigned w, unsigned h, const uint32_t* data) {
     for (unsigned y=0; y < h; ++y) {
         for (unsigned x=0; x < w; ++x) {
             for (unsigned i=0; i < 3; ++i) {
                 fprintf(f, "%c", (*data) >> 24);
+            }
+            ++data;
+        }
+    }
+}
+
+void bitmap_write_rays(FILE* f, unsigned w, unsigned h,
+                       const float (*data)[4], uint32_t rays)
+{
+    for (unsigned y=0; y < h; ++y) {
+        for (unsigned x=0; x < w; ++x) {
+            const float len = vec3_length((const float*)data);
+            const float scale = (*data)[3] / rays;
+            for (unsigned i=0; i < 3; ++i) {
+                const float d = fabs((*data)[i] / len * scale);
+                fprintf(f, "%c", (uint8_t)(d * 255));
             }
             ++data;
         }
