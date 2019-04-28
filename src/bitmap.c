@@ -44,6 +44,20 @@ void bitmap_write_depth(FILE* f, unsigned w, unsigned h, const uint32_t* data) {
     }
 }
 
+void bitmap_write_rgb(FILE* f, unsigned w, unsigned h,
+                      const float (*data)[4])
+{
+    for (unsigned y=0; y < h; ++y) {
+        for (unsigned x=0; x < w; ++x) {
+            for (unsigned i=0; i < 3; ++i) {
+                const float d = (*data)[i];
+                fprintf(f, "%c", (uint8_t)(d * 255));
+            }
+            ++data;
+        }
+    }
+}
+
 void bitmap_write_rays(FILE* f, unsigned w, unsigned h,
                        const float (*data)[4], uint32_t rays)
 {
