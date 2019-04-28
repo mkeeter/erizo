@@ -386,7 +386,8 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
     mat4_mul(c.model, s, c.model);
 
     // Render the model from every triangle on an icosphere
-    icosphere_t* ico = icosphere_new(2);
+    icosphere_t* ico = icosphere_new(3);
+    log_trace("Starting AO baking (%u angles)", ico->num_ts);
     for (unsigned t=0; t < ico->num_ts; ++t) {
         // Find the main vector (which will be Z)
         float center[3] = {0.0f, 0.0f, 0.0f};
@@ -413,11 +414,20 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
             c.view[1][i] = perp[i];
             c.view[2][i] = ortho[i];
         }
+
         ao_depth_render(&ao->depth, model, &c);
         ao_vol_render(&ao->vol, ao->depth.tex, &c);
     }
+    log_trace("Done with AO baking");
+
+#if AO_SAVE_DEBUG_IMAGES
+    ao_depth_save_bitmap(&ao->depth, "depth.bmp");
+    ao_vol_save_bitmap(&ao->vol, "vol.bmp");
+    log_trace("Done saving files");
+#else
     (void)ao_depth_save_bitmap;
     (void)ao_vol_save_bitmap;
+#endif
 
     // Restore previous viewport settings
     glViewport(prev[0], prev[1], prev[2], prev[3]);
