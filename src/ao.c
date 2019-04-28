@@ -341,7 +341,7 @@ static void ao_vol_save_bitmap(ao_vol_t* v, const char* filename) {
 
     // Write the image
     bitmap_write_header(out, v->size, v->size);
-    bitmap_write_rays(out, v->size, v->size, pixels, 1);
+    bitmap_write_rays(out, v->size, v->size, pixels, v->rays);
 
     free(pixels);
     fclose(out);
