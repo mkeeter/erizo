@@ -12,6 +12,7 @@ typedef struct ao_depth_ {
     GLuint fs;
     GLuint prog;
     GLuint u_model;
+    GLuint u_view;
 
     unsigned size;
 } ao_depth_t;
@@ -20,7 +21,6 @@ typedef struct ao_vol_ {
     GLuint fbo;
     GLuint tex[2];
     unsigned pingpong;
-    unsigned logsize;
 
     GLuint vao;
     GLuint vbo;
@@ -29,8 +29,12 @@ typedef struct ao_vol_ {
     GLuint vs;
     GLuint fs;
     GLuint prog;
+    GLuint u_view;
+    GLuint u_depth;
+    GLuint u_prev;
 
     unsigned size;
+    unsigned rays;
 } ao_vol_t;
 
 typedef struct ao_ {

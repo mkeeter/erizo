@@ -1,6 +1,7 @@
 #include "ao.h"
 #include "bitmap.h"
 #include "camera.h"
+#include "mat.h"
 #include "model.h"
 #include "log.h"
 #include "object.h"
@@ -36,9 +37,10 @@ static const GLchar* AO_DEPTH_VS_SRC = GLSL(330,
 layout(location=0) in vec3 pos;
 
 uniform mat4 model;
+uniform mat4 view;
 
 void main() {
-    gl_Position = model * vec4(pos, 1.0f);
+    gl_Position = view * model * vec4(pos, 1.0f);
 }
 );
 
@@ -82,6 +84,9 @@ static void ao_depth_init(ao_depth_t* d, unsigned size) {
     d->vs = shader_build(AO_DEPTH_VS_SRC, GL_VERTEX_SHADER);
     d->fs = shader_build(AO_DEPTH_FS_SRC, GL_FRAGMENT_SHADER);
     d->prog = shader_link_vf(d->vs, d->fs);
+
+    SHADER_GET_UNIFORM_LOC(d, model);
+    SHADER_GET_UNIFORM_LOC(d, view);
 }
 
 static void ao_depth_deinit(ao_depth_t* d) {
@@ -101,6 +106,7 @@ static void ao_depth_render(ao_depth_t* d, model_t* model, camera_t* camera) {
     glBindVertexArray(model->vao);
 
     CAMERA_UNIFORM_MAT(d, model);
+    CAMERA_UNIFORM_MAT(d, view);
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                          d->tex, 0);
@@ -155,8 +161,19 @@ static const GLchar* AO_VOL_FS_SRC = GLSL(330,
 in vec3 xyz;
 out vec4 out_color;
 
+uniform mat4 view;
+uniform sampler2D depth;
+uniform sampler2D prev;
+
 void main() {
-    out_color = vec4(xyz, 1.0f);
+    vec4 pt = view * vec4(xyz, 0.0f);
+    float z = texture(depth, pt.xy).z * 2.0f - 1.0f;
+    vec4 prev = texture(prev, gl_FragCoord.xy);
+    if (z <= pt.z) {
+        out_color = prev + vec4(xyz, 1.0f);
+    } else {
+        out_color = prev;
+    }
 }
 );
 
@@ -192,6 +209,9 @@ static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
     v->fs = shader_build(AO_VOL_FS_SRC, GL_FRAGMENT_SHADER);
     v->prog = shader_link_vf(v->vs, v->fs);
     glUseProgram(v->prog);
+    SHADER_GET_UNIFORM_LOC(v, view);
+    SHADER_GET_UNIFORM_LOC(v, depth);
+    SHADER_GET_UNIFORM_LOC(v, prev);
 
     /*  We build a set of square tiles in X and Y, each representing a
         single Z slice of the model, then upload this data to the GPU. */
@@ -262,28 +282,39 @@ static void ao_vol_deinit(ao_vol_t* v) {
     glDeleteBuffers(1, &v->vbo);
 }
 
-static void ao_vol_render(ao_vol_t* v, camera_t* camera) {
-    (void)camera;
-
+static void ao_vol_render(ao_vol_t* v, GLuint depth, camera_t* camera) {
     glBindFramebuffer(GL_FRAMEBUFFER, v->fbo);
 
     glEnable(GL_DEPTH_TEST);
     glUseProgram(v->prog);
     glBindVertexArray(v->vao);
+    CAMERA_UNIFORM_MAT(v, view);
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                         v->tex[v->pingpong], 0);
+                         v->tex[!v->pingpong], 0);
     GLenum draw_buf = GL_COLOR_ATTACHMENT0;
     glDrawBuffers(1, &draw_buf);
 
     check_framebuffer();
     log_gl_error();
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, v->tex[v->pingpong]);
+    glUniform1i(v->u_prev, 0);
+
+    glActiveTexture(GL_TEXTURE0 + 1);
+    glBindTexture(GL_TEXTURE_2D, depth);
+    glUniform1i(v->u_depth, 1);
+    log_gl_error();
+
     glViewport(0, 0, v->size, v->size);
     glClear(GL_COLOR_BUFFER_BIT);
     glDrawArrays(GL_TRIANGLES, 0, v->tri_count * 3);
-
     log_gl_error();
+
+    // Bookkeeping total number of rays and most recent buffer
+    v->rays++;
+    v->pingpong = !v->pingpong;
 }
 
 static void ao_vol_save_bitmap(ao_vol_t* v, const char* filename) {
@@ -323,10 +354,17 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
     GLint prev[4];
     glGetIntegerv(GL_VIEWPORT, prev);
 
+    // Make a modified camera that uses the same model matrix,
+    // but has an identity view matrix.  We'll later use the
+    // view matrix to render the model from different angles.
+    camera_t c;
+    memcpy(c.model, camera->model, sizeof(c.model));
+    mat4_identity(c.view);
+
     ao_depth_render(&ao->depth, model, camera);
     (void)ao_depth_save_bitmap;
 
-    ao_vol_render(&ao->vol, camera);
+    ao_vol_render(&ao->vol, ao->depth.tex, camera);
     (void)ao_vol_save_bitmap;
 
     // Restore previous viewport settings
