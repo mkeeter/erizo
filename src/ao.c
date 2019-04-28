@@ -380,11 +380,6 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
     memcpy(&c, camera, sizeof(c));
     mat4_identity(c.view);
 
-    // Scale the model matrix to fit models even when rotated.
-    float s[4][4];
-    mat4_scaling(0.5f, s);
-    mat4_mul(c.model, s, c.model);
-
     // Render the model from every triangle on an icosphere
     icosphere_t* ico = icosphere_new(3);
     log_trace("Starting AO baking (%u angles)", ico->num_ts);
