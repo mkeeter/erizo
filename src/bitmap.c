@@ -66,7 +66,12 @@ void bitmap_write_rays(FILE* f, unsigned w, unsigned h,
             const float len = vec3_length((const float*)data);
             const float scale = (*data)[3] / rays;
             for (unsigned i=0; i < 3; ++i) {
-                const float d = (*data)[i] / len * scale / 2.0f + 0.5f;
+                float d = (*data)[i] / len * scale / 2.0f + 0.5f;
+                if (d > 1.0f) {
+                    d = 1.0f;
+                } else if (d < 0.0f) {
+                    d = 0.0f;
+                }
                 fprintf(f, "%c", (uint8_t)(d * 255));
             }
             ++data;
