@@ -12,8 +12,11 @@ void mat4_mul(const float a[4][4], const float b[4][4], float out[4][4]);
 void mat4_apply(const float a[4][4], const float v[3], float out[3]);
 void mat4_inv(const float in[4][4], float out[4][4]);
 
-/* Basic vector length */
+/*  Basic vector length */
 float vec3_length(const float v[3]);
 
-/* In-place normalization of a vector */
+/*  In-place normalization of a vector */
 void vec3_normalize(float v[3]);
+
+/*  Cross product */
+void vec3_cross(const float a[3], const float b[3], float out[3]);

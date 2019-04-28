@@ -1,9 +1,10 @@
 #include "ao.h"
 #include "bitmap.h"
 #include "camera.h"
+#include "icosphere.h"
+#include "log.h"
 #include "mat.h"
 #include "model.h"
-#include "log.h"
 #include "object.h"
 #include "shader.h"
 
@@ -29,6 +30,15 @@ static void check_framebuffer() {
             log_error("Unknown framebuffer error: 0x%x", status);
         }
     }
+}
+
+static void setup_texture() {
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    const float border[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -77,8 +87,7 @@ static void ao_depth_init(ao_depth_t* d, unsigned size) {
                  GL_RED,            // format
                  GL_UNSIGNED_INT,   // type
                  NULL);             // data
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    setup_texture();
 
     // Build and link the AO shader programs
     d->vs = shader_build(AO_DEPTH_VS_SRC, GL_VERTEX_SHADER);
@@ -175,11 +184,11 @@ void main() {
     float pz = pt.z;
 
     // This is the actual ray's direction, which we accumulate
-    vec4 ray = view * vec4(0.0f, 0.0f, 1.0f, 0.0f);
+    vec4 ray = inverse(view) * vec4(0.0f, 0.0f, 1.0f, 0.0f);
 
     // This is the previous accumulator value
     vec4 prev = texelFetch(prev, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
-    if (pt.z >= tz) {
+    if (tz != -1.0f && pt.z >= tz) {
         out_color = prev + vec4(ray.xyz, 1.0f);
     } else {
         out_color = prev;
@@ -209,8 +218,7 @@ static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
                      GL_RGBA,       // format
                      GL_FLOAT,      // type
                      NULL);         // data
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        setup_texture();
     }
     v->pingpong = 0;
 
@@ -372,10 +380,38 @@ void ao_render(ao_t* ao, model_t* model, camera_t* camera) {
     memcpy(c.model, camera->model, sizeof(c.model));
     mat4_identity(c.view);
 
-    ao_depth_render(&ao->depth, model, camera);
-    (void)ao_depth_save_bitmap;
+    // Render the model from every triangle on an icosphere
+    icosphere_t* ico = icosphere_new(2);
+    for (unsigned t=0; t < ico->num_ts; ++t) {
+        // Find the main vector (which will be Z)
+        float center[3] = {0.0f, 0.0f, 0.0f};
+        for (unsigned i=0; i < 3; ++i) {
+            for (unsigned j=0; j < 3; ++j) {
+                center[i] += ico->vs[ico->ts[t][j]][i];
+            }
+            center[i] /= 3.0f;
+        }
+        // Find a perpendicular vector (which will be X)
+        float perp[3] = {0.0f, 0.0f, 0.0f};
+        for (unsigned i=0; i < 3; ++i) {
+            perp[i] = center[i] - ico->vs[ico->ts[t][0]][i];
+        }
 
-    ao_vol_render(&ao->vol, ao->depth.tex, camera);
+        vec3_normalize(center);
+        vec3_normalize(perp);
+
+        float ortho[3];
+        vec3_cross(center, perp, ortho);
+
+        for (unsigned i=0; i < 3; ++i) {
+            c.view[i][0] = center[i];
+            c.view[i][1] = perp[i];
+            c.view[i][2] = ortho[i];
+        }
+        ao_depth_render(&ao->depth, model, &c);
+        ao_vol_render(&ao->vol, ao->depth.tex, &c);
+    }
+    (void)ao_depth_save_bitmap;
     (void)ao_vol_save_bitmap;
 
     // Restore previous viewport settings

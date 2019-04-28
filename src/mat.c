@@ -144,3 +144,14 @@ void vec3_normalize(float v[3]) {
         v[i] /= length;
     }
 }
+
+void vec3_cross(const float a_[3], const float b_[3], float out[3]) {
+    float a[3];
+    memcpy(a, a_, sizeof(a));
+    float b[3];
+    memcpy(b, b_, sizeof(b));
+
+    out[0] = a[1] * b[2] - a[2] * b[1];
+    out[1] = a[2] * b[0] - a[0] * b[2];
+    out[2] = a[0] * b[1] - a[1] * b[0];
+}
