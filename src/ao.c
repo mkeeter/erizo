@@ -188,7 +188,7 @@ void main() {
 
     // This is the previous accumulator value
     vec4 prev = texelFetch(prev, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
-    if (tz == -1.0f || pt.z >= tz) {
+    if (tz == -1.0f || pz >= tz) {
         out_color = prev + vec4(ray.xyz, 1.0f);
     } else {
         out_color = prev;
