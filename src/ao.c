@@ -210,8 +210,10 @@ static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
         for (unsigned j=0; j < tiles_per_edge; ++j) {
             const float ymin =  j      / (float)tiles_per_edge;
             const float ymax = (j + 1) / (float)tiles_per_edge;
-            const float z = ((i * tiles_per_edge) + j) /
-                            (float)((1 << logsize) - 1);
+
+            // vx, vy, and vz are scaled between -1 and 1
+            const float vz = ((i * tiles_per_edge) + j) /
+                             (float)((1 << logsize) - 1) * 2.0f - 1.0f;
 
             /* Vertices are as follows:
              *  2----3
@@ -219,10 +221,10 @@ static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
              *  0----1  */
             const float vs[4][5] = {
             //    sx     sy      vx      vy    vz
-                {xmin,  ymin,   -1.0,   -1.0,   z},
-                {xmax,  ymin,    1.0,   -1.0,   z},
-                {xmin,  ymax,   -1.0,    1.0,   z},
-                {xmax,  ymax,    1.0,    1.0,   z}};
+                {xmin,  ymin,   -1.0,   -1.0,  vz},
+                {xmax,  ymin,    1.0,   -1.0,  vz},
+                {xmin,  ymax,   -1.0,    1.0,  vz},
+                {xmax,  ymax,    1.0,    1.0,  vz}};
             const unsigned triangles[2][3] = {{0, 1, 2}, {2, 1, 3}};
             for (unsigned t=0; t < 2; ++t) {
                 for (unsigned v=0; v < 3; ++v) {
