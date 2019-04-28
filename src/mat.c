@@ -130,7 +130,7 @@ void mat4_inv(const float in[4][4], float out[4][4]) {
    }
 }
 
-float vec3_length(float v[3]) {
+float vec3_length(const float v[3]) {
     float length = 0.0f;
     for (unsigned i=0; i < 3; ++i) {
         length += v[i] * v[i];
