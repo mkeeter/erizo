@@ -23,6 +23,7 @@ uniform mat4 model;
 
 out vec3 vert_norm;
 out vec3 pos_bary;
+out vec3 pos_model;
 
 void main() {
     vec3 a = gl_in[0].gl_Position.xyz;
@@ -34,18 +35,25 @@ void main() {
     vec3 nc = cross(c - a, b - a);
     vert_norm = normalize((view * model * vec4(na + nb + nc, 0.0f)).xyz);
 
-    mat4 m = proj * view * model;
+    mat4 pv = proj * view;
+    vec4 pm;
 
     pos_bary = vec3(1.0f, 0.0f, 0.0f);
-    gl_Position = m * gl_in[0].gl_Position;
+    pm = model * gl_in[0].gl_Position;
+    pos_model = pm.xyz;
+    gl_Position = pv * pm;
     EmitVertex();
 
     pos_bary = vec3(0.0f, 1.0f, 0.0f);
-    gl_Position = m * gl_in[1].gl_Position;
+    pm = model * gl_in[1].gl_Position;
+    pos_model = pm.xyz;
+    gl_Position = pv * pm;
     EmitVertex();
 
     pos_bary = vec3(0.0f, 0.0f, 1.0f);
-    gl_Position = m * gl_in[2].gl_Position;
+    pm = model * gl_in[2].gl_Position;
+    pos_model = pm.xyz;
+    gl_Position = pv * pm;
     EmitVertex();
 }
 );
@@ -53,10 +61,14 @@ void main() {
 static const GLchar* MODEL_FS_SRC = GLSL(330,
 in vec3 vert_norm;
 in vec3 pos_bary;
+in vec3 pos_model;
 
 uniform vec3 key;
 uniform vec3 fill;
 uniform vec3 base;
+
+uniform sampler2D vol;
+uniform int vol_size;
 
 out vec4 out_color;
 
@@ -64,8 +76,12 @@ void main() {
     float a = dot(vert_norm, vec3(0.0f, 0.0f, 1.0f));
     float b = dot(vert_norm, vec3(-0.57f, -0.57f, 0.57f));
 
-    out_color = vec4(mix(base, key,  a) * 0.5f +
-                     mix(base, fill, b) * 0.5f, 1.0f);
+    if (vol_size != 0) {
+        out_color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    } else {
+        out_color = vec4(mix(base, key,  a) * 0.5f +
+                         mix(base, fill, b) * 0.5f, 1.0f);
+    }
 }
 );
 
