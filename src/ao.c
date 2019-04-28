@@ -178,7 +178,7 @@ void main() {
     vec4 ray = view * vec4(0.0f, 0.0f, 1.0f, 0.0f);
 
     // This is the previous accumulator value
-    vec4 prev = texture(prev, gl_FragCoord.xy / 2.0f + 0.5f);
+    vec4 prev = texelFetch(prev, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
     if (pt.z >= tz) {
         out_color = prev + vec4(ray.xyz, 1.0f);
     } else {
