@@ -57,6 +57,7 @@ void instance_delete(instance_t* instance) {
     OBJECT_DELETE_MEMBER(instance, camera);
     OBJECT_DELETE_MEMBER(instance, backdrop);
     OBJECT_DELETE_MEMBER(instance, window);
+    OBJECT_DELETE_MEMBER(instance, ao);
     free(instance);
 }
 
