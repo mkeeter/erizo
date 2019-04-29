@@ -1,3 +1,4 @@
+#include "ao.h"
 #include "camera.h"
 #include "log.h"
 #include "model.h"
@@ -67,7 +68,7 @@ uniform vec3 key;
 uniform vec3 fill;
 uniform vec3 base;
 
-uniform sampler2D vol;
+uniform sampler2D vol_tex;
 uniform int vol_logsize;
 
 out vec4 out_color;
@@ -136,5 +137,21 @@ void model_draw(model_t* model, camera_t* camera, theme_t* theme) {
     THEME_UNIFORM_COLOR(model, fill);
     THEME_UNIFORM_COLOR(model, base);
 
+    // Activate environmental lighting / ambient occlusion
+    if (model->vol_logsize) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, model->vol_tex);
+        glUniform1i(model->u_vol, 0);
+        glUniform1i(model->u_vol_logsize, model->vol_logsize);
+    } else {
+        glUniform1i(model->u_vol_logsize, 0);
+    }
+
     glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, NULL);
+}
+
+void model_import_ao(model_t* model, ao_t* ao) {
+    model->vol_logsize = ao->vol.logsize;
+    model->vol_tex = ao->vol.tex[ao->vol.pingpong];
+    ao->vol.tex[ao->vol.pingpong] = ao->vol.tex[!ao->vol.pingpong];
 }

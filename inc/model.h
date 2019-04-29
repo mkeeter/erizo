@@ -1,5 +1,6 @@
 #include "base.h"
 
+struct ao_;
 struct camera_;
 struct theme_;
 
@@ -10,7 +11,8 @@ typedef struct model_ {
     GLuint vbo;
     GLuint ibo;
 
-    GLuint vol;
+    /*  Volumetrix lighting data */
+    GLuint vol_tex;
     GLuint vol_logsize;
 
     /*  Shader program */
@@ -37,3 +39,4 @@ typedef struct model_ {
 model_t* model_new();
 void model_delete(model_t* model);
 void model_draw(model_t* model, struct camera_* camera, struct theme_* theme);
+void model_import_ao(model_t* model, struct ao_* ao);
