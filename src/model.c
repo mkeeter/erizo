@@ -70,6 +70,7 @@ uniform vec3 base;
 
 uniform sampler2D vol_tex;
 uniform int vol_logsize;
+uniform int vol_num_rays;
 
 out vec4 out_color;
 
@@ -77,7 +78,7 @@ void main() {
     float a = dot(vert_norm, vec3(0.0f, 0.0f, 1.0f));
     float b = dot(vert_norm, vec3(-0.57f, -0.57f, 0.57f));
 
-    if (vol_logsize != 0) {
+    if (vol_num_rays != 0) {
         out_color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
     } else {
         out_color = vec4(mix(base, key,  a) * 0.5f +
@@ -108,6 +109,7 @@ model_t* model_new() {
 
     SHADER_GET_UNIFORM_LOC(model, vol);
     SHADER_GET_UNIFORM_LOC(model, vol_logsize);
+    SHADER_GET_UNIFORM_LOC(model, vol_num_rays);
 
     log_trace("Initialized model");
     return model;
@@ -124,7 +126,7 @@ void model_delete(model_t* model) {
     free(model);
 }
 
-void model_draw(model_t* model, camera_t* camera, theme_t* theme) {
+void model_draw(model_t* model, ao_t* ao, camera_t* camera, theme_t* theme) {
     glEnable(GL_DEPTH_TEST);
     glUseProgram(model->prog);
     glBindVertexArray(model->vao);
@@ -138,20 +140,16 @@ void model_draw(model_t* model, camera_t* camera, theme_t* theme) {
     THEME_UNIFORM_COLOR(model, base);
 
     // Activate environmental lighting / ambient occlusion
-    if (model->vol_logsize) {
+    if (ao) {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, model->vol_tex);
+        glBindTexture(GL_TEXTURE_2D, ao->vol.tex[ao->vol.pingpong]);
         glUniform1i(model->u_vol, 0);
-        glUniform1i(model->u_vol_logsize, model->vol_logsize);
+        glUniform1i(model->u_vol_logsize, ao->vol.logsize);
+        glUniform1i(model->u_vol_num_rays, ao->vol.rays);
     } else {
         glUniform1i(model->u_vol_logsize, 0);
+        glUniform1i(model->u_vol_num_rays, 0);
     }
 
     glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, NULL);
-}
-
-void model_import_ao(model_t* model, ao_t* ao) {
-    model->vol_logsize = ao->vol.logsize;
-    model->vol_tex = ao->vol.tex[ao->vol.pingpong];
-    ao->vol.tex[ao->vol.pingpong] = ao->vol.tex[!ao->vol.pingpong];
 }

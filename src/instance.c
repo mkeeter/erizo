@@ -111,15 +111,13 @@ void instance_draw(instance_t* instance, theme_t* theme) {
     glClear(GL_DEPTH_BUFFER_BIT);
     backdrop_draw(instance->backdrop, theme);
 
-    model_draw(instance->model, instance->camera, theme);
-    glfwSwapBuffers(instance->window);
-
 #if INSTANCE_RENDER_AO
-    if (instance->model->vol_logsize == 0) {
+    if (instance->ao == NULL) {
         instance->ao = ao_new(512, 6);
         ao_render(instance->ao, instance->model, instance->camera);
-        model_import_ao(instance->model, instance->ao);
-        ao_delete(instance->ao);
     }
 #endif
+
+    model_draw(instance->model, instance->ao, instance->camera, theme);
+    glfwSwapBuffers(instance->window);
 }

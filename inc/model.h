@@ -11,10 +11,6 @@ typedef struct model_ {
     GLuint vbo;
     GLuint ibo;
 
-    /*  Volumetrix lighting data */
-    GLuint vol_tex;
-    GLuint vol_logsize;
-
     /*  Shader program */
     GLuint vs;
     GLuint gs;
@@ -34,9 +30,10 @@ typedef struct model_ {
     /*  Uniform locations for volumetric lighting */
     GLuint u_vol;
     GLuint u_vol_logsize;
+    GLuint u_vol_num_rays;
 } model_t;
 
 model_t* model_new();
 void model_delete(model_t* model);
-void model_draw(model_t* model, struct camera_* camera, struct theme_* theme);
-void model_import_ao(model_t* model, struct ao_* ao);
+void model_draw(model_t* model,  struct ao_* ao,
+                struct camera_* camera, struct theme_* theme);

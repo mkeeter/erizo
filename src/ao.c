@@ -292,13 +292,7 @@ static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
 }
 
 static void ao_vol_deinit(ao_vol_t* v) {
-    // When we remove the texture to use in mesh rendering, we mark this fact
-    // by setting both ping-pong texture slots to the same value.
-    if (v->tex[0] == v->tex[1]) {
-        glDeleteTextures(1, v->tex);
-    } else {
-        glDeleteTextures(2, v->tex);
-    }
+    glDeleteTextures(2, v->tex);
     glDeleteFramebuffers(1, &v->fbo);
     glDeleteShader(v->vs);
     glDeleteShader(v->fs);
