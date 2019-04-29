@@ -10,6 +10,9 @@ typedef struct model_ {
     GLuint vbo;
     GLuint ibo;
 
+    GLuint vol;
+    GLuint vol_logsize;
+
     /*  Shader program */
     GLuint vs;
     GLuint gs;
@@ -25,6 +28,10 @@ typedef struct model_ {
     GLuint u_key;
     GLuint u_fill;
     GLuint u_base;
+
+    /*  Uniform locations for volumetric lighting */
+    GLuint u_vol;
+    GLuint u_vol_logsize;
 } model_t;
 
 model_t* model_new();

@@ -206,6 +206,7 @@ static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
 
     // Generate and configure the volumetric textures
     glGenTextures(2, v->tex);
+    v->logsize = logsize;
     v->size = 1 << (logsize / 2 * 3);
     for (unsigned i=0; i < 2; ++i) {
         glBindTexture(GL_TEXTURE_2D, v->tex[i]);

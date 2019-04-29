@@ -68,7 +68,7 @@ uniform vec3 fill;
 uniform vec3 base;
 
 uniform sampler2D vol;
-uniform int vol_size;
+uniform int vol_logsize;
 
 out vec4 out_color;
 
@@ -76,7 +76,7 @@ void main() {
     float a = dot(vert_norm, vec3(0.0f, 0.0f, 1.0f));
     float b = dot(vert_norm, vec3(-0.57f, -0.57f, 0.57f));
 
-    if (vol_size != 0) {
+    if (vol_logsize != 0) {
         out_color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
     } else {
         out_color = vec4(mix(base, key,  a) * 0.5f +
@@ -104,6 +104,9 @@ model_t* model_new() {
     SHADER_GET_UNIFORM_LOC(model, key);
     SHADER_GET_UNIFORM_LOC(model, fill);
     SHADER_GET_UNIFORM_LOC(model, base);
+
+    SHADER_GET_UNIFORM_LOC(model, vol);
+    SHADER_GET_UNIFORM_LOC(model, vol_logsize);
 
     log_trace("Initialized model");
     return model;

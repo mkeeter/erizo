@@ -34,6 +34,8 @@ typedef struct ao_vol_ {
     GLuint u_prev;
 
     unsigned size;
+    unsigned logsize;
+
     unsigned rays;
 } ao_vol_t;
 
