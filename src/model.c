@@ -83,17 +83,17 @@ void main() {
         int tiles = (1 << (vol_logsize / 2));
 
         // Normalize position to voxel scale
-        vec3 pos = (pos_model + 1.0f) / 2.0f * size;
-        int x = int(pos.x + 0.5f);
-        int y = int(pos.y + 0.5f);
-        int z = int(pos.z + 0.5f);
-        int zx = z / (1 << tiles);
-        int zy = z % (1 << tiles);
+        vec3 pos_norm = (pos_model + 1.0f) / 2.0f;
+        int z = int(pos_norm.z * size);
+        float zx = float(z / tiles);
+        float zy = float(z % tiles);
 
-        vec4 t = texture(vol_tex, vec2(x / float(size) + zx / float(tiles),
-                                       y / float(size) + zy / float(tiles)));
+        float tx = pos_norm.x / size + zx / tiles;
+        float ty = pos_norm.y / size + zy / tiles;
+        vec4 t = texture(vol_tex, vec2(tx, ty));
+        vec3 c = normalize(t.xyz) / 2.0f + 0.5f;
 
-        out_color = vec4(t.xyz, 1.0f);
+        out_color = vec4(c * t.w / vol_num_rays, 1.0f);
     } else {
         out_color = vec4(mix(base, key,  a) * 0.5f +
                          mix(base, fill, b) * 0.5f, 1.0f);
