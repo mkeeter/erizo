@@ -32,6 +32,7 @@ typedef struct ao_vol_ {
     GLint u_view;
     GLint u_depth;
     GLint u_prev;
+    GLint u_epsilon;
 
     unsigned size;
     unsigned logsize;

@@ -78,25 +78,26 @@ void main() {
     float a = dot(vert_norm, vec3(0.0f, 0.0f, 1.0f));
     float b = dot(vert_norm, vec3(-0.57f, -0.57f, 0.57f));
 
+    out_color = vec4(mix(base, key,  a) * 0.5f +
+                     mix(base, fill, b) * 0.5f, 1.0f);
     if (vol_num_rays != 0) {
         int size = (1 << vol_logsize);
         int tiles = (1 << (vol_logsize / 2));
 
         // Normalize position to voxel scale
         vec3 pos_norm = (pos_model + 1.0f) / 2.0f;
-        int z = int(pos_norm.z * size);
-        float zx = float(z / tiles);
-        float zy = float(z % tiles);
+        int z = int(pos_norm.z * size + 0.5f);
+        int zx = z / tiles;
+        int zy = z % tiles;
 
-        float tx = pos_norm.x / size + zx / tiles;
-        float ty = pos_norm.y / size + zy / tiles;
+        // Do the actual texture lookup
+        float tx = (pos_norm.x + zx) / tiles;
+        float ty = (pos_norm.y + zy) / tiles;
         vec4 t = texture(vol_tex, vec2(tx, ty));
-        vec3 c = normalize(t.xyz) / 2.0f + 0.5f;
 
-        out_color = vec4(c * t.w / vol_num_rays, 1.0f);
-    } else {
-        out_color = vec4(mix(base, key,  a) * 0.5f +
-                         mix(base, fill, b) * 0.5f, 1.0f);
+        // Figure out how to apply the color
+        vec3 c = normalize(t.xyz) / 2.0f + 0.5f;
+        out_color *= t.w / vol_num_rays;
     }
 }
 );

@@ -173,6 +173,7 @@ out vec4 out_color;
 uniform mat4 view;
 uniform sampler2D depth;
 uniform sampler2D prev;
+uniform float epsilon;
 
 void main() {
     // This is the target XYZ position, projected into view coordinates
@@ -188,7 +189,7 @@ void main() {
 
     // This is the previous accumulator value
     vec4 prev = texelFetch(prev, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
-    if (tz == -1.0f || pz >= tz) {
+    if (tz == -1.0f || pz >= tz - epsilon) {
         out_color = prev + vec4(ray.xyz, 1.0f);
     } else {
         out_color = prev;
@@ -230,6 +231,7 @@ static void ao_vol_init(ao_vol_t* v, unsigned logsize) {
     glUseProgram(v->prog);
     SHADER_GET_UNIFORM_LOC(v, view);
     SHADER_GET_UNIFORM_LOC(v, depth);
+    SHADER_GET_UNIFORM_LOC(v, epsilon);
     SHADER_GET_UNIFORM_LOC(v, prev);
 
     /*  We build a set of square tiles in X and Y, each representing a
@@ -317,6 +319,8 @@ static void ao_vol_render(ao_vol_t* v, GLuint depth, camera_t* camera) {
     glDrawBuffers(1, &draw_buf);
     check_framebuffer();
     log_gl_error();
+
+    glUniform1f(v->u_epsilon, 1.0f / v->size);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, v->tex[v->pingpong]);
