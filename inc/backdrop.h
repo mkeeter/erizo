@@ -12,10 +12,10 @@ typedef struct backdrop_ {
     GLuint prog;
 
     /*  Uniform locations */
-    GLuint u_upper_left;
-    GLuint u_upper_right;
-    GLuint u_lower_left;
-    GLuint u_lower_right;
+    GLint u_upper_left;
+    GLint u_upper_right;
+    GLint u_lower_left;
+    GLint u_lower_right;
 } backdrop_t;
 
 backdrop_t* backdrop_new();

@@ -18,19 +18,19 @@ typedef struct model_ {
     GLuint prog;
 
     /*  Uniform locations for matrices */
-    GLuint u_proj;
-    GLuint u_view;
-    GLuint u_model;
+    GLint u_proj;
+    GLint u_view;
+    GLint u_model;
 
     /*  Uniform locations for lighting */
-    GLuint u_key;
-    GLuint u_fill;
-    GLuint u_base;
+    GLint u_key;
+    GLint u_fill;
+    GLint u_base;
 
     /*  Uniform locations for volumetric lighting */
-    GLuint u_vol;
-    GLuint u_vol_logsize;
-    GLuint u_vol_num_rays;
+    GLint u_vol_tex;
+    GLint u_vol_logsize;
+    GLint u_vol_num_rays;
 } model_t;
 
 model_t* model_new();

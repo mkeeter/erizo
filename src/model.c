@@ -79,7 +79,21 @@ void main() {
     float b = dot(vert_norm, vec3(-0.57f, -0.57f, 0.57f));
 
     if (vol_num_rays != 0) {
-        out_color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+        int size = (1 << vol_logsize);
+        int tiles = (1 << (vol_logsize / 2));
+
+        // Normalize position to voxel scale
+        vec3 pos = (pos_model + 1.0f) / 2.0f * size;
+        int x = int(pos.x + 0.5f);
+        int y = int(pos.y + 0.5f);
+        int z = int(pos.z + 0.5f);
+        int zx = z / (1 << tiles);
+        int zy = z % (1 << tiles);
+
+        vec4 t = texture(vol_tex, vec2(x / float(size) + zx / float(tiles),
+                                       y / float(size) + zy / float(tiles)));
+
+        out_color = vec4(t.xyz, 1.0f);
     } else {
         out_color = vec4(mix(base, key,  a) * 0.5f +
                          mix(base, fill, b) * 0.5f, 1.0f);
@@ -107,9 +121,10 @@ model_t* model_new() {
     SHADER_GET_UNIFORM_LOC(model, fill);
     SHADER_GET_UNIFORM_LOC(model, base);
 
-    SHADER_GET_UNIFORM_LOC(model, vol);
+    SHADER_GET_UNIFORM_LOC(model, vol_tex);
     SHADER_GET_UNIFORM_LOC(model, vol_logsize);
     SHADER_GET_UNIFORM_LOC(model, vol_num_rays);
+    log_gl_error();
 
     log_trace("Initialized model");
     return model;
@@ -143,7 +158,7 @@ void model_draw(model_t* model, ao_t* ao, camera_t* camera, theme_t* theme) {
     if (ao) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, ao->vol.tex[ao->vol.pingpong]);
-        glUniform1i(model->u_vol, 0);
+        glUniform1i(model->u_vol_tex, 0);
         glUniform1i(model->u_vol_logsize, ao->vol.logsize);
         glUniform1i(model->u_vol_num_rays, ao->vol.rays);
     } else {
@@ -152,4 +167,5 @@ void model_draw(model_t* model, ao_t* ao, camera_t* camera, theme_t* theme) {
     }
 
     glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, NULL);
+    log_gl_error();
 }
