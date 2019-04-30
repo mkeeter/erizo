@@ -189,7 +189,7 @@ void main() {
 
     // This is the previous accumulator value
     vec4 prev = texelFetch(prev, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
-    if (tz != -1.0f && abs(tz - pz) <= 12.0f * epsilon) {
+    if (tz != -1.0f && abs(tz - pz) <= epsilon) {
         out_color = prev + vec4(ray.xyz, 1.0f);
     } else {
         out_color = prev;
@@ -320,7 +320,7 @@ static void ao_vol_render(ao_vol_t* v, GLuint depth, camera_t* camera) {
     check_framebuffer();
     log_gl_error();
 
-    glUniform1f(v->u_epsilon, 1.0f / v->size);
+    glUniform1f(v->u_epsilon, 1.0f / (1 << v->logsize));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, v->tex[v->pingpong]);
