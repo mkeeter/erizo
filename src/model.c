@@ -85,15 +85,11 @@ void main() {
         int tiles = (1 << (vol_logsize / 2));
 
         // Normalize position to voxel scale
-        vec3 pos_norm = (pos_model + 1.0f) / 2.0f;
-        int z = int(pos_norm.z * size + 0.5f);
-        int zx = z / tiles;
-        int zy = z % tiles;
+        ivec3 pos = ivec3((pos_model + 1.0f) / 2.0f * size + 0.5f);
+        ivec2 offset = ivec2(pos.z / tiles, pos.z % tiles);
 
         // Do the actual texture lookup
-        float tx = (pos_norm.x + zx) / tiles;
-        float ty = (pos_norm.y + zy) / tiles;
-        vec4 t = texture(vol_tex, vec2(tx, ty));
+        vec4 t = texelFetch(vol_tex, pos.xy + offset*size, 0);
 
         // Figure out how to apply the color
         vec3 c = normalize(t.xyz) / 2.0f + 0.5f;
