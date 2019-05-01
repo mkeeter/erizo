@@ -203,7 +203,7 @@ void main() {
     for (int i=0; i < 9; ++i) {
         vec2 tex_coord = pt.xy / 2.0f + 0.5f + corners[i];
         float tz = texture(depth, tex_coord).x * 2.0f - 1.0f;
-        if (tz != -1.0f && abs(tz - pz) <= 2.0f * epsilon) {
+        if (pz >= tz - 2.0f * epsilon) {
             out_color = prev + vec4(ray.xyz, 1.0f);
             return;
         }
