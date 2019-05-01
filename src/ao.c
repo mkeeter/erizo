@@ -181,19 +181,34 @@ void main() {
 
     // Here are the target and rendered Z positions, which we can compare
     // to decide whether this particular ray made it through.
-    float tz = texture(depth, pt.xy / 2.0f + 0.5f).x * 2.0f - 1.0f;
     float pz = -pt.z;
 
     // This is the actual ray's direction, which we accumulate
     vec4 ray = inverse(view) * vec4(0.0f, 0.0f, 1.0f, 0.0f);
 
+    vec2 corners[9] = vec2[9](
+            vec2( epsilon,  epsilon),
+            vec2( epsilon, -epsilon),
+            vec2(-epsilon,  epsilon),
+            vec2(-epsilon, -epsilon),
+            vec2(0, 0),
+            vec2(0, epsilon),
+            vec2(epsilon, 0),
+            vec2(0, -epsilon),
+            vec2(-epsilon, 0)
+            );
+
     // This is the previous accumulator value
     vec4 prev = texelFetch(prev, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
-    if (tz != -1.0f && abs(tz - pz) <= 2.0f * epsilon) {
-        out_color = prev + vec4(ray.xyz, 1.0f);
-    } else {
-        out_color = prev;
+    for (int i=0; i < 9; ++i) {
+        vec2 tex_coord = pt.xy / 2.0f + 0.5f + corners[i];
+        float tz = texture(depth, tex_coord).x * 2.0f - 1.0f;
+        if (tz != -1.0f && abs(tz - pz) <= 2.0f * epsilon) {
+            out_color = prev + vec4(ray.xyz, 1.0f);
+            return;
+        }
     }
+    out_color = prev;
 }
 );
 

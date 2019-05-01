@@ -85,7 +85,7 @@ void main() {
         int tiles = (1 << (vol_logsize / 2));
 
         // Normalize position to voxel scale
-        ivec3 pos = ivec3((pos_model + 1.0f) / 2.0f * size + 0.5f);
+        ivec3 pos = ivec3((pos_model + 1.0f) / 2.0f * size);
         ivec2 offset = ivec2(pos.z / tiles, pos.z % tiles);
 
         // Do the actual texture lookup
