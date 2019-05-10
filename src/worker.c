@@ -25,25 +25,31 @@ static void* worker_run(void* worker_) {
     vset_t* vset = vset_new();
     uint32_t* tris = (uint32_t*)malloc(sizeof(uint32_t) * 3 * worker->tri_count);
 
-    /*  This part is exciting, because STL files have 36 float-bytes
-     *  (representing 3 vertices of 3 floats each) at 50-byte intervals.
+    /*  Each triangle in an STL is 36 float-bytes (representing 3 vertices
+     *  of 3 floats each), and they are spaced at 50-byte intervals.
      *
      *  This means that every other set of float-bytes is aligned, which
-     *  lets us save a memcpy.  We check to see our parity, then iterate over
-     *  fast (aligned) floats and unaligned bytes in two separate loops. */
-    const bool unaligned = ((uintptr_t)worker->stl & 3);
-    /*  First, we do the aligned loads */
-    for (size_t i=unaligned; i < worker->tri_count; i += 2) {
+     *  lets us save a memcpy.  We check alignment and handle the unaligned
+     *  case below, which then lets us loop faster. */
+    unsigned i = 0;
+#define INSERT_UNALIGNED() {                                    \
+        float vert3[9];                                         \
+        memcpy(vert3, &worker->stl[i], sizeof(vert3));          \
+        for (unsigned j=0; j < 3; ++j) {                        \
+            tris[i*3 + j] = vset_insert(vset, &vert3[j * 3]);   \
+        }                                                       \
+        i++;                                                    \
+    }
+
+    if ((uintptr_t)worker->stl & 3) {
+        INSERT_UNALIGNED();
+    }
+    while (i < worker->tri_count) {
         for (unsigned j=0; j < 3; ++j) {
             tris[i*3 + j] = vset_insert(vset, (float*)worker->stl[i] + 3*j);
         }
-    }
-    /*  Then, the unaligned loads (which require a memcpy) */
-    for (size_t i=!unaligned; i < worker->tri_count; i += 2) {
-        float vert3[9];
-        memcpy(vert3, &worker->stl[i], sizeof(vert3));
-        for (unsigned j=0; j < 3; ++j) {
-            tris[i*3 + j] = vset_insert(vset, &vert3[j * 3]);
+        if (++i < worker->tri_count) {
+            INSERT_UNALIGNED();
         }
     }
     worker->vert_count = vset->count;
