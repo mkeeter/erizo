@@ -81,7 +81,14 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
         //  Disable file opening through application:openFiles:, which
         //  is triggered for command-line arguments during the first call
         //  to glfwInit.
-        app_open(app, argv[1]);
+        //
+        //  Skip "files" beginning with -psn, which is a Mac-specific
+        //  pseudo-file that's appended to the command-line arguments if
+        //  you launch the application by dragging a file onto the icon.
+        const char psn_prefix[] = "-psn";
+        if (strncmp(psn_prefix, argv[1], sizeof(psn_prefix) - 1)) {
+            app_open(app, argv[1]);
+        }
     }
 
     GLUE = [[Glue alloc] init];
