@@ -35,15 +35,14 @@ uniform vec3 base;
 out vec4 out_color;
 
 void main() {
-    mat4 m = inverse(proj);
     vec3 n_screen = cross(dFdx(ec_pos), dFdy(ec_pos));
-    vec3 normal = normalize((m * vec4(n_screen, 1.0f)).xyz);
+    n_screen.z *= inverse(view)[2][2];
+    vec3 normal = normalize(n_screen);
     float a = dot(normal, vec3(0.0f, 0.0f, 1.0f));
     float b = dot(normal, vec3(-0.57f, -0.57f, 0.57f));
 
     out_color = vec4(mix(base, key,  a) * 0.5f +
                      mix(base, fill, b) * 0.5f, 1.0f);
-    out_color = vec4(normalize(n_screen), 1.0f);
 }
 );
 
