@@ -36,7 +36,7 @@ out vec4 out_color;
 
 void main() {
     vec3 n_screen = cross(dFdx(ec_pos), dFdy(ec_pos));
-    n_screen.z *= inverse(view)[2][2];
+    n_screen.z *= proj[2][2];
     vec3 normal = normalize(n_screen);
     float a = dot(normal, vec3(0.0f, 0.0f, 1.0f));
     float b = dot(normal, vec3(-0.57f, -0.57f, 0.57f));
