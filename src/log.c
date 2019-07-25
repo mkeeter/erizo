@@ -5,9 +5,10 @@
 platform_terminal_color_t log_message_color(log_type_t t) {
     switch (t) {
         case LOG_TRACE: return TERM_COLOR_BLUE;
-        case LOG_INFO: return TERM_COLOR_GREEN;
-        case LOG_WARN: return TERM_COLOR_YELLOW;
+        case LOG_INFO:  return TERM_COLOR_GREEN;
+        case LOG_WARN:  return TERM_COLOR_YELLOW;
         case LOG_ERROR: return TERM_COLOR_RED;
+        default:        return TERM_COLOR_WHITE;
     }
 }
 
@@ -32,7 +33,7 @@ FILE* log_preamble(log_type_t t, const char* file, int line)
         mut = platform_mutex_new();
     }
 
-    const int64_t dt_usec = platform_get_time() - start_usec;
+    const uint64_t dt_usec = platform_get_time() - start_usec;
 
     FILE* out = (t == LOG_ERROR) ? stderr : stdout;
 
@@ -48,7 +49,8 @@ FILE* log_preamble(log_type_t t, const char* file, int line)
     fprintf(out, "[erizo]");
 
     platform_set_terminal_color(out, TERM_COLOR_WHITE);
-    fprintf(out, " (%lli.%06lli) ", dt_usec / 1000000, dt_usec % 1000000);
+    fprintf(out, " (%u.%06u) ", (uint32_t)(dt_usec / 1000000),
+                                (uint32_t)(dt_usec % 1000000));
 
     platform_clear_terminal_color(out);
     fprintf(out, "%s:%i ", filename, line);

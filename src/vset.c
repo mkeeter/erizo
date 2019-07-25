@@ -142,8 +142,8 @@ void vset_print_stats(vset_t* v) {
         chain_count += (chain_length > 0);
     }
 
-    log_trace("vset has %lu nodes", v->count);
-    log_trace("   size %lu", v->num_buckets);
+    log_trace("vset has %u nodes", v->count);
+    log_trace("   size %u", v->num_buckets);
     log_trace("   longest chain %u", max_chain);
     log_trace("   occupied buckets %u", chain_count);
     log_trace("   average chain %f", (float)total_chain / v->num_buckets);

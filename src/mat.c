@@ -148,10 +148,10 @@ vec3_t vec3_normalized(const vec3_t v) {
 }
 
 vec3_t vec3_cross(const vec3_t a, const vec3_t b) {
-    return (vec3_t){
+    return (vec3_t){{
         a.v[1] * b.v[2] - a.v[2] * b.v[1],
         a.v[2] * b.v[0] - a.v[0] * b.v[2],
-        a.v[0] * b.v[1] - a.v[1] * b.v[0]};
+        a.v[0] * b.v[1] - a.v[1] * b.v[0]}};
 }
 
 vec3_t vec3_center(const vec3_t a, const vec3_t b) {

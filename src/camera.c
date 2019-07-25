@@ -2,12 +2,6 @@
 #include "object.h"
 #include "mat.h"
 
-typedef enum camera_mouse_ {
-    CAMERA_IDLE,
-    CAMERA_ROT,
-    CAMERA_PAN,
-} camera_mouse_t;
-
 struct camera_ {
     /*  Window parameters */
     int width;

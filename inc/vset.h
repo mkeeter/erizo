@@ -14,9 +14,9 @@ typedef struct vset_ {
     size_t data_size;
 
     uint32_t* buckets;
-    size_t num_buckets;
+    uint32_t num_buckets;
 
-    size_t count;               /* Number of used nodes */
+    uint32_t count;             /* Number of used nodes */
 } vset_t;
 
 /*  Constructs a new vset */
