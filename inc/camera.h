@@ -1,40 +1,23 @@
 #include "base.h"
 
-typedef enum camera_mouse_ {
-    CAMERA_IDLE,
-    CAMERA_ROT,
-    CAMERA_PAN,
-} camera_mouse_t;
-
-typedef struct camera_ {
-    /*  Window parameters */
-    int width;
-    int height;
-
-    /*  Camera positioning */
-    float pitch;
-    float yaw;
-    float center[3];
-    float scale;
-
-    /*  Calculated matrices */
-    float proj[4][4];
-    float view[4][4];
-
-    /* Matrix calculated in loader and stored in model */
-    float model[4][4];
-
-    /*  Mouse position and state tracking */
-    camera_mouse_t state;
-    float mouse_pos[2];
-    float click_pos[2];
-    float start[3]; /* Flexible drag data, depends on mode */
-    float drag_mat[4][4];
-} camera_t;
+/*  Forward declaration of camera struct */
+struct camera_;
+typedef struct camera_ camera_t;
 
 /*  Constructs a new heap-allocated camera */
 camera_t* camera_new(float width, float height);
 void camera_delete(camera_t* camera);
+
+/*  Sets the camera width and height and updates proj matrix */
+void camera_set_size(camera_t* camera, float width, float height);
+
+/*  Sets the camera's model matrix */
+void camera_set_model_mat(camera_t* camera, float mat[4][4]);
+
+/*  Used when binding uniforms */
+float* camera_model_mat(camera_t* camera);
+float* camera_proj_mat(camera_t* camera);
+float* camera_view_mat(camera_t* camera);
 
 /*  Updates the proj matrix from width and height */
 void camera_update_proj(camera_t* camera);
@@ -55,4 +38,5 @@ void camera_zoom(camera_t* camera, float amount);
  *  pan if the button was already held down. */
 void camera_set_mouse_pos(camera_t* camera, float x, float y);
 
-#define CAMERA_UNIFORM_MAT(m, u) glUniformMatrix4fv(m->u_##u, 1, GL_FALSE, (float*)camera->u)
+#define CAMERA_UNIFORM_MAT(m, u) glUniformMatrix4fv(\
+        m->u_##u, 1, GL_FALSE, camera_##u##_mat(camera))

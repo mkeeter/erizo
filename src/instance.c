@@ -15,9 +15,11 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
     /*  Kick the loader off in a separate thread */
     loader_t* loader = loader_new(filepath);
 
-    camera_t* camera = camera_new(500.0f, 500.0f);
+    const float width = 500;
+    const float height = 500;
+    camera_t* camera = camera_new(width, height);
     const char* filename = platform_filename(filepath);
-    GLFWwindow* window = window_new(filename, camera->width, camera->height);
+    GLFWwindow* window = window_new(filename, width, height);
 
     /*  Highest priority once OpenGL is running: allocate the VBO
      *  and pass it to the loader thread.  */
@@ -63,9 +65,8 @@ void instance_delete(instance_t* instance) {
 
 void instance_cb_window_size(instance_t* instance, int width, int height)
 {
-    instance->camera->width = width;
-    instance->camera->height = height;
-    camera_update_proj(instance->camera);
+    /*  Update camera size (and recalculate projection matrix) */
+    camera_set_size(instance->camera, width, height);
 
     /*  Continue to render while the window is being resized
      *  (otherwise it ends up greyed out on Mac)  */

@@ -346,7 +346,7 @@ void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
         model->ibo = loader->ibo;
         model->tri_count = loader->tri_count;
 
-        memcpy(camera->model, loader->mat, sizeof(loader->mat));
+        camera_set_model_mat(camera, loader->mat);
         log_trace("Copied model from loader");
     } else {
         log_error("Loading failed");
