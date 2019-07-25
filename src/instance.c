@@ -45,11 +45,12 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
 
     /*  At the very last moment, check on the loader */
     loader_finish(loader, instance->model, instance->camera);
-    if (loader->state != LOADER_DONE) {
-        instance->error = loader_error_string(loader->state);
-    }
-    loader_delete(loader);
 
+    /*  Sets the error string, or NULL if there was no error. */
+    instance->error = loader_error_string(loader);
+
+    /*  Clean up and return */
+    loader_delete(loader);
     return instance;
 }
 

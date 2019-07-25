@@ -8,6 +8,32 @@
 #include "platform.h"
 #include "worker.h"
 
+struct loader_ {
+    const char* filename;
+
+    /*  Model parameters */
+    GLuint vbo;
+    GLuint ibo;
+    uint32_t tri_count;
+    uint32_t vert_count;
+    mat4_t mat;
+
+    /*  GPU-mapped buffers, populated by main thread */
+    float* vertex_buf;
+    uint32_t* index_buf;
+
+    /*  Synchronization system */
+    struct platform_thread_* thread;
+    loader_state_t state;
+    struct platform_mutex_* mutex;
+    struct platform_cond_* cond;
+
+    /*  Each worker thread increments count when they are
+     *  done building their vertex set, using the same mutex
+     *  and condition variable. */
+    unsigned count;
+};
+
 static void* loader_run(void* loader_);
 
 void loader_wait(loader_t* loader, loader_state_t target) {
@@ -245,7 +271,7 @@ static void* loader_run(void* loader_) {
 
     /*  Reduce min / max arrays from worker subprocesses */
     float scale = 0.0f;
-    float center[3];
+    vec3_t center;
     for (unsigned v=0; v < 3; ++v) {
         for (unsigned i=1; i < NUM_WORKERS; ++i) {
             if (workers[i].max[v] > workers[0].max[v]) {
@@ -255,7 +281,7 @@ static void* loader_run(void* loader_) {
                 workers[0].min[v] = workers[i].min[v];
             }
         }
-        center[v] = (workers[0].max[v] + workers[0].min[v]) / 2.0f;
+        center.v[v] = (workers[0].max[v] + workers[0].min[v]) / 2.0f;
         const float d = workers[0].max[v] - workers[0].min[v];
         if (d > scale) {
             scale = d;
@@ -263,11 +289,9 @@ static void* loader_run(void* loader_) {
     }
     /*  Build the model matrix, which positions the model at
      *  [0,0,0] and scales it to fit the standard GL view */
-    float t[4][4];
-    mat4_translation(center, t);
-    float s[4][4];
-    mat4_scaling(1.0f / scale, s);
-    mat4_mul(t, s, loader->mat);
+    mat4_t t = mat4_translation(center);
+    mat4_t s = mat4_scaling(1.0f / scale);
+    loader->mat = mat4_mul(t, s);
 
     /*  Mark the load as done and post an empty event, to make sure that
      *  the main loop wakes up and checks the loader */
@@ -346,7 +370,7 @@ void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
         model->ibo = loader->ibo;
         model->tri_count = loader->tri_count;
 
-        camera_set_model_mat(camera, loader->mat);
+        memcpy(camera_model_mat(camera), &loader->mat, sizeof(mat4_t));
         log_trace("Copied model from loader");
     } else {
         log_error("Loading failed");
@@ -364,15 +388,15 @@ void loader_delete(loader_t* loader) {
     log_trace("Destroyed loader");
 }
 
-const char* loader_error_string(loader_state_t state) {
-    switch(state) {
+const char* loader_error_string(loader_t* loader) {
+    switch(loader->state) {
         case LOADER_START:
         case LOADER_MODEL_SIZE:
         case LOADER_GPU_BUFFER:
         case LOADER_WORKER_GPU:
+            return "Invalid state";
         case LOADER_DONE:
-            return "No error";
-
+            return NULL;
         case LOADER_ERROR:
             return "Generic error";
         case LOADER_ERROR_NO_FILE:
@@ -382,4 +406,13 @@ const char* loader_error_string(loader_state_t state) {
         case LOADER_ERROR_WRONG_SIZE:
             return "File size does not match triangle count";
     }
+    log_error_and_abort("Invalid state %i", loader->state);
+    return NULL;
+}
+
+void loader_increment_count(loader_t* loader) {
+    platform_mutex_lock(loader->mutex);
+    loader->count++;
+    platform_cond_broadcast(loader->cond);
+    platform_mutex_unlock(loader->mutex);
 }

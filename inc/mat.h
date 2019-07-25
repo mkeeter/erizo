@@ -1,22 +1,33 @@
+typedef struct mat4_ {
+    float m[4][4];
+} mat4_t;
+
+typedef struct vec3_ {
+    float v[3];
+} vec3_t;
+
 /*  Constructs an identity matrix */
-void mat4_identity(float out[4][4]);
+mat4_t mat4_identity(void);
 
 /*  Constructs a translation matrix */
-void mat4_translation(const float d[3], float out[4][4]);
+mat4_t mat4_translation(const vec3_t d);
 
 /*  Constructs a uniform scaling matrix */
-void mat4_scaling(const float s, float out[4][4]);
+mat4_t mat4_scaling(const float s);
 
 /*  Matrix math */
-void mat4_mul(const float a[4][4], const float b[4][4], float out[4][4]);
-void mat4_apply(const float a[4][4], const float v[3], float out[3]);
-void mat4_inv(const float in[4][4], float out[4][4]);
+mat4_t mat4_mul(const mat4_t a, const mat4_t b);
+vec3_t mat4_apply(const mat4_t a, const vec3_t v);
+mat4_t mat4_inv(const mat4_t in);
 
 /*  Basic vector length */
-float vec3_length(const float v[3]);
+float vec3_length(const vec3_t v);
 
 /*  In-place normalization of a vector */
-void vec3_normalize(float v[3]);
+vec3_t vec3_normalized(const vec3_t v);
+
+/*  Returns the center between two points */
+vec3_t vec3_center(const vec3_t a, const vec3_t b);
 
 /*  Cross product */
-void vec3_cross(const float a[3], const float b[3], float out[3]);
+vec3_t vec3_cross(const vec3_t a, const vec3_t b);

@@ -63,7 +63,8 @@ void bitmap_write_rays(FILE* f, unsigned w, unsigned h,
 {
     for (unsigned y=0; y < h; ++y) {
         for (unsigned x=0; x < w; ++x) {
-            const float len = vec3_length((const float*)data);
+            vec3_t norm = {{(*data)[0], (*data)[1], (*data)[2]}};
+            const float len = vec3_length(norm);
             const float scale = (*data)[3] / rays;
             for (unsigned i=0; i < 3; ++i) {
                 float d = (*data)[i] / len * scale / 2.0f + 0.5f;

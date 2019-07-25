@@ -16,15 +16,15 @@ struct camera_ {
     /*  Camera positioning */
     float pitch;
     float yaw;
-    float center[3];
+    vec3_t center;
     float scale;
 
     /*  Calculated matrices */
-    float proj[4][4];
-    float view[4][4];
+    mat4_t proj;
+    mat4_t view;
 
     /* Matrix calculated in loader and stored in model */
-    float model[4][4];
+    mat4_t model;
 
     /*  Mouse position and state tracking */
     enum { CAMERA_IDLE,
@@ -34,8 +34,8 @@ struct camera_ {
 
     float mouse_pos[2];
     float click_pos[2];
-    float start[3]; /* Flexible drag data, depends on mode */
-    float drag_mat[4][4];
+    vec3_t start; /* Flexible drag data, depends on mode */
+    mat4_t drag_mat;
 };
 
 camera_t* camera_new(float width, float height) {
@@ -58,72 +58,64 @@ void camera_set_size(camera_t* camera, float width, float height) {
     camera_update_proj(camera);
 }
 
-void camera_set_model_mat(camera_t* camera, float mat[4][4]) {
-    memcpy(camera->model, mat, sizeof(camera->model));
-}
-
 float* camera_model_mat(camera_t* camera) {
-    return (float*)camera->model;
+    return (float*)&camera->model;
 }
 
 float* camera_proj_mat(camera_t* camera) {
-    return (float*)camera->proj;
+    return (float*)&camera->proj;
 }
 
 float* camera_view_mat(camera_t* camera) {
-    return (float*)camera->view;
+    return (float*)&camera->view;
 }
 
 void camera_update_proj(camera_t* camera) {
-    mat4_identity(camera->proj);
+    camera->proj = mat4_identity();
     const float aspect = (float)camera->width / (float)camera->height;
     if (aspect > 1) {
-        camera->proj[0][0] = 1.0f / aspect;
+        camera->proj.m[0][0] = 1.0f / aspect;
     } else {
-        camera->proj[1][1] = aspect;
+        camera->proj.m[1][1] = aspect;
     }
-    camera->proj[2][2] = camera->scale / 2.0f;
+    camera->proj.m[2][2] = camera->scale / 2.0f;
 }
 
 void camera_reset_view(camera_t* camera) {
     camera->scale = 1.2f;
-    memset(camera->center, 0, sizeof(camera->center));
+    memset(&camera->center, 0, sizeof(camera->center));
     camera_update_view(camera);
 }
 
 void camera_update_view(camera_t* camera) {
-    mat4_identity(camera->view);
+    camera->view = mat4_identity();
 
-    {   /* Apply translation */
-        float t[4][4];
-        mat4_translation(camera->center, t);
-        mat4_mul(camera->view, t, camera->view);
-    }
+    /* Apply translation */
+    camera->view = mat4_mul(camera->view, mat4_translation(camera->center));
 
     {   /* Apply the yaw rotation */
         const float c = cos(camera->yaw);
         const float s = sin(camera->yaw);
-        const float y[4][4] = {{ c,   -s,   0.0f, 0.0f},
-                               { s,    c,   0.0f, 0.0f},
-                               {0.0f, 0.0f, 1.0f, 0.0f},
-                               {0.0f, 0.0f, 0.0f, 1.0f}};
-        mat4_mul(camera->view, y, camera->view);
+        const mat4_t y = {{{ c,   -s,   0.0f, 0.0f},
+                           { s,    c,   0.0f, 0.0f},
+                           {0.0f, 0.0f, 1.0f, 0.0f},
+                           {0.0f, 0.0f, 0.0f, 1.0f}}};
+        camera->view = mat4_mul(camera->view, y);
     }
     {   /* Apply the pitch rotation */
         const float c = cos(camera->pitch);
         const float s = sin(camera->pitch);
-        const float p[4][4] = {{1.0f, 0.0f, 0.0f, 0.0f},
-                               {0.0f,  c,   -s,   0.0f},
-                               {0.0f,  s,    c,   0.0f},
-                               {0.0f, 0.0f, 0.0f, 1.0f}};
-        mat4_mul(camera->view, p, camera->view);
+        const mat4_t p = {{{1.0f, 0.0f, 0.0f, 0.0f},
+                           {0.0f,  c,   -s,   0.0f},
+                           {0.0f,  s,    c,   0.0f},
+                           {0.0f, 0.0f, 0.0f, 1.0f}}};
+        camera->view = mat4_mul(camera->view, p);
     }
 
     {   /*  Apply the scaling */
-        float s[4][4];
-        mat4_scaling(1.0f / camera->scale, s);
-        s[1][1] *= -1.0f;
-        mat4_mul(camera->view, s, camera->view);
+        mat4_t s = mat4_scaling(1.0f / camera->scale);
+        s.m[1][1] *= -1.0f;
+        camera->view = mat4_mul(camera->view, s);
     }
 }
 
@@ -140,19 +132,19 @@ void camera_set_mouse_pos(camera_t* camera, float x, float y) {
     switch (camera->state) {
         case CAMERA_IDLE:  break;
         case CAMERA_PAN: {
-            float v[3] = {camera->click_pos[0], camera->click_pos[1], 0.0f};
-            mat4_apply(camera->drag_mat, v, v);
-            float w[3] = {camera->mouse_pos[0], camera->mouse_pos[1], 0.0f};
-            mat4_apply(camera->drag_mat, w, w);
+            vec3_t v = {{camera->click_pos[0], camera->click_pos[1], 0.0f}};
+            v = mat4_apply(camera->drag_mat, v);
+            vec3_t w = {{camera->mouse_pos[0], camera->mouse_pos[1], 0.0f}};
+            w = mat4_apply(camera->drag_mat, w);
             for (unsigned i=0; i < 3; ++i) {
-                camera->center[i] = camera->start[i] + v[i] - w[i];
+                camera->center.v[i] = camera->start.v[i] + v.v[i] - w.v[i];
             }
             camera_update_view(camera);
             break;
         }
         case CAMERA_ROT: {
-            const float start_pitch = camera->start[0];
-            const float start_yaw = camera->start[1];
+            const float start_pitch = camera->start.v[0];
+            const float start_yaw = camera->start.v[1];
 
             /*  Update pitch and clamp values */
             camera->pitch = start_pitch + dy * 2.0f;
@@ -181,25 +173,24 @@ void camera_set_mouse_pos(camera_t* camera, float x, float y) {
 /*  Finds the inverse of the view + projection matrix.  This
  *  turns normalized mouse coordinates (in the +/- 1 range)
  *  into world coordinates. */
-static void camera_vpi_mat(camera_t* camera, float m[4][4]) {
-    mat4_identity(m);
-    mat4_mul(camera->proj, m, m);
-    mat4_mul(camera->view, m, m);
-    mat4_inv(m, m);
+static mat4_t camera_vpi_mat(camera_t* camera) {
+    mat4_t m = mat4_identity();
+    m = mat4_mul(camera->proj, m);
+    m = mat4_mul(camera->view, m);
+    return mat4_inv(m);
 }
 
 void camera_begin_pan(camera_t* camera) {
     memcpy(camera->click_pos, camera->mouse_pos, sizeof(camera->mouse_pos));
-    memcpy(camera->start, camera->center, sizeof(camera->center));
-
-    camera_vpi_mat(camera, camera->drag_mat);
+    camera->start = camera->center;
+    camera->drag_mat = camera_vpi_mat(camera);
     camera->state = CAMERA_PAN;
 }
 
 void camera_begin_rot(camera_t* camera) {
     memcpy(camera->click_pos, camera->mouse_pos, sizeof(camera->mouse_pos));
-    camera->start[0] = camera->pitch;
-    camera->start[1] = camera->yaw;
+    camera->start.v[0] = camera->pitch;
+    camera->start.v[1] = camera->yaw;
     camera->state = CAMERA_ROT;
 }
 
@@ -208,23 +199,20 @@ void camera_end_drag(camera_t* camera) {
 }
 
 void camera_zoom(camera_t* camera, float amount) {
-    const float mouse[3] = {camera->mouse_pos[0], camera->mouse_pos[1], 0.0f};
+    const vec3_t mouse = {{camera->mouse_pos[0], camera->mouse_pos[1], 0.0f}};
 
-    float mat[4][4];
-    camera_vpi_mat(camera, mat);
-    float before[3];
-    mat4_apply(mat, mouse, before);
+    mat4_t mat = camera_vpi_mat(camera);
+    vec3_t before = mat4_apply(mat, mouse);
 
     camera->scale *= powf(1.01f, amount);
     camera_update_view(camera);
     camera_update_proj(camera);
 
-    camera_vpi_mat(camera, mat);
-    float after[3];
-    mat4_apply(mat, mouse, after);
+    mat = camera_vpi_mat(camera);
+    vec3_t after = mat4_apply(mat, mouse);
 
     for (unsigned i=0; i < 3; ++i) {
-        camera->center[i] += before[i] - after[i];
+        camera->center.v[i] += before.v[i] - after.v[i];
     }
     camera_update_view(camera);
 }

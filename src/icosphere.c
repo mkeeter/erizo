@@ -3,6 +3,14 @@
 #include "mat.h"
 #include "vset.h"
 
+struct icosphere_ {
+    uint32_t num_vs;
+    vec3_t* vs;
+
+    uint32_t num_ts;
+    uint32_t (*ts)[3];
+};
+
 uint32_t edge_lookup(icosphere_t* ico, uint32_t (*edge)[6][2],
                      const uint32_t ab[2]) {
     // Look to see whether this edge was already populated
@@ -16,10 +24,7 @@ uint32_t edge_lookup(icosphere_t* ico, uint32_t (*edge)[6][2],
 
     // Otherwise, store the new vertex
     uint32_t n = ico->num_vs++;
-    for (unsigned i=0; i < 3; ++i) {
-        ico->vs[n][i] = (ico->vs[ab[0]][i] + ico->vs[ab[1]][i]) / 2.0f;
-    }
-    vec3_normalize(ico->vs[n]);
+    ico->vs[n] = vec3_normalized(vec3_center(ico->vs[ab[0]], ico->vs[ab[1]]));
 
     // Record the vertex index in the edge tables by finding the first
     // slot with zeros and replacing it with our new information.
@@ -129,7 +134,7 @@ icosphere_t* icosphere_new(unsigned depth) {
         ico->vs = malloc(sizeof(ts));
         memcpy(ico->vs, ts, sizeof(ts));
         for (unsigned i=1; i < ico->num_vs; ++i) {
-            vec3_normalize(ico->vs[i]);
+            ico->vs[i] = vec3_normalized(ico->vs[i]);
         }
     }
 

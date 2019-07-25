@@ -55,10 +55,7 @@ static void* worker_run(void* worker_) {
     worker->vert_count = vset->count;
 
     /*  Increment the number of finished worker threads */
-    platform_mutex_lock(loader->mutex);
-    loader->count++;
-    platform_cond_broadcast(loader->cond);
-    platform_mutex_unlock(loader->mutex);
+    loader_increment_count(loader);
 
     /*  Find our model's bounds by iterating over deduplicated vertices */
     memcpy(worker->min, vset->vert[1], sizeof(worker->min));

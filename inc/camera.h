@@ -11,9 +11,6 @@ void camera_delete(camera_t* camera);
 /*  Sets the camera width and height and updates proj matrix */
 void camera_set_size(camera_t* camera, float width, float height);
 
-/*  Sets the camera's model matrix */
-void camera_set_model_mat(camera_t* camera, float mat[4][4]);
-
 /*  Used when binding uniforms */
 float* camera_model_mat(camera_t* camera);
 float* camera_proj_mat(camera_t* camera);
