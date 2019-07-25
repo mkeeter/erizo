@@ -1,6 +1,5 @@
 #include "base.h"
 
-struct ao_;
 struct camera_;
 struct theme_;
 
@@ -35,5 +34,4 @@ typedef struct model_ {
 
 model_t* model_new();
 void model_delete(model_t* model);
-void model_draw(model_t* model,  struct ao_* ao,
-                struct camera_* camera, struct theme_* theme);
+void model_draw(model_t* model, struct camera_* camera, struct theme_* theme);

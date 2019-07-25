@@ -1,4 +1,3 @@
-#include "ao.h"
 #include "app.h"
 #include "backdrop.h"
 #include "camera.h"
@@ -57,7 +56,6 @@ void instance_delete(instance_t* instance) {
     OBJECT_DELETE_MEMBER(instance, camera);
     OBJECT_DELETE_MEMBER(instance, backdrop);
     OBJECT_DELETE_MEMBER(instance, window);
-    OBJECT_DELETE_MEMBER(instance, ao);
     free(instance);
 }
 
@@ -112,13 +110,6 @@ void instance_draw(instance_t* instance, theme_t* theme) {
     glClear(GL_DEPTH_BUFFER_BIT);
     backdrop_draw(instance->backdrop, theme);
 
-#if INSTANCE_RENDER_AO
-    if (instance->ao == NULL) {
-        instance->ao = ao_new(512, 6);
-        ao_render(instance->ao, instance->model, instance->camera);
-    }
-#endif
-
-    model_draw(instance->model, instance->ao, instance->camera, theme);
+    model_draw(instance->model, instance->camera, theme);
     glfwSwapBuffers(instance->window);
 }

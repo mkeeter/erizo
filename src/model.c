@@ -1,4 +1,3 @@
-#include "ao.h"
 #include "camera.h"
 #include "log.h"
 #include "model.h"
@@ -81,7 +80,7 @@ void model_delete(model_t* model) {
     free(model);
 }
 
-void model_draw(model_t* model, ao_t* ao, camera_t* camera, theme_t* theme) {
+void model_draw(model_t* model, camera_t* camera, theme_t* theme) {
     glEnable(GL_DEPTH_TEST);
     glUseProgram(model->prog);
     glBindVertexArray(model->vao);

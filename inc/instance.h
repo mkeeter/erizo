@@ -1,6 +1,5 @@
 #include "base.h"
 
-struct ao_;
 struct app_;
 struct backdrop_;
 struct camera_;
@@ -11,8 +10,6 @@ typedef struct instance_ {
     struct backdrop_* backdrop;
     struct camera_* camera;
     struct model_*  model;
-
-    struct ao_* ao;
 
     const char* error; // Error string from the loader
     struct app_* parent;
