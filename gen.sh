@@ -17,8 +17,7 @@ EOF
 )
 
 TARGET=src/version.c
-PREV=$(cat $TARGET 2> /dev/null || echo '')
-if [ "$VERSION" != "$PREV" ]
+if ! echo "$VERSION" | cmp $TARGET &> /dev/null
 then
     echo "$VERSION" > $TARGET
 fi
@@ -38,8 +37,7 @@ do
 done
 TARGET=inc/log_align.h
 LOGSIZE="#define LOG_ALIGN $LARGEST"
-PREV=$(cat $TARGET 2> /dev/null || echo '')
-if [ "$LOGSIZE" != "$PREV" ]
+if ! echo "$LOGSIZE" | cmp $TARGET &> /dev/null
 then
     echo "$LOGSIZE" > $TARGET
 fi
