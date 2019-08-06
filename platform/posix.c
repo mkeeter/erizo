@@ -52,17 +52,17 @@ void platform_clear_terminal_color(FILE* f) {
     fprintf(f, "\x1b[0m");
 }
 
-typedef struct platform_thread_ {
+struct platform_thread_ {
     pthread_t data;
-} platform_thread_t;
+};
 
-typedef struct platform_mutex_ {
+struct platform_mutex_ {
     pthread_mutex_t data;
-} platform_mutex_t;
+};
 
-typedef struct platform_cond_ {
+struct platform_cond_ {
     pthread_cond_t data;
-} platform_cond_t;
+};
 
 platform_mutex_t* platform_mutex_new() {
     OBJECT_ALLOC(platform_mutex);

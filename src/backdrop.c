@@ -38,6 +38,22 @@ void main() {
 }
 );
 
+struct backdrop_ {
+    GLuint vao;
+    GLuint vbo;
+
+    /*  Shader program */
+    GLuint vs;
+    GLuint fs;
+    GLuint prog;
+
+    /*  Uniform locations */
+    GLint u_upper_left;
+    GLint u_upper_right;
+    GLint u_lower_left;
+    GLint u_lower_right;
+};
+
 backdrop_t* backdrop_new() {
     OBJECT_ALLOC(backdrop);
     backdrop->vs = shader_build(BACKDROP_VS_SRC, GL_VERTEX_SHADER);

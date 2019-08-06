@@ -131,6 +131,8 @@ static const char* loader_parse_ascii(const char* data, size_t* size) {
     for (unsigned i=0; i < buf_count / 9; i++)  {
         memcpy(&out[84 + i*50 + 12], &buffer[i*9], 36);
     }
+    free(buffer);
+
     return out;
 }
 

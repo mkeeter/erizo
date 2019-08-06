@@ -1,7 +1,6 @@
 #include "base.h"
 
 /*  Forward declaration of camera struct */
-struct camera_;
 typedef struct camera_ camera_t;
 
 /*  Constructs a new heap-allocated camera */

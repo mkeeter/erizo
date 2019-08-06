@@ -24,25 +24,25 @@ void platform_clear_terminal_color(FILE* f);
 ////////////////////////////////////////////////////////////////////////////////
 
 /*  Threading API is a thin wrapper around pthreads */
-struct platform_mutex_;
-struct platform_cond_;
-struct platform_thread_;
+typedef struct platform_mutex_ platform_mutex_t;
+typedef struct platform_cond_ platform_cond_t;
+typedef struct platform_thread_ platform_thread_t;
 
-struct platform_mutex_* platform_mutex_new();
-void platform_mutex_delete(struct platform_mutex_* mutex);
-int platform_mutex_lock(struct platform_mutex_* mutex);
-int platform_mutex_unlock(struct platform_mutex_* mutex);
+platform_mutex_t* platform_mutex_new();
+void platform_mutex_delete(platform_mutex_t* mutex);
+int platform_mutex_lock(platform_mutex_t* mutex);
+int platform_mutex_unlock(platform_mutex_t* mutex);
 
-struct platform_cond_* platform_cond_new();
-void platform_cond_delete(struct platform_cond_* cond);
-int platform_cond_wait(struct platform_cond_* cond,
-                       struct platform_mutex_* mutex);
-int platform_cond_broadcast(struct platform_cond_* cond);
+platform_cond_t* platform_cond_new();
+void platform_cond_delete(platform_cond_t* cond);
+int platform_cond_wait(platform_cond_t* cond,
+                       platform_mutex_t* mutex);
+int platform_cond_broadcast(platform_cond_t* cond);
 
-struct platform_thread_*  platform_thread_new(void *(*run)(void *),
-                                              void* data);
-void platform_thread_delete(struct platform_thread_* mutex);
-int platform_thread_join(struct platform_thread_* thread);
+platform_thread_t*  platform_thread_new(void *(*run)(void *),
+                                        void* data);
+void platform_thread_delete(platform_thread_t* mutex);
+int platform_thread_join(platform_thread_t* thread);
 
 ////////////////////////////////////////////////////////////////////////////////
 
