@@ -29,7 +29,7 @@ GEN :=       \
 BUILD_DIR := build
 
 CFLAGS := -Wall -Werror -g -O3 -pedantic -Iinc -Ivendor
-LDFLAGS = -L/usr/local/lib -lglfw -lglew $(CFLAGS)
+LDFLAGS = -L/usr/local/lib
 
 # Build with Clang's undefined behavior sanitizer:
 # make clean; env UBSAN=1 make
@@ -45,14 +45,26 @@ ifeq ($(ASAN),1)
 endif
 
 # Platform detection
+ifndef TARGET
 UNAME := $(shell uname)
-ifeq ($(UNAME), Darwin)
+	ifeq ($(UNAME), Darwin)
+		TARGET := darwin
+	endif
+endif
+
+ifeq ($(TARGET), darwin)
 	SRC +=  platform/darwin platform/posix
 	LDFLAGS += -framework Foundation             \
 	           -framework Cocoa                  \
 	           -framework OpenGL                 \
+	           -lglfw -lglew                     \
 	           -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 	PLATFORM += -DPLATFORM_DARWIN
+endif
+ifeq ($(TARGET), win32-cross)
+	CFLAGS += -I../glfw/include -I../glew-2.1.0/include -mwindows -DGLEW_STATIC
+	PLATFORM += -DPLATFORM_WIN32
+	LDFLAGS += -L. -lopengl32 -lglfw3 -lglew32
 endif
 
 OBJ := $(addprefix $(BUILD_DIR)/,$(SRC:=.o) $(GEN:=.o))
@@ -61,10 +73,10 @@ DEP := $(OBJ:.o=.d)
 all: erizo erizo-test
 
 erizo: $(BUILD_DIR)/src/main.o $(OBJ)
-	$(CC) -o $@ $(LDFLAGS) $^
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 erizo-test: $(BUILD_DIR)/src/test.o $(OBJ)
-	$(CC) -o $@ $(LDFLAGS) $^
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<

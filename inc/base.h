@@ -4,6 +4,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#ifdef PLATFORM_WIN32
+#define _USE_MATH_DEFINES
+#endif
+
 #include <assert.h>
 #include <ctype.h>
 #include <math.h>
