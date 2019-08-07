@@ -8,9 +8,13 @@
 #include "platform.h"
 
 const char* platform_mmap(const char* filename, size_t* size) {
-    (void)filename;
-    (void)size;
-    return NULL;
+    HANDLE file = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file == INVALID_HANDLE_VALUE) {
+        log_error("Could not mmap file (%lu)", GetLastError());
+        return NULL;
+    }
+    HANDLE map = CreateFileMappingA(file, NULL, PAGE_EXECUTE_READ, 0, 0, NULL);
+    return MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
 }
 
 void platform_munmap(const char* data, size_t size) {
