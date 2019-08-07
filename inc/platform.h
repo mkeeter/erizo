@@ -5,6 +5,7 @@ struct app_;
 const char* platform_mmap(const char* filename, size_t* size);
 void platform_munmap(const char* data, size_t size);
 
+/*  Returns time in microseconds */
 int64_t platform_get_time(void);
 
 /*  Based on 8-color ANSI terminals */
@@ -41,7 +42,7 @@ int platform_cond_broadcast(platform_cond_t* cond);
 
 platform_thread_t*  platform_thread_new(void *(*run)(void *),
                                         void* data);
-void platform_thread_delete(platform_thread_t* mutex);
+void platform_thread_delete(platform_thread_t* thread);
 int platform_thread_join(platform_thread_t* thread);
 
 ////////////////////////////////////////////////////////////////////////////////
