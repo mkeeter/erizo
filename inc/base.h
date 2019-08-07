@@ -1,12 +1,13 @@
 #ifndef BASE_H
 #define BASE_H
 
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
 #ifdef PLATFORM_WIN32
+#define GLEW_STATIC
 #define _USE_MATH_DEFINES
 #endif
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #include <assert.h>
 #include <ctype.h>

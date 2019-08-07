@@ -62,7 +62,8 @@ ifeq ($(TARGET), darwin)
 	PLATFORM += -DPLATFORM_DARWIN
 endif
 ifeq ($(TARGET), win32-cross)
-	CFLAGS += -I../glfw/include -I../glew-2.1.0/include -mwindows -DGLEW_STATIC
+	SRC += platform/win32
+	CFLAGS += -I../glfw/include -I../glew-2.1.0/include -mwindows
 	PLATFORM += -DPLATFORM_WIN32
 	LDFLAGS += -L. -lopengl32 -lglfw3 -lglew32
 endif
