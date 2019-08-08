@@ -6,6 +6,7 @@
 #include "log.h"
 #include "object.h"
 #include "platform.h"
+#include "window.h"
 
 struct platform_mmap_ {
     const char* data;
@@ -57,11 +58,12 @@ void platform_munmap(platform_mmap_t* m) {
 }
 
 int64_t platform_get_time(void) {
+    FILETIME t;
+    GetSystemTimePreciseAsFileTime(&t);
     LARGE_INTEGER i;
-    if (!QueryPerformanceCounter(&i)) {
-        log_error_and_abort("Failed to get time");
-    }
-    return i.QuadPart;
+    i.LowPart = t.dwLowDateTime;
+    i.HighPart = t.dwHighDateTime;
+    return i.QuadPart / 10;
 }
 
 void platform_set_terminal_color(FILE* f, platform_terminal_color_t c) {
@@ -174,9 +176,19 @@ int platform_thread_join(platform_thread_t* thread) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void platform_init(app_t* app, int argc, char** argv) {
-    app_open(app, ":/sphere");
-    (void)argc;
-    (void)argv;
+    if (argc == 2) {
+        app_open(app, argv[1]);
+    }
+    if (app->instance_count == 0) {
+        //  Construct a dummy window, which triggers GLFW initialization
+        //  and may cause the application to open a file (if it was
+        //  double-clicked or dragged onto the icon).
+        window_new("", 1.0f, 1.0f);
+
+        if (app->instance_count == 0) {
+            app_open(app, ":/sphere");
+        }
+    }
 }
 
 void platform_window_bind(GLFWwindow* window) {
