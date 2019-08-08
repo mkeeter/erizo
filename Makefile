@@ -29,8 +29,8 @@ GEN :=       \
 
 BUILD_DIR := build
 
-CFLAGS := -Wall -Werror -g -O3 -pedantic -Iinc -Ivendor
-LDFLAGS = -L/usr/local/lib
+CFLAGS := -Wall -Werror -g -O3 -pedantic -Iinc -Ivendor -Ivendor/glfw/include -Ivendor/glew
+LDFLAGS = -Lvendor/glfw/build/src -lglfw3
 
 # Build with Clang's undefined behavior sanitizer:
 # make clean; env UBSAN=1 make
@@ -55,18 +55,20 @@ endif
 
 ifeq ($(TARGET), darwin)
 	SRC +=  platform/darwin platform/posix
-	LDFLAGS += -framework Foundation             \
+	LDFLAGS := -framework Foundation             \
 	           -framework Cocoa                  \
+	           -framework IOKit                  \
+	           -framework CoreVideo              \
 	           -framework OpenGL                 \
-	           -lglfw                            \
-	           -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
-	PLATFORM += -DPLATFORM_DARWIN
+	           -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk \
+	           $(LDFLAGS)
+	PLATFORM := -DPLATFORM_DARWIN
 endif
 ifeq ($(TARGET), win32-cross)
 	SRC += platform/win32
-	CFLAGS += -I../glfw/include -I../glew-2.1.0/include -mwindows -DGLEW_STATIC
-	PLATFORM += -DPLATFORM_WIN32
-	LDFLAGS += -L. -lopengl32 -lglfw3
+	CFLAGS += -mwindows -DGLEW_STATIC
+	PLATFORM := -DPLATFORM_WIN32
+	LDFLAGS += -lopengl32
 endif
 
 OBJ := $(addprefix $(BUILD_DIR)/,$(SRC:=.o) $(GEN:=.o))
@@ -102,3 +104,20 @@ clean:
 	rm -rf $(GEN:=.c)
 	rm -f erizo
 	rm -f erizo-test
+
+ifeq ($(TARGET), win32-cross)
+glfw:
+	cd vendor/glfw && rm -rf build && mkdir build
+	cd vendor/glfw/build && \
+	    cmake -DCMAKE_TOOLCHAIN_FILE=../CMake/i686-w64-mingw32.cmake \
+	          -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF \
+	          -DGLFW_BUILD_TESTS=OFF .. && \
+	    make
+else
+glfw:
+	cd vendor/glfw && rm -rf build && mkdir build
+	cd vendor/glfw/build && \
+	    cmake -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF \
+	          -DGLFW_BUILD_TESTS=OFF .. && \
+	    make
+endif
