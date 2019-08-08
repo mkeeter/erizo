@@ -174,7 +174,7 @@ int platform_thread_join(platform_thread_t* thread) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void platform_init(app_t* app, int argc, char** argv) {
-    (void)app;
+    app_open(app, ":/sphere");
     (void)argc;
     (void)argv;
 }
