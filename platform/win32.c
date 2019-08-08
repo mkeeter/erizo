@@ -86,6 +86,7 @@ platform_mutex_t* platform_mutex_new() {
 }
 
 void platform_mutex_delete(platform_mutex_t* mutex) {
+    DeleteCriticalSection(&mutex->data);
     free(mutex);
 }
 
