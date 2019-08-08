@@ -14,6 +14,7 @@ SRC :=       \
 	src/vset     \
 	src/window   \
 	src/worker   \
+	vendor/glew/glew    \
 	# end of source files
 
 # Force the version-generation script to run before
@@ -57,15 +58,15 @@ ifeq ($(TARGET), darwin)
 	LDFLAGS += -framework Foundation             \
 	           -framework Cocoa                  \
 	           -framework OpenGL                 \
-	           -lglfw -lglew                     \
+	           -lglfw                            \
 	           -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 	PLATFORM += -DPLATFORM_DARWIN
 endif
 ifeq ($(TARGET), win32-cross)
 	SRC += platform/win32
-	CFLAGS += -I../glfw/include -I../glew-2.1.0/include -mwindows
+	CFLAGS += -I../glfw/include -I../glew-2.1.0/include -mwindows -DGLEW_STATIC
 	PLATFORM += -DPLATFORM_WIN32
-	LDFLAGS += -L. -lopengl32 -lglfw3 -lglew32
+	LDFLAGS += -L. -lopengl32 -lglfw3
 endif
 
 OBJ := $(addprefix $(BUILD_DIR)/,$(SRC:=.o) $(GEN:=.o))

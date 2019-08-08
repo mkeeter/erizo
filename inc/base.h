@@ -2,7 +2,6 @@
 #define BASE_H
 
 #ifdef PLATFORM_WIN32
-#define GLEW_STATIC
 #define _USE_MATH_DEFINES
 #endif
 
