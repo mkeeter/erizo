@@ -104,6 +104,8 @@ clean:
 	rm -rf $(GEN:=.c)
 	rm -f erizo
 	rm -f erizo-test
+	rm -f erizo.exe
+	rm -f erizo-test.exe
 
 ifeq ($(TARGET), win32-cross)
 glfw:
