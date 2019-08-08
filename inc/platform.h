@@ -2,8 +2,11 @@
 
 struct app_;
 
-const char* platform_mmap(const char* filename, size_t* size);
-void platform_munmap(const char* data, size_t size);
+typedef struct platform_mmap_ platform_mmap_t;
+platform_mmap_t* platform_mmap(const char* filename);
+const char* platform_mmap_data(platform_mmap_t* m);
+size_t platform_mmap_size(platform_mmap_t* m);
+void platform_munmap(platform_mmap_t* m);
 
 /*  Returns time in microseconds */
 int64_t platform_get_time(void);

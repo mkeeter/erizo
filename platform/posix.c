@@ -10,7 +10,12 @@
 #include "object.h"
 #include "platform.h"
 
-const char* platform_mmap(const char* filename, size_t* size) {
+struct platform_mmap_ {
+    char* data;
+    size_t size;
+};
+
+platform_mmap_t* platform_mmap(const char* filename) {
     int stl_fd = open(filename, O_RDONLY);
     if (stl_fd == -1) {
         log_error("open failed (errno: %i)", errno);
@@ -22,19 +27,31 @@ const char* platform_mmap(const char* filename, size_t* size) {
         close(stl_fd);
         return NULL;
     }
-    *size = s.st_size;
 
-    const void* ptr = mmap(0, *size, PROT_READ, MAP_PRIVATE, stl_fd, 0);
+    OBJECT_ALLOC(platform_mmap);
+    platform_mmap->size = s.st_size;
+    platform_mmap->data = mmap(0, platform_mmap->size, PROT_READ,
+                               MAP_PRIVATE, stl_fd, 0);
     close(stl_fd);
-    if (ptr == (void*)-1) {
+    if (platform_mmap->data == (void*)-1) {
         log_error("mmap failed (errno: %i)", errno);
+        free(platform_mmap);
         return NULL;
     }
-    return (const char*)ptr;
+    return platform_mmap;
 }
 
-void platform_munmap(const char* data, size_t size) {
-    munmap((void*)data, size);
+void platform_munmap(platform_mmap_t* m) {
+    munmap((void*)m->data, m->size);
+    free(m);
+}
+
+const char* platform_mmap_data(platform_mmap_t* m) {
+    return m->data;
+}
+
+size_t platform_mmap_size(platform_mmap_t* m) {
+    return m->size;
 }
 
 int64_t platform_get_time() {

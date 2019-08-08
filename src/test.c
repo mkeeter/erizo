@@ -7,8 +7,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    size_t size;
-    const char* data = platform_mmap(argv[1], &size);
+    platform_mmap_t* map = platform_mmap(argv[1]);
+    const char* data = platform_mmap_data(map);
 
     uint32_t tri_count;
     memcpy(&tri_count, &data[80], sizeof(tri_count));
@@ -57,5 +57,5 @@ int main(int argc, char** argv) {
 
     printf("    Time per iteration: %f ± %f s\n", mean, std);
 
-    platform_munmap(data, size);
+    platform_munmap(map);
 }

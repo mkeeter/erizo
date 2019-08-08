@@ -7,19 +7,53 @@
 #include "object.h"
 #include "platform.h"
 
-const char* platform_mmap(const char* filename, size_t* size) {
+struct platform_mmap_ {
+    const char* data;
+    HANDLE file;
+    HANDLE map;
+    size_t size;
+};
+
+platform_mmap_t* platform_mmap(const char* filename) {
     HANDLE file = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (file == INVALID_HANDLE_VALUE) {
-        log_error("Could not mmap file (%lu)", GetLastError());
+        log_error("Could not open file (%lu)", GetLastError());
         return NULL;
     }
+    LARGE_INTEGER size;
+    if (!GetFileSizeEx(file, &size)) {
+        log_error("Could not get file size (%lu)", GetLastError());
+        CloseHandle(file);
+        return NULL;
+    }
+
     HANDLE map = CreateFileMappingA(file, NULL, PAGE_EXECUTE_READ, 0, 0, NULL);
-    return MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
+    if (map == INVALID_HANDLE_VALUE) {
+        log_error("Could not mmap file (%lu)", GetLastError());
+        CloseHandle(file);
+        return NULL;
+    }
+    OBJECT_ALLOC(platform_mmap);
+    platform_mmap->file = file;
+    platform_mmap->map = map;
+    platform_mmap->data = MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
+    platform_mmap->size = size.QuadPart;
+    return platform_mmap;
 }
 
-void platform_munmap(const char* data, size_t size) {
-    (void)data;
-    (void)size;
+size_t platform_mmap_size(platform_mmap_t* m) {
+    return m->size;
+}
+
+const char* platform_mmap_data(platform_mmap_t* m) {
+    return m->data;
+}
+
+void platform_munmap(platform_mmap_t* m) {
+    UnmapViewOfFile(m->data);
+    CloseHandle(m->map);
+    CloseHandle(m->file);
+    free(m);
 }
 
 int64_t platform_get_time(void) {

@@ -61,17 +61,6 @@ loader_t* loader_new(const char* filename) {
     return loader;
 }
 
-/*  Helper type and function to clean up loader data */
-typedef enum { MMAP, DYNAMIC } loader_allocation_t;
-static void loader_free(const char* data, size_t size,
-                        loader_allocation_t t)
-{
-    switch (t) {
-        case MMAP:      platform_munmap(data, size); break;
-        case DYNAMIC:   free((void*)data); break;
-    }
-}
-
 static const char* loader_parse_ascii(const char* data, size_t* size) {
     size_t buf_size = 256;
     size_t buf_count = 0;
@@ -140,36 +129,33 @@ static void* loader_run(void* loader_) {
     loader_t* loader = (loader_t*)loader_;
     loader_next(loader, LOADER_START);
 
-    /*  Filesize in bytes; needed to munmap file at the end */
-    size_t size;
+    platform_mmap_t* mapped = NULL;
+    const char* data = NULL;
+    size_t size; /* filesize in bytes */
 
     /*  This magic filename tells us to load a builtin array,
      *  rather than something in the filesystem */
-    const char* mapped;
-    loader_allocation_t allocation_type;
     if (!strcmp(loader->filename, ":/sphere")) {
-        allocation_type = DYNAMIC;
-        mapped = icosphere_stl(1, &size);
+        data = icosphere_stl(1, &size);
     } else {
-        allocation_type = MMAP;
-        mapped = platform_mmap(loader->filename, &size);
-    }
-
-    /*  Check that the file was opened. */
-    if (!mapped) {
-        log_error("Could not open %s", loader->filename);
-        loader_next(loader, LOADER_ERROR_NO_FILE);
-        loader_free(mapped, size, allocation_type);
-        return NULL;
+        mapped = platform_mmap(loader->filename);
+        if (mapped) {
+            data = platform_mmap_data(mapped);
+            size = platform_mmap_size(mapped);
+        } else {
+            log_error("Could not open %s", loader->filename);
+            loader_next(loader, LOADER_ERROR_NO_FILE);
+            return NULL;
+        }
     }
 
     /*  Check whether this is an ASCII stl.  Some binary STL files
      *  still start with the word 'solid', so we check the file size
      *  as a second heuristic.  */
-    bool is_ascii = (size >= 6 && !strncmp("solid ", mapped, 6));
+    bool is_ascii = (size >= 6 && !strncmp("solid ", data, 6));
     if (is_ascii && size >= 84) {
         uint32_t tentative_tri_count;
-        memcpy(&tentative_tri_count, &mapped[80],
+        memcpy(&tentative_tri_count, &data[80],
                sizeof(tentative_tri_count));
         if (size == tentative_tri_count * 50 + 84) {
             log_warn("File begins with 'solid' but appears to be "
@@ -182,15 +168,15 @@ static void* loader_run(void* loader_) {
      *  loader can run unobstructed. */
     if (is_ascii) {
         size_t new_size;
-        const char* new_mapped = loader_parse_ascii(mapped, &new_size);
-        if (new_mapped) {
-            loader_free(mapped, size, allocation_type);
-            mapped = new_mapped;
+        const char* new_data = loader_parse_ascii(data, &new_size);
+        if (new_data) {
+            platform_munmap(mapped);
+            mapped = NULL;
+            data = new_data;
             size = new_size;
-            allocation_type = DYNAMIC;
         } else {
             loader_next(loader, LOADER_ERROR_BAD_ASCII_STL);
-            loader_free(mapped, size, allocation_type);
+            platform_munmap(mapped);
             return NULL;
         }
     }
@@ -199,13 +185,12 @@ static void* loader_run(void* loader_) {
     if (size < 84) {
         log_error("File is too small to be an STL (%u < 84)", (unsigned)size);
         loader_next(loader, LOADER_ERROR_WRONG_SIZE);
-        loader_free(mapped, size, allocation_type);
+        platform_munmap(mapped);
         return NULL;
     }
 
     /*  Pull the number of triangles from the raw STL data */
-    memcpy(&loader->tri_count, &mapped[80],
-           sizeof(loader->tri_count));
+    memcpy(&loader->tri_count, &data[80], sizeof(loader->tri_count));
 
     /*  Compare the actual file size with the expected size */
     const uint32_t expected_size = loader->tri_count * 50 + 84;
@@ -213,7 +198,7 @@ static void* loader_run(void* loader_) {
         log_error("Invalid file size for %u triangles (expected %u, got %u)",
                   loader->tri_count, expected_size, (unsigned)size);
         loader_next(loader, LOADER_ERROR_WRONG_SIZE);
-        loader_free(mapped, size, allocation_type);
+        platform_munmap(mapped);
         return NULL;
     }
 
@@ -227,7 +212,7 @@ static void* loader_run(void* loader_) {
 
         workers[i].loader = loader;
         workers[i].tri_count = end - start;
-        workers[i].stl = (const char (*)[50])&mapped[80 + 4 + 12 + 50 * start];
+        workers[i].stl = (const char (*)[50])&data[80 + 4 + 12 + 50 * start];
 
         worker_start(&workers[i]);
     }
@@ -302,7 +287,11 @@ static void* loader_run(void* loader_) {
     glfwPostEmptyEvent();
 
     /*  Release any allocated file data */
-    loader_free(mapped, size, allocation_type);
+    if (mapped) {
+        platform_munmap(mapped);
+    } else {
+        free((void*)data);
+    }
 
     return NULL;
 }

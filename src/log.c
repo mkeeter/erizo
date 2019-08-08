@@ -30,7 +30,6 @@ FILE* log_preamble(log_type_t t, const char* file, int line)
 
     if (start_usec == -1) {
         start_usec = platform_get_time();
-        mut = platform_mutex_new();
     }
 
     const uint64_t dt_usec = platform_get_time() - start_usec;
