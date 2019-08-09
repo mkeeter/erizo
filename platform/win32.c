@@ -8,6 +8,9 @@
 #include "platform.h"
 #include "window.h"
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+
 struct platform_mmap_ {
     const char* data;
     HANDLE file;
@@ -192,8 +195,21 @@ void platform_init(app_t* app, int argc, char** argv) {
     }
 }
 
+/*  We hot-swap the WNDPROC pointer from the one defined in GLFW to our
+ *  own here, which lets us respond to menu events (ignored in GLFW). */
+static WNDPROC glfw_wndproc = NULL;
+static LRESULT CALLBACK wndproc(HWND hWnd, UINT message,
+                                WPARAM wParam, LPARAM lParam)
+{
+    return (*glfw_wndproc)(hWnd, message, wParam, lParam);
+}
+
 void platform_window_bind(GLFWwindow* window) {
-    (void)window;
+    HWND w = glfwGetWin32Window(window);
+    if (glfw_wndproc == NULL) {
+        glfw_wndproc = (WNDPROC)GetWindowLongPtrW(w, GWLP_WNDPROC);
+    }
+    SetWindowLongPtrW(w, GWLP_WNDPROC, (LONG_PTR)wndproc);
 }
 
 /*  Shows a warning dialog with the given text */
