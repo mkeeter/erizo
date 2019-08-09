@@ -84,7 +84,9 @@ GLFWwindow* window_new(const char* filename, float width, float height) {
     GLFWwindow* const window = glfwCreateWindow(
             width, height, filename, NULL, NULL);
     if (!window) {
-        log_error_and_abort("Failed to create window");
+        const char* err;
+        glfwGetError(&err);
+        log_error_and_abort("Failed to create window: %s", err);
     } else {
         log_trace("Created window");
     }
