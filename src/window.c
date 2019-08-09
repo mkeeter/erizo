@@ -95,7 +95,7 @@ GLFWwindow* window_new(const char* filename, float width, float height) {
     if (first) {
         const GLenum glew_err = glewInit();
         if (GLEW_OK != glew_err) {
-            log_error_and_abort("GLEW initialization failed: %s\n",
+            log_error_and_abort("GLEW initialization failed: %s",
                                 glewGetErrorString(glew_err));
         }
         log_trace("Initialized GLEW");
