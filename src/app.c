@@ -45,11 +45,12 @@ void app_set_front(app_t* app, instance_t* instance) {
 }
 
 bool app_run(app_t* app) {
-    for (unsigned i=0; i < app->instance_count; ++i) {
+    unsigned i=0;
+    while (i < app->instance_count) {
         instance_draw(app->instances[i], app->theme);
         if (glfwWindowShouldClose(app->instances[i]->window)) {
-            const bool focused = app->instances[i]->focused;
-            instance_delete(app->instances[i]);
+            instance_t* target = app->instances[i];
+            const bool focused = target->focused;
 
             /*  Shift the remaining instances by one */
             app->instance_count--;
@@ -60,7 +61,12 @@ bool app_run(app_t* app) {
             if (focused && app->instance_count) {
                 glfwFocusWindow(app->instances[0]->window);
             }
+
+            instance_delete(target);
+        } else {
+            i++;
         }
     }
+
     return app->instance_count;
 }
