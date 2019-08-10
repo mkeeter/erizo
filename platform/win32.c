@@ -195,6 +195,8 @@ void platform_init(app_t* app, int argc, char** argv) {
     }
 }
 
+#define ID_FILE_EXIT 9001
+
 /*  We hot-swap the WNDPROC pointer from the one defined in GLFW to our
  *  own here, which lets us respond to menu events (ignored in GLFW). */
 static WNDPROC glfw_wndproc = NULL;
@@ -210,6 +212,12 @@ void platform_window_bind(GLFWwindow* window) {
         glfw_wndproc = (WNDPROC)GetWindowLongPtrW(w, GWLP_WNDPROC);
     }
     SetWindowLongPtrW(w, GWLP_WNDPROC, (LONG_PTR)wndproc);
+
+    HMENU menu = CreateMenu();
+    HMENU file = CreatePopupMenu();
+    AppendMenuW(file, MF_STRING, ID_FILE_EXIT, L"&New");
+    AppendMenu(menu, MF_STRING | MF_POPUP, (UINT)file, "&File");
+    SetMenu(w, menu);
 }
 
 /*  Shows a warning dialog with the given text */

@@ -33,12 +33,16 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
     log_trace("Showed window");
 
     OBJECT_ALLOC(instance);
-    window_bind(window, instance);
 
     instance->backdrop = backdrop;
     instance->camera = camera;
     instance->model = model;
     instance->parent = parent;
+
+    /*  This needs to happen after setting up the instance, because
+     *  on Windows, the window size callback is invoked when we add
+     *  the menu, which requires the camera to be populated. */
+    window_bind(window, instance);
 
     camera_update_proj(instance->camera);
     camera_reset_view(instance->camera);
