@@ -248,7 +248,7 @@ void platform_window_bind(GLFWwindow* window) {
     HMENU file = CreatePopupMenu();
     AppendMenuW(file, MF_STRING, ID_FILE_OPEN, L"&Open");
     AppendMenuW(file, MF_STRING, ID_FILE_EXIT, L"&Exit");
-    AppendMenu(menu, MF_STRING | MF_POPUP, (UINT)file, "&File");
+    AppendMenu(menu, MF_STRING | MF_POPUP, (UINT_PTR)file, "&File");
     SetMenu(w, menu);
 }
 

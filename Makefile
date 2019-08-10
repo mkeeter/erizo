@@ -65,6 +65,7 @@ ifeq ($(TARGET), darwin)
 	PLATFORM := -DPLATFORM_DARWIN
 endif
 ifeq ($(TARGET), win32-cross)
+	CC := x86_64-w64-mingw32-gcc
 	SRC += platform/win32
 	CFLAGS += -mwindows -DGLEW_STATIC
 	PLATFORM := -DPLATFORM_WIN32
@@ -111,7 +112,7 @@ ifeq ($(TARGET), win32-cross)
 glfw:
 	cd vendor/glfw && rm -rf build && mkdir build
 	cd vendor/glfw/build && \
-	    cmake -DCMAKE_TOOLCHAIN_FILE=../CMake/i686-w64-mingw32.cmake \
+	    cmake -DCMAKE_TOOLCHAIN_FILE=../CMake/x86_64-w64-mingw32.cmake \
 	          -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF \
 	          -DGLFW_BUILD_TESTS=OFF .. && \
 	    make
