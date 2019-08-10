@@ -1,5 +1,4 @@
 #define _WIN32_WINNT _WIN32_WINNT_WIN7
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include "app.h"
@@ -179,7 +178,9 @@ int platform_thread_join(platform_thread_t* thread) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static app_t* app_handle = NULL;
 void platform_init(app_t* app, int argc, char** argv) {
+    app_handle = app;
     if (argc == 2) {
         app_open(app, argv[1]);
     }
@@ -206,8 +207,28 @@ static LRESULT CALLBACK wndproc(HWND hWnd, UINT message,
 {
     if (message == WM_COMMAND) {
         switch(LOWORD(wParam)) {
-            case ID_FILE_OPEN:
+            case ID_FILE_OPEN: {
+                OPENFILENAME ofn;       // common dialog box structure
+                TCHAR szFile[260] = { 0 };       // if using TCHAR macros
+
+                // Initialize OPENFILENAME
+                ZeroMemory(&ofn, sizeof(ofn));
+                ofn.lStructSize = sizeof(ofn);
+                ofn.hwndOwner = hWnd;
+                ofn.lpstrFile = szFile;
+                ofn.nMaxFile = sizeof(szFile);
+                ofn.lpstrFilter = ("STL model\0*.stl\0");
+                ofn.nFilterIndex = 1;
+                ofn.lpstrFileTitle = NULL;
+                ofn.nMaxFileTitle = 0;
+                ofn.lpstrInitialDir = NULL;
+                ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+                if (GetOpenFileName(&ofn) == TRUE) {
+                    app_open(app_handle, ofn.lpstrFile);
+                }
                 break;
+            }
             case ID_FILE_EXIT:
                 SendMessage(hWnd, WM_CLOSE, 0, 0);
                 break;
