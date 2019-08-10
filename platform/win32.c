@@ -195,7 +195,8 @@ void platform_init(app_t* app, int argc, char** argv) {
     }
 }
 
-#define ID_FILE_EXIT 9001
+#define ID_FILE_OPEN 9001
+#define ID_FILE_EXIT 9002
 
 /*  We hot-swap the WNDPROC pointer from the one defined in GLFW to our
  *  own here, which lets us respond to menu events (ignored in GLFW). */
@@ -203,6 +204,15 @@ static WNDPROC glfw_wndproc = NULL;
 static LRESULT CALLBACK wndproc(HWND hWnd, UINT message,
                                 WPARAM wParam, LPARAM lParam)
 {
+    if (message == WM_COMMAND) {
+        switch(LOWORD(wParam)) {
+            case ID_FILE_OPEN:
+                break;
+            case ID_FILE_EXIT:
+                SendMessage(hWnd, WM_CLOSE, 0, 0);
+                break;
+        }
+    }
     return (*glfw_wndproc)(hWnd, message, wParam, lParam);
 }
 
@@ -215,7 +225,8 @@ void platform_window_bind(GLFWwindow* window) {
 
     HMENU menu = CreateMenu();
     HMENU file = CreatePopupMenu();
-    AppendMenuW(file, MF_STRING, ID_FILE_EXIT, L"&New");
+    AppendMenuW(file, MF_STRING, ID_FILE_OPEN, L"&Open");
+    AppendMenuW(file, MF_STRING, ID_FILE_EXIT, L"&Exit");
     AppendMenu(menu, MF_STRING | MF_POPUP, (UINT)file, "&File");
     SetMenu(w, menu);
 }
