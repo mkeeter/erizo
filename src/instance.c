@@ -39,16 +39,16 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
     instance->model = model;
     instance->parent = parent;
 
-    /*  This needs to happen after setting up the instance, because
-     *  on Windows, the window size callback is invoked when we add
-     *  the menu, which requires the camera to be populated. */
-    window_bind(window, instance);
-
     camera_update_proj(instance->camera);
     camera_reset_view(instance->camera);
 
     /*  At the very last moment, check on the loader */
     loader_finish(loader, instance->model, instance->camera);
+
+    /*  This needs to happen after setting up the instance, because
+     *  on Windows, the window size callback is invoked when we add
+     *  the menu, which requires the camera to be populated. */
+    window_bind(window, instance);
 
     /*  Sets the error string, or NULL if there was no error. */
     instance->error = loader_error_string(loader);
