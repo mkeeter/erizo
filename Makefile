@@ -70,17 +70,22 @@ ifeq ($(TARGET), win32-cross)
 	CFLAGS += -mwindows -DGLEW_STATIC
 	PLATFORM := -DPLATFORM_WIN32
 	LDFLAGS += -lopengl32
+	ERIZO_APP  := erizo.exe
+	ERIZO_TEST := erizo-test.exe
+else
+	ERIZO_APP  := erizo
+	ERIZO_TEST := erizo-test
 endif
+
+all: $(ERIZO_APP) $(ERIZO_TEST)
 
 OBJ := $(addprefix $(BUILD_DIR)/,$(SRC:=.o) $(GEN:=.o))
 DEP := $(OBJ:.o=.d)
 
-all: erizo erizo-test
-
-erizo: $(BUILD_DIR)/src/main.o $(OBJ)
+$(ERIZO_APP): $(BUILD_DIR)/src/main.o $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
-erizo-test: $(BUILD_DIR)/src/test.o $(OBJ)
+$(ERIZO_TEST): $(BUILD_DIR)/src/test.o $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
@@ -103,10 +108,8 @@ $(BUILD_DIR):
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(GEN:=.c)
-	rm -f erizo
-	rm -f erizo-test
-	rm -f erizo.exe
-	rm -f erizo-test.exe
+	rm -f $(ERIZO_APP)
+	rm -f $(ERIZO_TEST)
 
 ifeq ($(TARGET), win32-cross)
 glfw:
