@@ -233,6 +233,8 @@ static LRESULT CALLBACK wndproc(HWND hWnd, UINT message,
                 SendMessage(hWnd, WM_CLOSE, 0, 0);
                 break;
         }
+    } else if (message == WM_CHAR && wParam == 'o' - 'a' + 1) {
+        PostMessage(hWnd, WM_COMMAND, ID_FILE_OPEN, 0L);
     }
     return (*glfw_wndproc)(hWnd, message, wParam, lParam);
 }
@@ -246,9 +248,9 @@ void platform_window_bind(GLFWwindow* window) {
 
     HMENU menu = CreateMenu();
     HMENU file = CreatePopupMenu();
-    AppendMenuW(file, MF_STRING, ID_FILE_OPEN, L"&Open");
-    AppendMenuW(file, MF_STRING, ID_FILE_EXIT, L"&Exit");
-    AppendMenu(menu, MF_STRING | MF_POPUP, (UINT_PTR)file, "&File");
+    AppendMenuW(file, MF_STRING, ID_FILE_OPEN, L"&Open\tCtrl+O");
+    AppendMenuW(file, MF_STRING, ID_FILE_EXIT, L"E&xit");
+    AppendMenu(menu, MF_STRING | MF_POPUP, (UINT_PTR)file, "File");
     SetMenu(w, menu);
 }
 
