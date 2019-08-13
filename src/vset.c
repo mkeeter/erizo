@@ -105,7 +105,7 @@ uint32_t vset_insert(vset_t* restrict v, const float* restrict f) {
     // Walk down the chain for this particular hash, looking for
     // the identical value.  If the loop doesn't return early,
     // then we're left pointing at the next link to assign.
-    for (uint32_t*i = &v->buckets[b]; *i != 0; i = &v->data[*i].next) {
+    for (uint32_t* i = &v->buckets[b]; *i != 0; i = &v->data[*i].next) {
        if (v->data[*i].hash == hash && cmp(f, v->vert[*i])) {
            return *i;
        }
