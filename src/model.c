@@ -72,7 +72,7 @@ model_t* model_new() {
 
 void model_delete(model_t* model) {
     glDeleteBuffers(1, &model->vbo);
-    glDeleteVertexArrays(1, &model->vao);
+    glDeleteBuffers(1, &model->ibo);
     glDeleteVertexArrays(1, &model->vbo);
     glDeleteShader(model->vs);
     glDeleteShader(model->fs);
