@@ -248,7 +248,7 @@ GLFWAPI int glfwInit(void)
 
     glfwDefaultWindowHints();
 
-    {
+    if (0) {
         int i;
 
         for (i = 0;  _glfwDefaultMappings[i];  i++)
