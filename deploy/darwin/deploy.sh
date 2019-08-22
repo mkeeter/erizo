@@ -7,6 +7,7 @@ APP=$EXE.app
 cd ../..
 make clean
 make -j8
+strip erizo
 
 # Parse the revision, branch, and tag from version.c
 REV=$(cat src/version.c | sed -ne 's/.*GIT_REV="\(.*\)".*/\1/gp')

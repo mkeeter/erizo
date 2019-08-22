@@ -61,6 +61,7 @@ ifeq ($(TARGET), darwin)
 	           -framework CoreVideo              \
 	           -framework OpenGL                 \
 	           -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk \
+	           -dead_strip \
 	           $(LDFLAGS)
 	PLATFORM := -DPLATFORM_DARWIN
 endif
