@@ -25,11 +25,6 @@ typedef struct model_ {
     GLint u_key;
     GLint u_fill;
     GLint u_base;
-
-    /*  Uniform locations for volumetric lighting */
-    GLint u_vol_tex;
-    GLint u_vol_logsize;
-    GLint u_vol_num_rays;
 } model_t;
 
 model_t* model_new();
