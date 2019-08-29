@@ -18,7 +18,6 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
 
     const float width = 500;
     const float height = 500;
-    camera_t* camera = camera_new(width, height);
     const char* filename = platform_filename(filepath);
     GLFWwindow* window = window_new(filename, width, height);
 
@@ -30,12 +29,12 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
     log_trace("Showed window");
 
     OBJECT_ALLOC(instance);
+    instance->parent = parent;
 
     /*  Next, build the OpenGL-dependent objects */
     instance->backdrop = backdrop_new();
-    instance->camera = camera;
+    instance->camera = camera_new(width, height);
     instance->model = model_new();
-    instance->parent = parent;
     instance->shaded = shaded_new();
 
     camera_update_proj(instance->camera);
@@ -58,9 +57,10 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
 }
 
 void instance_delete(instance_t* instance) {
-    OBJECT_DELETE_MEMBER(instance, model);
-    OBJECT_DELETE_MEMBER(instance, camera);
     OBJECT_DELETE_MEMBER(instance, backdrop);
+    OBJECT_DELETE_MEMBER(instance, camera);
+    OBJECT_DELETE_MEMBER(instance, model);
+    OBJECT_DELETE_MEMBER(instance, shaded);
     OBJECT_DELETE_MEMBER(instance, window);
     free(instance);
 }
