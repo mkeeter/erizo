@@ -9,7 +9,8 @@ struct theme_;
 typedef struct instance_ {
     struct backdrop_* backdrop;
     struct camera_* camera;
-    struct model_*  model;
+    struct model_* model;
+    struct shaded_* shaded;
 
     const char* error; // Error string from the loader
     struct app_* parent;

@@ -10,6 +10,7 @@ SRC :=       \
 	src/mat      \
 	src/model    \
 	src/shader   \
+	src/shaded   \
 	src/theme    \
 	src/vset     \
 	src/window   \

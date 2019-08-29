@@ -8,6 +8,7 @@
 #include "model.h"
 #include "object.h"
 #include "platform.h"
+#include "shaded.h"
 #include "theme.h"
 #include "window.h"
 
@@ -25,19 +26,17 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
      *  and pass it to the loader thread.  */
     loader_allocate_vbo(loader);
 
-    /*  Next, build the OpenGL-dependent objects */
-    model_t* model = model_new();
-    backdrop_t* backdrop = backdrop_new();
-
     glfwShowWindow(window);
     log_trace("Showed window");
 
     OBJECT_ALLOC(instance);
 
-    instance->backdrop = backdrop;
+    /*  Next, build the OpenGL-dependent objects */
+    instance->backdrop = backdrop_new();
     instance->camera = camera;
-    instance->model = model;
+    instance->model = model_new();
     instance->parent = parent;
+    instance->shaded = shaded_new();
 
     camera_update_proj(instance->camera);
     camera_reset_view(instance->camera);
@@ -116,6 +115,6 @@ void instance_draw(instance_t* instance, theme_t* theme) {
     glClear(GL_DEPTH_BUFFER_BIT);
     backdrop_draw(instance->backdrop, theme);
 
-    model_draw(instance->model, instance->camera, theme);
+    shaded_draw(instance->shaded, instance->model, instance->camera, theme);
     glfwSwapBuffers(instance->window);
 }
