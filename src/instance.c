@@ -11,6 +11,7 @@
 #include "shaded.h"
 #include "theme.h"
 #include "window.h"
+#include "wireframe.h"
 
 instance_t* instance_new(app_t* parent, const char* filepath) {
     /*  Kick the loader off in a separate thread */
@@ -36,6 +37,7 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
     instance->camera = camera_new(width, height);
     instance->model = model_new();
     instance->shaded = shaded_new();
+    instance->wireframe = wireframe_new();
 
     camera_update_proj(instance->camera);
     camera_reset_view(instance->camera);

@@ -14,6 +14,7 @@ SRC :=       \
 	src/theme    \
 	src/vset     \
 	src/window   \
+	src/wireframe\
 	src/worker   \
 	vendor/glew/glew    \
 	# end of source files
