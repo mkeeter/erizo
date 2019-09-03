@@ -91,7 +91,8 @@ wireframe_t* wireframe_new() {
     wireframe->vs = shader_build(WIREFRAME_VS_SRC, GL_VERTEX_SHADER);
     wireframe->gs = shader_build(WIREFRAME_GS_SRC, GL_GEOMETRY_SHADER);
     wireframe->fs = shader_build(WIREFRAME_FS_SRC, GL_FRAGMENT_SHADER);
-    wireframe->prog = shader_link_vf(wireframe->vs, wireframe->fs);
+    wireframe->prog = shader_link_vgf(
+            wireframe->vs, wireframe->gs, wireframe->fs);
 
     SHADER_GET_UNIFORM_LOC(wireframe, proj);
     SHADER_GET_UNIFORM_LOC(wireframe, view);

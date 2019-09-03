@@ -64,6 +64,7 @@ void instance_delete(instance_t* instance) {
     OBJECT_DELETE_MEMBER(instance, model);
     OBJECT_DELETE_MEMBER(instance, shaded);
     OBJECT_DELETE_MEMBER(instance, window);
+    OBJECT_DELETE_MEMBER(instance, wireframe);
     free(instance);
 }
 
