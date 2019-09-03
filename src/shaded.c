@@ -49,7 +49,6 @@ void main() {
 struct shaded_ {
     /*  Shader program */
     GLuint vs;
-    GLuint gs;
     GLuint fs;
     GLuint prog;
 
