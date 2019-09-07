@@ -23,28 +23,40 @@ uniform mat4 view;
 uniform mat4 model;
 
 out vec3 ec_pos;
+out vec3 edge_dist;
+
+float distance(vec3 pt, vec3 a, vec3 b) {
+    vec3 dt = normalize(b - a);
+    float dist = dot(pt - a, dt);
+    vec3 proj = a + dist * dt;
+    return length(proj - pt);
+}
 
 void main() {
-    vec4 a = gl_in[0].gl_Position;
-    vec4 b = gl_in[1].gl_Position;
-    vec4 c = gl_in[2].gl_Position;
+    vec4 a = view * model * gl_in[0].gl_Position;
+    vec4 b = view * model * gl_in[1].gl_Position;
+    vec4 c = view * model * gl_in[2].gl_Position;
 
-    gl_Position = proj * view * model * a;
+    gl_Position = proj * a;
     ec_pos = gl_Position.xyz;
+    edge_dist = vec3(0.0f, distance(a.xyz, b.xyz, c.xyz), 0.0f);
     EmitVertex();
 
-    gl_Position = proj * view * model * b;
+    gl_Position = proj * b;
     ec_pos = gl_Position.xyz;
+    edge_dist = vec3(0.0f, 0.0f, distance(b.xyz, c.xyz, a.xyz));
     EmitVertex();
 
-    gl_Position = proj * view * model * c;
+    gl_Position = proj * c;
     ec_pos = gl_Position.xyz;
+    edge_dist = vec3(distance(c.xyz, a.xyz, b.xyz), 0.0f, 0.0f);
     EmitVertex();
 }
 );
 
 static const GLchar* WIREFRAME_FS_SRC = GLSL(330,
 in vec3 ec_pos;
+in vec3 edge_dist;
 
 uniform mat4 proj;
 uniform mat4 view;
@@ -63,8 +75,10 @@ void main() {
     float a = dot(normal, vec3(0.0f, 0.0f, 1.0f));
     float b = dot(normal, vec3(-0.57f, -0.57f, 0.57f));
 
-    out_color = vec4(mix(base, key,  a) * 0.5f +
-                     mix(base, fill, b) * 0.5f, 1.0f);
+    float d = min(edge_dist.x, min(edge_dist.y, edge_dist.z));
+    float s = clamp((d - 0.0005f) / 0.001f, 0.5f, 1.0f);
+    out_color = vec4(mix(base, key,  a) * 0.5f * s +
+                     mix(base, fill, b) * 0.5f * s, 1.0f);
 }
 );
 
