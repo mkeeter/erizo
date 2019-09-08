@@ -196,8 +196,10 @@ void platform_init(app_t* app, int argc, char** argv) {
     }
 }
 
-#define ID_FILE_OPEN 9001
-#define ID_FILE_EXIT 9002
+#define ID_FILE_OPEN        9001
+#define ID_FILE_EXIT        9002
+#define ID_VIEW_SHADED      9003
+#define ID_VIEW_WIREFRAME   9004
 
 /*  We hot-swap the WNDPROC pointer from the one defined in GLFW to our
  *  own here, which lets us respond to menu events (ignored in GLFW). */
@@ -232,6 +234,22 @@ static LRESULT CALLBACK wndproc(HWND hWnd, UINT message,
             case ID_FILE_EXIT:
                 SendMessage(hWnd, WM_CLOSE, 0, 0);
                 break;
+
+            case ID_VIEW_SHADED:
+                CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1),
+                        ID_VIEW_SHADED, MF_CHECKED);
+                CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1),
+                        ID_VIEW_WIREFRAME, MF_UNCHECKED);
+                app_view_shaded(app_handle);
+                break;
+
+            case ID_VIEW_WIREFRAME:
+                CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1),
+                        ID_VIEW_SHADED, MF_UNCHECKED);
+                CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1),
+                        ID_VIEW_WIREFRAME, MF_CHECKED);
+                app_view_wireframe(app_handle);
+                break;
         }
     } else if (message == WM_CHAR && wParam == 'o' - 'a' + 1) {
         PostMessage(hWnd, WM_COMMAND, ID_FILE_OPEN, 0L);
@@ -251,6 +269,13 @@ void platform_window_bind(GLFWwindow* window) {
     AppendMenuW(file, MF_STRING, ID_FILE_OPEN, L"&Open\tCtrl+O");
     AppendMenuW(file, MF_STRING, ID_FILE_EXIT, L"E&xit");
     AppendMenu(menu, MF_STRING | MF_POPUP, (UINT_PTR)file, "File");
+
+    HMENU view = CreatePopupMenu();
+    AppendMenuW(view, MF_STRING, ID_VIEW_SHADED, L"Shaded");
+    CheckMenuItem(view, ID_VIEW_SHADED, MF_CHECKED);
+    AppendMenuW(view, MF_STRING, ID_VIEW_WIREFRAME, L"Wireframe");
+    AppendMenu(menu, MF_STRING | MF_POPUP, (UINT_PTR)view, "View");
+
     SetMenu(w, menu);
 }
 
