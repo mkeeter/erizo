@@ -15,6 +15,11 @@ typedef struct instance_ {
     struct shaded_* shaded;
     struct wireframe_* wireframe;
 
+    enum {
+        DRAW_NORMAL,
+        DRAW_WIREFRAME
+    } draw_mode;
+
     const char* error; // Error string from the loader
     struct app_* parent;
 
