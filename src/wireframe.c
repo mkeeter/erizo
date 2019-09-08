@@ -76,7 +76,7 @@ void main() {
     float b = dot(normal, vec3(-0.57f, -0.57f, 0.57f));
 
     float d = min(edge_dist.x, min(edge_dist.y, edge_dist.z));
-    float s = clamp(d / 0.0015f, 0.8f, 1.0f);
+    float s = clamp(d / 0.002f, 0.8f, 1.0f);
     out_color = vec4(mix(base, key,  a) * 0.5f * s +
                      mix(base, fill, b) * 0.5f * s, 1.0f);
 }
