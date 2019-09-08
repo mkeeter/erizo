@@ -17,6 +17,10 @@ bool app_run(app_t* app);
 /*  Triggered from the UI */
 struct instance_* app_open(app_t* app, const char* filename);
 
+/*  Changes the view mode for the whole application */
+void app_view_shaded(app_t* app);
+void app_view_wireframe(app_t* app);
+
 /*  Moves a specific instance to the front of the list,
  *  which is used to determine the new focused window
  *  when the focused window is closed. */

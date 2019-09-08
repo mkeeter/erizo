@@ -32,6 +32,20 @@ instance_t* app_open(app_t* app, const char* filename) {
     return instance;
 }
 
+void app_view_shaded(app_t* app) {
+    for (unsigned i=0; i < app->instance_count; ++i) {
+        app->instances[i]->draw_mode = DRAW_SHADED;
+    }
+    glfwPostEmptyEvent();
+}
+
+void app_view_wireframe(app_t* app) {
+    for (unsigned i=0; i < app->instance_count; ++i) {
+        app->instances[i]->draw_mode = DRAW_WIREFRAME;
+    }
+    glfwPostEmptyEvent();
+}
+
 void app_set_front(app_t* app, instance_t* instance) {
     for (unsigned i=0; i < app->instance_count; ++i) {
         if (app->instances[i] == instance) {

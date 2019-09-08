@@ -10,7 +10,15 @@ typedef struct instance_ {
     struct backdrop_* backdrop;
     struct camera_* camera;
     struct model_* model;
+
+    // Different rendering modes
     struct shaded_* shaded;
+    struct wireframe_* wireframe;
+
+    enum {
+        DRAW_SHADED,
+        DRAW_WIREFRAME
+    } draw_mode;
 
     const char* error; // Error string from the loader
     struct app_* parent;
