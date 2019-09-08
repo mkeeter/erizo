@@ -38,7 +38,7 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
     instance->model = model_new();
     instance->shaded = shaded_new();
     instance->wireframe = wireframe_new();
-    instance->draw_mode = DRAW_NORMAL;
+    instance->draw_mode = DRAW_SHADED;
 
     camera_update_proj(instance->camera);
     camera_reset_view(instance->camera);
@@ -120,7 +120,7 @@ void instance_draw(instance_t* instance, theme_t* theme) {
     backdrop_draw(instance->backdrop, theme);
 
     switch (instance->draw_mode) {
-        case DRAW_NORMAL:
+        case DRAW_SHADED:
             shaded_draw(
                     instance->shaded, instance->model,
                     instance->camera, theme);

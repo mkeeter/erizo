@@ -16,7 +16,7 @@ typedef struct instance_ {
     struct wireframe_* wireframe;
 
     enum {
-        DRAW_NORMAL,
+        DRAW_SHADED,
         DRAW_WIREFRAME
     } draw_mode;
 

@@ -22,6 +22,9 @@ extern "C" {
 @interface Glue : NSObject {
 @public
     app_t* app;
+
+    NSMenuItem* shaded;
+    NSMenuItem* wireframe;
 }
 -(void) onOpen;
 -(void) onClose;
@@ -55,6 +58,18 @@ extern "C" {
             [window close];
         }
     }
+}
+
+-(void) onShaded {
+    [self->shaded setState:NSOnState];
+    [self->wireframe setState:NSOffState];
+    app_view_shaded(self->app);
+}
+
+-(void) onWireframe {
+    [self->shaded setState:NSOffState];
+    [self->wireframe setState:NSOnState];
+    app_view_wireframe(self->app);
 }
 @end
 
@@ -130,7 +145,33 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
     close.target = GLUE;
     [fileMenu addItem:close];
 
+    // Build the view menu
+    NSMenu *viewMenu = [[[NSMenu alloc] initWithTitle:@"View"] autorelease];
+    NSMenuItem *viewMenuItem = [[[NSMenuItem alloc]
+        initWithTitle:@"View" action:NULL keyEquivalent:@""] autorelease];
+    [viewMenuItem setSubmenu:viewMenu];
+    NSMenuItem *shaded = [[[NSMenuItem alloc]
+        initWithTitle:@"Shaded"
+        action:@selector(onShaded)
+        keyEquivalent:@""
+        ] autorelease];
+    shaded.target = GLUE;
+    [shaded setState:NSOnState];
+    [viewMenu addItem:shaded];
+
+    NSMenuItem *wireframe = [[[NSMenuItem alloc]
+        initWithTitle:@"Wireframe"
+        action:@selector(onWireframe)
+        keyEquivalent:@""
+        ] autorelease];
+    wireframe.target = GLUE;
+    [viewMenu addItem:wireframe];
+
+    GLUE->shaded = shaded;
+    GLUE->wireframe = wireframe;
+
     [[NSApplication sharedApplication].mainMenu insertItem:fileMenuItem atIndex:1];
+    [[NSApplication sharedApplication].mainMenu insertItem:viewMenuItem atIndex:2];
 }
 
 extern "C" void platform_warning(const char* title, const char* text) {
