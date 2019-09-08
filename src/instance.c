@@ -76,9 +76,16 @@ void instance_cb_window_size(instance_t* instance, int width, int height)
     /*  Update camera size (and recalculate projection matrix) */
     camera_set_size(instance->camera, width, height);
 
+#ifdef PLATFORM_DARWIN
     /*  Continue to render while the window is being resized
      *  (otherwise it ends up greyed out on Mac)  */
     instance_draw(instance, instance->parent->theme);
+#endif
+
+#ifdef PLATFORM_WIN32
+    /*  Otherwise, it misbehaves in a high-DPI environment */
+    glViewport(0, 0, width, height);
+#endif
 }
 
 void instance_cb_mouse_pos(instance_t* instance, float xpos, float ypos) {
