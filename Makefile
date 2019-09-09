@@ -29,10 +29,16 @@ GEN :=       \
 	src/version  \
 	# end of generated files
 
-BUILD_DIR := build
+# Platform detection
+ifndef TARGET
+UNAME := $(shell uname)
+	ifeq ($(UNAME), Darwin)
+		TARGET := darwin
+	endif
+endif
 
 CFLAGS := -Wall -Werror -g -O3 -pedantic -Iinc -Ivendor -Ivendor/glfw/include -Ivendor/glew
-LDFLAGS = -Lvendor/glfw/build/src -lglfw3
+LDFLAGS = -Lvendor/glfw/build-$(TARGET)/src -lglfw3
 
 # Build with Clang's undefined behavior sanitizer:
 # make clean; env UBSAN=1 make
@@ -45,14 +51,6 @@ endif
 # make clean; env ASAN=1 make
 ifeq ($(ASAN),1)
 	CFLAGS  += -fsanitize=address
-endif
-
-# Platform detection
-ifndef TARGET
-UNAME := $(shell uname)
-	ifeq ($(UNAME), Darwin)
-		TARGET := darwin
-	endif
 endif
 
 ifeq ($(TARGET), darwin)
@@ -79,6 +77,8 @@ else
 	ERIZO_APP  := erizo
 	ERIZO_TEST := erizo-test
 endif
+
+BUILD_DIR := build-$(TARGET)
 
 all: $(ERIZO_APP) $(ERIZO_TEST)
 
@@ -114,19 +114,17 @@ clean:
 	rm -f $(ERIZO_APP)
 	rm -f $(ERIZO_TEST)
 
-ifeq ($(TARGET), win32-cross)
 glfw:
-	cd vendor/glfw && rm -rf build && mkdir build
-	cd vendor/glfw/build && \
-	    cmake -DCMAKE_TOOLCHAIN_FILE=../CMake/x86_64-w64-mingw32.cmake \
-	          -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF \
-	          -DGLFW_BUILD_TESTS=OFF .. && \
+	cd vendor/glfw && mkdir -p build-$(TARGET)
+ifeq ($(TARGET), win32-cross)
+	cd vendor/glfw/build-$(TARGET) && cmake \
+	    -DCMAKE_TOOLCHAIN_FILE=../CMake/x86_64-w64-mingw32.cmake \
+	    -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF \
+	    -DGLFW_BUILD_TESTS=OFF .. && \
 	    make
 else
-glfw:
-	cd vendor/glfw && rm -rf build && mkdir build
-	cd vendor/glfw/build && \
-	    cmake -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF \
-	          -DGLFW_BUILD_TESTS=OFF .. && \
+	cd vendor/glfw/build-$(TARGET) && cmake \
+	    -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF \
+	    -DGLFW_BUILD_TESTS=OFF .. && \
 	    make
 endif
