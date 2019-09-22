@@ -2,6 +2,7 @@
 #include <windows.h>
 
 #include "app.h"
+#include "instance.h"
 #include "log.h"
 #include "object.h"
 #include "platform.h"
@@ -240,7 +241,7 @@ static LRESULT CALLBACK wndproc(HWND hWnd, UINT message,
                         ID_VIEW_SHADED, MF_CHECKED);
                 CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1),
                         ID_VIEW_WIREFRAME, MF_UNCHECKED);
-                app_view_shaded(app_handle);
+                instance_view_shaded(app_get_front(app_handle));
                 break;
 
             case ID_VIEW_WIREFRAME:
@@ -248,7 +249,7 @@ static LRESULT CALLBACK wndproc(HWND hWnd, UINT message,
                         ID_VIEW_SHADED, MF_UNCHECKED);
                 CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1),
                         ID_VIEW_WIREFRAME, MF_CHECKED);
-                app_view_wireframe(app_handle);
+                instance_view_wireframe(app_get_front(app_handle));
                 break;
         }
     } else if (message == WM_CHAR && wParam == 'o' - 'a' + 1) {

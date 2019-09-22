@@ -27,23 +27,24 @@ instance_t* app_open(app_t* app, const char* filename) {
         app->instances = (instance_t**)realloc(
                 app->instances, sizeof(instance_t*) * app->instances_size);
     }
+    instance->draw_mode = app->draw_mode;
     app->instances[app->instance_count++] = instance;
     instance_cb_focus(instance, true);
     return instance;
 }
 
 void app_view_shaded(app_t* app) {
+    app->draw_mode = DRAW_SHADED;
     for (unsigned i=0; i < app->instance_count; ++i) {
-        app->instances[i]->draw_mode = DRAW_SHADED;
+        instance_view_shaded(app->instances[i]);
     }
-    glfwPostEmptyEvent();
 }
 
 void app_view_wireframe(app_t* app) {
+    app->draw_mode = DRAW_WIREFRAME;
     for (unsigned i=0; i < app->instance_count; ++i) {
-        app->instances[i]->draw_mode = DRAW_WIREFRAME;
+        instance_view_wireframe(app->instances[i]);
     }
-    glfwPostEmptyEvent();
 }
 
 void app_set_front(app_t* app, instance_t* instance) {
@@ -56,6 +57,13 @@ void app_set_front(app_t* app, instance_t* instance) {
         }
     }
     log_error_and_abort("Could not find instance in app_set_front");
+}
+
+instance_t* app_get_front(app_t* app) {
+    if (app->instances == NULL || app->instance_count == 0) {
+        log_error_and_abort("No front instance");
+    }
+    return app->instances[0];
 }
 
 bool app_run(app_t* app) {

@@ -9,6 +9,7 @@ typedef struct app_ {
     unsigned instances_size;
 
     struct theme_* theme;
+    int draw_mode;
 } app_t;
 
 /*  Calls instance_run on every instance */
@@ -25,3 +26,6 @@ void app_view_wireframe(app_t* app);
  *  which is used to determine the new focused window
  *  when the focused window is closed. */
 void app_set_front(app_t* app, struct instance_* instance);
+
+/*  Returns the instance that's currently focused */
+struct instance_* app_get_front(app_t* app);

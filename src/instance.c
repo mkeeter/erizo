@@ -69,6 +69,19 @@ void instance_delete(instance_t* instance) {
     free(instance);
 }
 
+static void instance_set_view(instance_t* instance, int draw_mode) {
+    instance->draw_mode = draw_mode;
+    glfwPostEmptyEvent();
+}
+
+void instance_view_shaded(instance_t* instance) {
+    instance_set_view(instance, DRAW_SHADED);
+}
+
+void instance_view_wireframe(instance_t* instance) {
+    instance_set_view(instance, DRAW_WIREFRAME);
+}
+
 /******************************************************************************/
 
 void instance_cb_window_size(instance_t* instance, int width, int height)
@@ -106,6 +119,7 @@ void instance_cb_mouse_click(instance_t* instance, int button,
         camera_end_drag(instance->camera);
     }
 }
+
 void instance_cb_mouse_scroll(instance_t* instance,
                               float xoffset, float yoffset)
 {

@@ -7,7 +7,13 @@
 
 int main(int argc, char** argv) {
     log_info("Startup!");
-    app_t app = { NULL, 0, 0, NULL };
+    app_t app = {
+        .instances=NULL,
+        .instance_count=0,
+        .instances_size=0,
+        .theme=NULL,
+        .draw_mode=DRAW_SHADED,
+    };
     app.theme = theme_new_solarized();
 
     if (argc != 2) {

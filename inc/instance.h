@@ -32,6 +32,9 @@ instance_t* instance_new(struct app_* parent, const char* filepath);
 void instance_delete(instance_t* instance);
 void instance_draw(instance_t* instance, struct theme_* theme);
 
+void instance_view_shaded(instance_t* instance);
+void instance_view_wireframe(instance_t* instance);
+
 /*  Callbacks */
 void instance_cb_window_size(instance_t* instance, int width, int height);
 void instance_cb_mouse_pos(instance_t* instance, float xpos, float ypos);
