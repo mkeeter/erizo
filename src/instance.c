@@ -1,6 +1,7 @@
 #include "app.h"
 #include "backdrop.h"
 #include "camera.h"
+#include "draw.h"
 #include "instance.h"
 #include "loader.h"
 #include "log.h"
@@ -63,9 +64,9 @@ void instance_delete(instance_t* instance) {
     OBJECT_DELETE_MEMBER(instance, backdrop);
     OBJECT_DELETE_MEMBER(instance, camera);
     OBJECT_DELETE_MEMBER(instance, model);
-    OBJECT_DELETE_MEMBER(instance, shaded);
+    draw_delete(instance->shaded);
+    draw_delete(instance->wireframe);
     OBJECT_DELETE_MEMBER(instance, window);
-    OBJECT_DELETE_MEMBER(instance, wireframe);
     free(instance);
 }
 
@@ -142,14 +143,10 @@ void instance_draw(instance_t* instance, theme_t* theme) {
 
     switch (instance->draw_mode) {
         case DRAW_SHADED:
-            shaded_draw(
-                    instance->shaded, instance->model,
-                    instance->camera, theme);
+            draw(instance->shaded, instance->model, instance->camera, theme);
             break;
         case DRAW_WIREFRAME:
-            wireframe_draw(
-                    instance->wireframe, instance->model,
-                    instance->camera, theme);
+            draw(instance->wireframe, instance->model, instance->camera, theme);
             break;
     }
     glfwSwapBuffers(instance->window);

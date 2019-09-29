@@ -3,6 +3,7 @@ SRC :=       \
 	src/app      \
 	src/backdrop \
 	src/camera   \
+	src/draw     \
 	src/instance \
 	src/icosphere\
 	src/loader   \

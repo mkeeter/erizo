@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "draw.h"
 #include "object.h"
 #include "mat.h"
 
@@ -209,4 +210,10 @@ void camera_zoom(camera_t* camera, float amount) {
         camera->center.v[i] += before.v[i] - after.v[i];
     }
     camera_update_view(camera);
+}
+
+void camera_bind(camera_t* camera, draw_t* draw) {
+    glUniformMatrix4fv(draw->u_proj,  1, GL_FALSE, (float*)&camera->proj);
+    glUniformMatrix4fv(draw->u_view,  1, GL_FALSE, (float*)&camera->view);
+    glUniformMatrix4fv(draw->u_model, 1, GL_FALSE, (float*)&camera->model);
 }

@@ -1,3 +1,6 @@
+/*  Forward declarations */
+struct draw_;
+
 typedef struct theme_ {
     float upper_left[3];
     float upper_right[3];
@@ -12,5 +15,7 @@ typedef struct theme_ {
 theme_t* theme_new_solarized();
 theme_t* theme_new_nord();
 theme_t* theme_new_gruvbox();
+
+void theme_bind(theme_t* theme, struct draw_* draw);
 
 #define THEME_UNIFORM_COLOR(m, u) glUniform3fv(m->u_##u, 1, theme->u)

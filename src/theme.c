@@ -1,6 +1,7 @@
 #include "platform.h"
 
 #include "log.h"
+#include "draw.h"
 #include "object.h"
 #include "theme.h"
 
@@ -76,4 +77,10 @@ theme_t* theme_new_gruvbox() {
     from_hex("665c54", theme->base);
 
     return theme;
+}
+
+void theme_bind(theme_t* theme, draw_t* draw) {
+    THEME_UNIFORM_COLOR(draw, key);
+    THEME_UNIFORM_COLOR(draw, fill);
+    THEME_UNIFORM_COLOR(draw, base);
 }

@@ -12,8 +12,8 @@ typedef struct instance_ {
     struct model_* model;
 
     // Different rendering modes
-    struct shaded_* shaded;
-    struct wireframe_* wireframe;
+    struct draw_* shaded;
+    struct draw_* wireframe;
 
     enum {
         DRAW_SHADED,

@@ -2,6 +2,7 @@
 
 /*  Forward declaration of camera struct */
 typedef struct camera_ camera_t;
+struct draw_;
 
 /*  Constructs a new heap-allocated camera */
 camera_t* camera_new(float width, float height);
@@ -12,8 +13,6 @@ void camera_set_size(camera_t* camera, float width, float height);
 
 /*  Used when binding uniforms */
 float* camera_model_mat(camera_t* camera);
-float* camera_proj_mat(camera_t* camera);
-float* camera_view_mat(camera_t* camera);
 
 /*  Updates the proj matrix from width and height */
 void camera_update_proj(camera_t* camera);
@@ -34,5 +33,5 @@ void camera_zoom(camera_t* camera, float amount);
  *  pan if the button was already held down. */
 void camera_set_mouse_pos(camera_t* camera, float x, float y);
 
-#define CAMERA_UNIFORM_MAT(m, u) glUniformMatrix4fv(\
-        m->u_##u, 1, GL_FALSE, camera_##u##_mat(camera))
+/*  Binds the camera matrices to the draw target */
+void camera_bind(camera_t* camera, struct draw_* draw);

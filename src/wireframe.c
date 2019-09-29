@@ -1,10 +1,6 @@
-#include "camera.h"
-#include "log.h"
-#include "model.h"
-#include "object.h"
-#include "shader.h"
-#include "theme.h"
+#include "draw.h"
 #include "wireframe.h"
+#include "shader.h"
 
 static const GLchar* WIREFRAME_VS_SRC = GLSL(330,
 layout(location=0) in vec3 pos;
@@ -100,50 +96,6 @@ struct wireframe_ {
     GLint u_base;
 };
 
-wireframe_t* wireframe_new() {
-    OBJECT_ALLOC(wireframe);
-    wireframe->vs = shader_build(WIREFRAME_VS_SRC, GL_VERTEX_SHADER);
-    wireframe->gs = shader_build(WIREFRAME_GS_SRC, GL_GEOMETRY_SHADER);
-    wireframe->fs = shader_build(WIREFRAME_FS_SRC, GL_FRAGMENT_SHADER);
-    wireframe->prog = shader_link_vgf(
-            wireframe->vs, wireframe->gs, wireframe->fs);
-
-    SHADER_GET_UNIFORM_LOC(wireframe, proj);
-    SHADER_GET_UNIFORM_LOC(wireframe, view);
-    SHADER_GET_UNIFORM_LOC(wireframe, model);
-
-    SHADER_GET_UNIFORM_LOC(wireframe, key);
-    SHADER_GET_UNIFORM_LOC(wireframe, fill);
-    SHADER_GET_UNIFORM_LOC(wireframe, base);
-
-    log_gl_error();
-    return wireframe;
+draw_t* wireframe_new() {
+    return draw_new(WIREFRAME_VS_SRC, WIREFRAME_GS_SRC, WIREFRAME_FS_SRC);
 }
-
-void wireframe_delete(wireframe_t* wireframe) {
-    glDeleteShader(wireframe->vs);
-    glDeleteShader(wireframe->gs);
-    glDeleteShader(wireframe->fs);
-    glDeleteProgram(wireframe->prog);
-    free(wireframe);
-}
-
-void wireframe_draw(wireframe_t* wireframe, model_t* model,
-                    camera_t* camera, theme_t* theme)
-{
-    glEnable(GL_DEPTH_TEST);
-    glUseProgram(wireframe->prog);
-    glBindVertexArray(model->vao);
-
-    CAMERA_UNIFORM_MAT(wireframe, proj);
-    CAMERA_UNIFORM_MAT(wireframe, view);
-    CAMERA_UNIFORM_MAT(wireframe, model);
-
-    THEME_UNIFORM_COLOR(wireframe, key);
-    THEME_UNIFORM_COLOR(wireframe, fill);
-    THEME_UNIFORM_COLOR(wireframe, base);
-
-    glDrawElements(GL_TRIANGLES, model->tri_count * 3, GL_UNSIGNED_INT, NULL);
-    log_gl_error();
-}
-
