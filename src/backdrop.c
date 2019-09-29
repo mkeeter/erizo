@@ -7,22 +7,19 @@
 static const GLchar* BACKDROP_VS_SRC = GLSL(330,
 layout(location=0) in vec2 pos;
 
-uniform vec3 upper_left;
-uniform vec3 upper_right;
-uniform vec3 lower_left;
-uniform vec3 lower_right;
+uniform vec3 corners[4];
 
 out vec4 grad_color;
 
 void main() {
     if (pos.x < 0.0f && pos.y < 0.0f) {
-        grad_color = vec4(lower_left, 1.0f);
+        grad_color = vec4(corners[0], 1.0f);
     } else if (pos.x > 0.0f && pos.y < 0.0f) {
-        grad_color = vec4(lower_right, 1.0f);
+        grad_color = vec4(corners[1], 1.0f);
     } else if (pos.x < 0.0f && pos.y > 0.0f) {
-        grad_color = vec4(upper_left, 1.0f);
+        grad_color = vec4(corners[2], 1.0f);
     } else if (pos.x > 0.0f && pos.y > 0.0f) {
-        grad_color = vec4(upper_right, 1.0f);
+        grad_color = vec4(corners[3], 1.0f);
     }
 
     gl_Position = vec4(pos, 1.0f, 1.0f);
@@ -48,10 +45,7 @@ struct backdrop_ {
     GLuint prog;
 
     /*  Uniform locations */
-    GLint u_upper_left;
-    GLint u_upper_right;
-    GLint u_lower_left;
-    GLint u_lower_right;
+    GLint u_corners;
 };
 
 backdrop_t* backdrop_new() {
@@ -61,10 +55,7 @@ backdrop_t* backdrop_new() {
     backdrop->prog = shader_link_vf(backdrop->vs, backdrop->fs);
     glUseProgram(backdrop->prog);
 
-    SHADER_GET_UNIFORM_LOC(backdrop, upper_left);
-    SHADER_GET_UNIFORM_LOC(backdrop, upper_right);
-    SHADER_GET_UNIFORM_LOC(backdrop, lower_left);
-    SHADER_GET_UNIFORM_LOC(backdrop, lower_right);
+    SHADER_GET_UNIFORM_LOC(backdrop, corners);
 
     const float corners[] = {-1.0f, -1.0f,
                              -1.0f,  1.0f,
@@ -95,10 +86,7 @@ void backdrop_delete(backdrop_t* backdrop) {
 void backdrop_draw(backdrop_t* backdrop, theme_t* theme) {
     glDisable(GL_DEPTH_TEST);
     glUseProgram(backdrop->prog);
-    THEME_UNIFORM_COLOR(backdrop, upper_left);
-    THEME_UNIFORM_COLOR(backdrop, upper_right);
-    THEME_UNIFORM_COLOR(backdrop, lower_left);
-    THEME_UNIFORM_COLOR(backdrop, lower_right);
+    glUniform3fv(backdrop->u_corners, 4, (const float*)&theme->corners);
     glBindVertexArray(backdrop->vao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

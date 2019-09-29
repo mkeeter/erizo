@@ -32,10 +32,10 @@ theme_t* theme_new_solarized() {
     OBJECT_ALLOC(theme);
 
     /*  Backdrop colors */
-    from_hex("003440", theme->upper_left);
-    from_hex("002833", theme->upper_right);
-    from_hex("002833", theme->lower_left);
-    from_hex("002833", theme->lower_right);
+    from_hex("002833", theme->corners[0]);
+    from_hex("002833", theme->corners[1]);
+    from_hex("003440", theme->corners[2]);
+    from_hex("002833", theme->corners[3]);
 
     /*  Model colors */
     from_hex("fdf6e3", theme->key);
@@ -49,10 +49,10 @@ theme_t* theme_new_nord() {
     OBJECT_ALLOC(theme);
 
     /*  Backdrop colors */
-    from_hex("3b4252", theme->upper_left);
-    from_hex("2e3440", theme->upper_right);
-    from_hex("2e3440", theme->lower_left);
-    from_hex("2e3440", theme->lower_right);
+    from_hex("2e3440", theme->corners[0]);
+    from_hex("2e3440", theme->corners[1]);
+    from_hex("3b4252", theme->corners[2]);
+    from_hex("2e3440", theme->corners[3]);
 
     /*  Model colors */
     from_hex("eceff4", theme->key);
@@ -66,10 +66,10 @@ theme_t* theme_new_gruvbox() {
     OBJECT_ALLOC(theme);
 
     /*  Backdrop colors */
-    from_hex("3c3836", theme->upper_left);
-    from_hex("1d2021", theme->upper_right);
-    from_hex("1d2021", theme->lower_left);
-    from_hex("1d2021", theme->lower_right);
+    from_hex("1d2021", theme->corners[0]);
+    from_hex("1d2021", theme->corners[1]);
+    from_hex("3c3836", theme->corners[2]);
+    from_hex("1d2021", theme->corners[3]);
 
     /*  Model colors */
     from_hex("fbf1c7", theme->key);
@@ -80,7 +80,7 @@ theme_t* theme_new_gruvbox() {
 }
 
 void theme_bind(theme_t* theme, draw_t* draw) {
-    THEME_UNIFORM_COLOR(draw, key);
-    THEME_UNIFORM_COLOR(draw, fill);
-    THEME_UNIFORM_COLOR(draw, base);
+    glUniform3fv(draw->u_key,  1, theme->key);
+    glUniform3fv(draw->u_fill, 1, theme->fill);
+    glUniform3fv(draw->u_base, 1, theme->base);
 }
