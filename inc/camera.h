@@ -4,8 +4,13 @@
 typedef struct camera_ camera_t;
 struct draw_;
 
+typedef enum {
+    CAMERA_PROJ_ORTHOGRAPHIC,
+    CAMERA_PROJ_PERSPECTIVE
+} camera_proj_t;
+
 /*  Constructs a new heap-allocated camera */
-camera_t* camera_new(float width, float height);
+camera_t* camera_new(float width, float height, camera_proj_t proj);
 void camera_delete(camera_t* camera);
 
 /*  Sets the camera width and height and updates proj matrix */
@@ -25,5 +30,14 @@ void camera_zoom(camera_t* camera, float amount);
  *  pan if the button was already held down. */
 void camera_set_mouse_pos(camera_t* camera, float x, float y);
 
+/*  Schedules a camera animation to update projection */
+void camera_anim_proj_perspective(camera_t* camera);
+void camera_anim_proj_orthographic(camera_t* camera);
+
 /*  Binds the camera matrices to the draw target */
 void camera_bind(camera_t* camera, struct draw_* draw);
+
+/*  Checks whether there is an animation running on the camera.
+ *  If so, the values are updated.  If the animation is incomplete,
+ *  returns true (so the caller should schedule a redraw). */
+bool camera_check_anim(camera_t* camera);

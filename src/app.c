@@ -1,11 +1,12 @@
 #include "app.h"
 #include "backdrop.h"
+#include "camera.h"
 #include "instance.h"
 #include "log.h"
 #include "platform.h"
 
 instance_t* app_open(app_t* app, const char* filename) {
-    instance_t* instance = instance_new(app, filename);
+    instance_t* instance = instance_new(app, filename, app->draw_proj);
 
     /*  If loading failed, then do a special one-time drawing of
      *  the backdrop, show an error dialog, and mark the window
@@ -47,6 +48,20 @@ void app_view_wireframe(app_t* app) {
     }
 }
 
+void app_view_orthographic(app_t* app) {
+    app->draw_proj = CAMERA_PROJ_ORTHOGRAPHIC;
+    for (unsigned i=0; i < app->instance_count; ++i) {
+        instance_view_orthographic(app->instances[i]);
+    }
+}
+
+void app_view_perspective(app_t* app) {
+    app->draw_proj = CAMERA_PROJ_PERSPECTIVE;
+    for (unsigned i=0; i < app->instance_count; ++i) {
+        instance_view_perspective(app->instances[i]);
+    }
+}
+
 void app_set_front(app_t* app, instance_t* instance) {
     for (unsigned i=0; i < app->instance_count; ++i) {
         if (app->instances[i] == instance) {
@@ -68,8 +83,9 @@ instance_t* app_get_front(app_t* app) {
 
 bool app_run(app_t* app) {
     unsigned i=0;
+    bool needs_redraw = false;
     while (i < app->instance_count) {
-        instance_draw(app->instances[i], app->theme);
+        needs_redraw |= instance_draw(app->instances[i], app->theme);
         if (glfwWindowShouldClose(app->instances[i]->window)) {
             instance_t* target = app->instances[i];
             const bool focused = target->focused;
@@ -88,6 +104,10 @@ bool app_run(app_t* app) {
         } else {
             i++;
         }
+    }
+
+    if (needs_redraw) {
+        glfwPostEmptyEvent();
     }
 
     return app->instance_count;

@@ -14,7 +14,7 @@
 #include "window.h"
 #include "wireframe.h"
 
-instance_t* instance_new(app_t* parent, const char* filepath) {
+instance_t* instance_new(app_t* parent, const char* filepath, int proj) {
     /*  Kick the loader off in a separate thread */
     loader_t* loader = loader_new(filepath);
 
@@ -35,7 +35,7 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
 
     /*  Next, build the OpenGL-dependent objects */
     instance->backdrop = backdrop_new();
-    instance->camera = camera_new(width, height);
+    instance->camera = camera_new(width, height, proj);
     instance->model = model_new();
     instance->shaded = shaded_new();
     instance->wireframe = wireframe_new();
@@ -78,6 +78,14 @@ void instance_view_shaded(instance_t* instance) {
 
 void instance_view_wireframe(instance_t* instance) {
     instance_set_view(instance, DRAW_WIREFRAME);
+}
+
+void instance_view_orthographic(instance_t* instance) {
+    camera_anim_proj_orthographic(instance->camera);
+}
+
+void instance_view_perspective(instance_t* instance) {
+    camera_anim_proj_perspective(instance->camera);
 }
 
 /******************************************************************************/
@@ -133,7 +141,9 @@ void instance_cb_focus(instance_t* instance, bool focus)
     }
 }
 
-void instance_draw(instance_t* instance, theme_t* theme) {
+bool instance_draw(instance_t* instance, theme_t* theme) {
+    const bool needs_redraw = camera_check_anim(instance->camera);
+
     glfwMakeContextCurrent(instance->window);
     glClear(GL_DEPTH_BUFFER_BIT);
     backdrop_draw(instance->backdrop, theme);
@@ -147,4 +157,5 @@ void instance_draw(instance_t* instance, theme_t* theme) {
             break;
     }
     glfwSwapBuffers(instance->window);
+    return needs_redraw;
 }

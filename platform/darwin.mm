@@ -25,6 +25,9 @@ extern "C" {
 
     NSMenuItem* shaded;
     NSMenuItem* wireframe;
+
+    NSMenuItem* perspective;
+    NSMenuItem* orthographic;
 }
 -(void) onOpen;
 -(void) onClose;
@@ -70,6 +73,18 @@ extern "C" {
     [self->shaded setState:NSOffState];
     [self->wireframe setState:NSOnState];
     app_view_wireframe(self->app);
+}
+
+-(void) onPerspective {
+    [self->perspective setState:NSOnState];
+    [self->orthographic setState:NSOffState];
+    app_view_perspective(self->app);
+}
+
+-(void) onOrthographic {
+    [self->perspective setState:NSOffState];
+    [self->orthographic setState:NSOnState];
+    app_view_orthographic(self->app);
 }
 @end
 
@@ -150,25 +165,55 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
     NSMenuItem *viewMenuItem = [[[NSMenuItem alloc]
         initWithTitle:@"View" action:NULL keyEquivalent:@""] autorelease];
     [viewMenuItem setSubmenu:viewMenu];
-    NSMenuItem *shaded = [[[NSMenuItem alloc]
-        initWithTitle:@"Shaded"
-        action:@selector(onShaded)
-        keyEquivalent:@""
-        ] autorelease];
-    shaded.target = GLUE;
-    [shaded setState:NSOnState];
-    [viewMenu addItem:shaded];
 
-    NSMenuItem *wireframe = [[[NSMenuItem alloc]
-        initWithTitle:@"Wireframe"
-        action:@selector(onWireframe)
-        keyEquivalent:@""
-        ] autorelease];
-    wireframe.target = GLUE;
-    [viewMenu addItem:wireframe];
+    {
+        NSMenuItem *shaded = [[[NSMenuItem alloc]
+            initWithTitle:@"Shaded"
+            action:@selector(onShaded)
+            keyEquivalent:@""
+            ] autorelease];
+        shaded.target = GLUE;
+        [shaded setState:NSOnState];
+        [viewMenu addItem:shaded];
+        GLUE->shaded = shaded;
+    }
 
-    GLUE->shaded = shaded;
-    GLUE->wireframe = wireframe;
+
+    {
+        NSMenuItem *wireframe = [[[NSMenuItem alloc]
+            initWithTitle:@"Wireframe"
+            action:@selector(onWireframe)
+            keyEquivalent:@""
+            ] autorelease];
+        wireframe.target = GLUE;
+        [viewMenu addItem:wireframe];
+        GLUE->wireframe = wireframe;
+    }
+
+    [viewMenu addItem:[NSMenuItem separatorItem]];
+
+    {
+        NSMenuItem *orthographic = [[[NSMenuItem alloc]
+            initWithTitle:@"Orthographic"
+            action:@selector(onOrthographic)
+            keyEquivalent:@""
+            ] autorelease];
+        orthographic.target = GLUE;
+        [orthographic setState:NSOnState];
+        [viewMenu addItem:orthographic];
+        GLUE->orthographic = orthographic;
+    }
+
+    {
+        NSMenuItem *perspective = [[[NSMenuItem alloc]
+            initWithTitle:@"Perspective"
+            action:@selector(onPerspective)
+            keyEquivalent:@""
+            ] autorelease];
+        perspective.target = GLUE;
+        [viewMenu addItem:perspective];
+        GLUE->perspective = perspective;
+    }
 
     [[NSApplication sharedApplication].mainMenu insertItem:fileMenuItem atIndex:1];
     [[NSApplication sharedApplication].mainMenu insertItem:viewMenuItem atIndex:2];
