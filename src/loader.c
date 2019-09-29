@@ -16,7 +16,8 @@ struct loader_ {
     GLuint ibo;
     uint32_t tri_count;
     uint32_t vert_count;
-    mat4_t mat;
+    vec3_t center;
+    float scale;
 
     /*  GPU-mapped buffers, populated by main thread */
     float* vertex_buf;
@@ -257,8 +258,6 @@ static void* loader_run(void* loader_) {
     log_trace("Joined worker threads");
 
     /*  Reduce min / max arrays from worker subprocesses */
-    float scale = 0.0f;
-    vec3_t center;
     for (unsigned v=0; v < 3; ++v) {
         for (unsigned i=1; i < NUM_WORKERS; ++i) {
             if (workers[i].max[v] > workers[0].max[v]) {
@@ -268,17 +267,12 @@ static void* loader_run(void* loader_) {
                 workers[0].min[v] = workers[i].min[v];
             }
         }
-        center.v[v] = (workers[0].max[v] + workers[0].min[v]) / 2.0f;
+        loader->center.v[v] = (workers[0].max[v] + workers[0].min[v]) / 2.0f;
         const float d = workers[0].max[v] - workers[0].min[v];
-        if (d > scale) {
-            scale = d;
+        if (d > loader->scale) {
+            loader->scale = d;
         }
     }
-    /*  Build the model matrix, which positions the model at
-     *  [0,0,0] and scales it to fit the standard GL view */
-    mat4_t t = mat4_translation(center);
-    mat4_t s = mat4_scaling(1.0f / scale);
-    loader->mat = mat4_mul(t, s);
 
     /*  Mark the load as done and post an empty event, to make sure that
      *  the main loop wakes up and checks the loader */
@@ -361,7 +355,7 @@ void loader_finish(loader_t* loader, model_t* model, camera_t* camera) {
         model->ibo = loader->ibo;
         model->tri_count = loader->tri_count;
 
-        memcpy(camera_model_mat(camera), &loader->mat, sizeof(mat4_t));
+        camera_set_model(camera, (float*)&loader->center, loader->scale);
         log_trace("Copied model from loader");
     } else {
         log_error("Loading failed");

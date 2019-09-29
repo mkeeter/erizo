@@ -41,9 +41,6 @@ instance_t* instance_new(app_t* parent, const char* filepath) {
     instance->wireframe = wireframe_new();
     instance->draw_mode = DRAW_SHADED;
 
-    camera_update_proj(instance->camera);
-    camera_reset_view(instance->camera);
-
     /*  At the very last moment, check on the loader */
     loader_finish(loader, instance->model, instance->camera);
 

@@ -33,39 +33,10 @@ struct camera_ {
     mat4_t drag_mat;
 };
 
-camera_t* camera_new(float width, float height) {
-    OBJECT_ALLOC(camera);
-    camera->width = width;
-    camera->height = height;
+////////////////////////////////////////////////////////////////////////////////
 
-    /*  Avoids a division by 0 during initial construction */
-    camera->scale = 1.0f;
-    return camera;
-}
-
-void camera_delete(camera_t* camera) {
-    free(camera);
-}
-
-void camera_set_size(camera_t* camera, float width, float height) {
-    camera->width = width;
-    camera->height = height;
-    camera_update_proj(camera);
-}
-
-float* camera_model_mat(camera_t* camera) {
-    return (float*)&camera->model;
-}
-
-float* camera_proj_mat(camera_t* camera) {
-    return (float*)&camera->proj;
-}
-
-float* camera_view_mat(camera_t* camera) {
-    return (float*)&camera->view;
-}
-
-void camera_update_proj(camera_t* camera) {
+/*  Updates the proj matrix from width and height */
+static void camera_update_proj(camera_t* camera) {
     camera->proj = mat4_identity();
     const float aspect = (float)camera->width / (float)camera->height;
     if (aspect > 1) {
@@ -76,13 +47,8 @@ void camera_update_proj(camera_t* camera) {
     camera->proj.m[2][2] = camera->scale / 2.0f;
 }
 
-void camera_reset_view(camera_t* camera) {
-    camera->scale = 1.2f;
-    memset(&camera->center, 0, sizeof(camera->center));
-    camera_update_view(camera);
-}
-
-void camera_update_view(camera_t* camera) {
+/*  Recalculates the view matrix */
+static void camera_update_view(camera_t* camera) {
     camera->view = mat4_identity();
 
     /* Apply translation */
@@ -114,8 +80,39 @@ void camera_update_view(camera_t* camera) {
     }
 }
 
-void camera_set_mouse_pos(camera_t* camera, float x, float y) {
+////////////////////////////////////////////////////////////////////////////////
 
+camera_t* camera_new(float width, float height) {
+    OBJECT_ALLOC(camera);
+    camera->width = width;
+    camera->height = height;
+
+    /*  Avoids a division by 0 during initial construction */
+    camera->scale = 1.0f;
+
+    /*  Initialize matrices to a sane state */
+    camera_update_proj(camera);
+    camera_update_view(camera);
+    return camera;
+}
+
+void camera_delete(camera_t* camera) {
+    free(camera);
+}
+
+void camera_set_size(camera_t* camera, float width, float height) {
+    camera->width = width;
+    camera->height = height;
+    camera_update_proj(camera);
+}
+
+void camera_set_model(camera_t* camera, float* center, float scale) {
+    mat4_t t = mat4_translation(*(vec3_t*)center);
+    mat4_t s = mat4_scaling(1.0f / scale);
+    camera->model = mat4_mul(t, s);
+}
+
+void camera_set_mouse_pos(camera_t* camera, float x, float y) {
     x = 2.0f * x / (camera->width) - 1.0f;
     y = 1.0f - 2.0f * y / (camera->height);
     camera->mouse_pos[0] = x;

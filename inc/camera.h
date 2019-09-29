@@ -11,17 +11,9 @@ void camera_delete(camera_t* camera);
 /*  Sets the camera width and height and updates proj matrix */
 void camera_set_size(camera_t* camera, float width, float height);
 
-/*  Used when binding uniforms */
-float* camera_model_mat(camera_t* camera);
-
-/*  Updates the proj matrix from width and height */
-void camera_update_proj(camera_t* camera);
-
-/*  Recalculates the view matrix */
-void camera_update_view(camera_t* camera);
-
-/*  Resets center and scale, then recalculates the view matrix */
-void camera_reset_view(camera_t* camera);
+/*  Sets the camera's model matrix.
+ *  center must be an array of 3 floats */
+void camera_set_model(camera_t* camera, float* center, float scale);
 
 /*  Mouse handling functions */
 void camera_begin_pan(camera_t* camera);
