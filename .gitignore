@@ -1,4 +1,4 @@
-build/*
+build-*
 erizo
 erizo-test
 erizo.exe
