@@ -86,6 +86,12 @@ all: $(ERIZO_APP) $(ERIZO_TEST)
 OBJ := $(addprefix $(BUILD_DIR)/,$(SRC:=.o) $(GEN:=.o))
 DEP := $(OBJ:.o=.d)
 
+ifeq ($(TARGET), win32-cross)
+$(BUILD_DIR)/erizo.coff: deploy/win32/erizo.rc
+	x86_64-w64-mingw32-windres $? $@
+OBJ += deploy/win32/erizo.coff
+endif
+
 $(ERIZO_APP): $(BUILD_DIR)/src/main.o $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
