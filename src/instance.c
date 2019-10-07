@@ -103,6 +103,7 @@ void instance_cb_window_size(instance_t* instance, int width, int height)
 
 #ifdef PLATFORM_WIN32
     /*  Otherwise, it misbehaves in a high-DPI environment */
+    glfwMakeContextCurrent(instance->window);
     glViewport(0, 0, width, height);
 #endif
 }
