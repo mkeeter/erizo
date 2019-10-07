@@ -89,7 +89,7 @@ DEP := $(OBJ:.o=.d)
 ifeq ($(TARGET), win32-cross)
 $(BUILD_DIR)/erizo.coff: deploy/win32/erizo.rc
 	x86_64-w64-mingw32-windres $? $@
-OBJ += deploy/win32/erizo.coff
+OBJ += $(BUILD_DIR)/erizo.coff
 endif
 
 $(ERIZO_APP): $(BUILD_DIR)/src/main.o $(OBJ)
