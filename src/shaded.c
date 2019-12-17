@@ -42,23 +42,6 @@ void main() {
 }
 );
 
-struct shaded_ {
-    /*  Shader program */
-    GLuint vs;
-    GLuint fs;
-    GLuint prog;
-
-    /*  Uniform locations for matrices */
-    GLint u_proj;
-    GLint u_view;
-    GLint u_model;
-
-    /*  Uniform locations for lighting */
-    GLint u_key;
-    GLint u_fill;
-    GLint u_base;
-};
-
 draw_t* shaded_new() {
     return draw_new(SHADED_VS_SRC, NULL, SHADED_FS_SRC);
 }

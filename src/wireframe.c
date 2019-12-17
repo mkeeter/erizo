@@ -78,24 +78,6 @@ void main() {
 }
 );
 
-struct wireframe_ {
-    /*  Shader program */
-    GLuint vs;
-    GLuint gs;
-    GLuint fs;
-    GLuint prog;
-
-    /*  Uniform locations for matrices */
-    GLint u_proj;
-    GLint u_view;
-    GLint u_model;
-
-    /*  Uniform locations for lighting */
-    GLint u_key;
-    GLint u_fill;
-    GLint u_base;
-};
-
 draw_t* wireframe_new() {
     return draw_new(WIREFRAME_VS_SRC, WIREFRAME_GS_SRC, WIREFRAME_FS_SRC);
 }
