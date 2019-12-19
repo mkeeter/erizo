@@ -4,6 +4,7 @@
 #include "draw.h"
 #include "object.h"
 #include "theme.h"
+#include "shader.h"
 
 static void from_hex(const char* hex, float f[3]) {
     if (strlen(hex) != 6) {
@@ -79,8 +80,16 @@ theme_t* theme_new_gruvbox() {
     return theme;
 }
 
-void theme_bind(theme_t* theme, draw_t* draw) {
-    glUniform3fv(draw->u_key,  1, theme->key);
-    glUniform3fv(draw->u_fill, 1, theme->fill);
-    glUniform3fv(draw->u_base, 1, theme->base);
+theme_uniforms_t theme_get_uniforms(GLuint prog) {
+    theme_uniforms_t u;
+    SHADER_GET_UNIFORM(key);
+    SHADER_GET_UNIFORM(fill);
+    SHADER_GET_UNIFORM(base);
+    return u;
+}
+
+void theme_bind(theme_t* theme, theme_uniforms_t u) {
+    glUniform3fv(u.key,  1, theme->key);
+    glUniform3fv(u.fill, 1, theme->fill);
+    glUniform3fv(u.base, 1, theme->base);
 }

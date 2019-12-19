@@ -3,6 +3,7 @@
 #include "log.h"
 #include "object.h"
 #include "platform.h"
+#include "shader.h"
 #include "mat.h"
 
 /*  Animation to change something about the camera */
@@ -274,10 +275,18 @@ void camera_zoom(camera_t* camera, float amount) {
     camera_update_view(camera);
 }
 
-void camera_bind(camera_t* camera, draw_t* draw) {
-    glUniformMatrix4fv(draw->u_proj,  1, GL_FALSE, (float*)&camera->proj);
-    glUniformMatrix4fv(draw->u_view,  1, GL_FALSE, (float*)&camera->view);
-    glUniformMatrix4fv(draw->u_model, 1, GL_FALSE, (float*)&camera->model);
+camera_uniforms_t camera_get_uniforms(GLuint prog) {
+    camera_uniforms_t u;
+    SHADER_GET_UNIFORM(proj);
+    SHADER_GET_UNIFORM(view);
+    SHADER_GET_UNIFORM(model);
+    return u;
+}
+
+void camera_bind(camera_t* camera, camera_uniforms_t u) {
+    glUniformMatrix4fv(u.proj,  1, GL_FALSE, (float*)&camera->proj);
+    glUniformMatrix4fv(u.view,  1, GL_FALSE, (float*)&camera->view);
+    glUniformMatrix4fv(u.model, 1, GL_FALSE, (float*)&camera->model);
 }
 
 bool camera_check_anim(camera_t* camera) {

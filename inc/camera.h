@@ -2,7 +2,12 @@
 
 /*  Forward declaration of camera struct */
 typedef struct camera_ camera_t;
-struct draw_;
+
+typedef struct camera_uniforms_ {
+    GLint proj;
+    GLint view;
+    GLint model;
+} camera_uniforms_t;
 
 typedef enum {
     CAMERA_PROJ_ORTHOGRAPHIC,
@@ -34,10 +39,13 @@ void camera_set_mouse_pos(camera_t* camera, float x, float y);
 void camera_anim_proj_perspective(camera_t* camera);
 void camera_anim_proj_orthographic(camera_t* camera);
 
-/*  Binds the camera matrices to the draw target */
-void camera_bind(camera_t* camera, struct draw_* draw);
-
 /*  Checks whether there is an animation running on the camera.
  *  If so, the values are updated.  If the animation is incomplete,
  *  returns true (so the caller should schedule a redraw). */
 bool camera_check_anim(camera_t* camera);
+
+/*  Looks up uniforms for camera binding */
+camera_uniforms_t camera_get_uniforms(GLuint prog);
+
+/*  Binds the camera matrices to the given uniforms */
+void camera_bind(camera_t* camera, camera_uniforms_t u);

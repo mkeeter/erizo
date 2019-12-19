@@ -1,7 +1,7 @@
 #include "log.h"
 #include "shader.h"
 
-GLuint shader_build(const GLchar* src, GLenum type) {
+static GLuint shader_build(const GLchar* src, GLenum type) {
     const GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, &src, NULL);
     glCompileShader(shader);
@@ -21,41 +21,39 @@ GLuint shader_build(const GLchar* src, GLenum type) {
     return shader;
 }
 
-void shader_check_link(GLuint program) {
+shader_t shader_new(const char* vs, const char* gs, const char* fs) {
+    shader_t shader;
+
+    shader.prog = glCreateProgram();
+
+    shader.vs = shader_build(vs, GL_VERTEX_SHADER);
+    glAttachShader(shader.prog, shader.vs);
+
+    shader.fs = shader_build(fs, GL_FRAGMENT_SHADER);
+    glAttachShader(shader.prog, shader.fs);
+
+    if (gs) {
+        shader.gs = shader_build(gs, GL_GEOMETRY_SHADER);
+        glAttachShader(shader.prog, shader.gs);
+    }
+
+    glLinkProgram(shader.prog);
     GLint status;
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
+    glGetProgramiv(shader.prog, GL_LINK_STATUS, &status);
     if (status != GL_TRUE) {
         GLint len = 0;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &len);
+        glGetProgramiv(shader.prog, GL_INFO_LOG_LENGTH, &len);
 
         GLchar* buf = (GLchar*)malloc(len + 1);
-        glGetProgramInfoLog(program, len, NULL, buf);
+        glGetProgramInfoLog(shader.prog, len, NULL, buf);
         log_error_and_abort("Failed to link program: %s", buf);
     }
+    return shader;
 }
 
-
-GLuint shader_link_vf(GLuint vs, GLuint fs) {
-    GLuint program = glCreateProgram();
-
-    glAttachShader(program, vs);
-    glAttachShader(program, fs);
-
-    glLinkProgram(program);
-    shader_check_link(program);
-
-    return program;
-}
-
-GLuint shader_link_vgf(GLuint vs, GLuint gs, GLuint fs) {
-    GLuint program = glCreateProgram();
-
-    glAttachShader(program, vs);
-    glAttachShader(program, gs);
-    glAttachShader(program, fs);
-
-    glLinkProgram(program);
-    shader_check_link(program);
-
-    return program;
+void shader_deinit(shader_t shader) {
+    glDeleteShader(shader.vs);
+    glDeleteShader(shader.gs);
+    glDeleteShader(shader.fs);
+    glDeleteProgram(shader.prog);
 }

@@ -40,9 +40,7 @@ struct backdrop_ {
     GLuint vbo;
 
     /*  Shader program */
-    GLuint vs;
-    GLuint fs;
-    GLuint prog;
+    shader_t shader;
 
     /*  Uniform locations */
     GLint u_corners;
@@ -50,12 +48,15 @@ struct backdrop_ {
 
 backdrop_t* backdrop_new() {
     OBJECT_ALLOC(backdrop);
-    backdrop->vs = shader_build(BACKDROP_VS_SRC, GL_VERTEX_SHADER);
-    backdrop->fs = shader_build(BACKDROP_FS_SRC, GL_FRAGMENT_SHADER);
-    backdrop->prog = shader_link_vf(backdrop->vs, backdrop->fs);
-    glUseProgram(backdrop->prog);
+    backdrop->shader = shader_new(BACKDROP_VS_SRC, NULL, BACKDROP_FS_SRC);
+    glUseProgram(backdrop->shader.prog);
 
-    SHADER_GET_UNIFORM_LOC(backdrop, corners);
+    {   // Make a temporary struct to unpack a single uniform
+        GLint prog = backdrop->shader.prog;
+        struct { GLint corners; } u;
+        SHADER_GET_UNIFORM(corners);
+        backdrop->u_corners = u.corners;
+    }
 
     const float corners[] = {-1.0f, -1.0f,
                              -1.0f,  1.0f,
@@ -77,15 +78,13 @@ backdrop_t* backdrop_new() {
 void backdrop_delete(backdrop_t* backdrop) {
     glDeleteBuffers(1, &backdrop->vbo);
     glDeleteVertexArrays(1, &backdrop->vao);
-    glDeleteShader(backdrop->vs);
-    glDeleteShader(backdrop->fs);
-    glDeleteProgram(backdrop->prog);
+    shader_deinit(backdrop->shader);
     free(backdrop);
 }
 
 void backdrop_draw(backdrop_t* backdrop, theme_t* theme) {
     glDisable(GL_DEPTH_TEST);
-    glUseProgram(backdrop->prog);
+    glUseProgram(backdrop->shader.prog);
     glUniform3fv(backdrop->u_corners, 4, (const float*)&theme->corners);
     glBindVertexArray(backdrop->vao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

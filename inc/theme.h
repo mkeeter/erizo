@@ -1,5 +1,4 @@
-/*  Forward declarations */
-struct draw_;
+#include "base.h"
 
 typedef struct theme_ {
     float corners[4][3];
@@ -9,8 +8,17 @@ typedef struct theme_ {
     float base[3];
 } theme_t;
 
+typedef struct theme_uniforms_ {
+    GLint key;
+    GLint fill;
+    GLint base;
+} theme_uniforms_t;
+
 theme_t* theme_new_solarized();
 theme_t* theme_new_nord();
 theme_t* theme_new_gruvbox();
 
-void theme_bind(theme_t* theme, struct draw_* draw);
+/*  Looks up uniforms for theme binding */
+theme_uniforms_t theme_get_uniforms(GLuint prog);
+
+void theme_bind(theme_t* theme, theme_uniforms_t u);
