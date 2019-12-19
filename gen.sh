@@ -25,16 +25,8 @@ fi
 ################################################################################
 # Find the largest filename + line number possible in the logs,
 # then write it to a file so that log columns can be nicely aligned.
-LARGEST=0
-for s in "$@"
-do
-    LINECOUNT=`wc -l $s.c | awk '{print $1}'`
-    let "LENGTH = ${#s} + ${#LINECOUNT} + 2"
-    if (( $LENGTH > $LARGEST ))
-    then
-        LARGEST=$LENGTH
-    fi
-done
+LARGEST=$(grep -nr "log_" $@ | sed -e 's/\([^:]*:[^:]*\):.*$/\1/g' |
+          awk '{print length($1)}' | sort | tail -n 1)
 TARGET=inc/log_align.h
 LOGSIZE="#define LOG_ALIGN $LARGEST"
 if ! echo "$LOGSIZE" | cmp $TARGET &> /dev/null

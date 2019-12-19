@@ -1,28 +1,28 @@
 # Source files
-SRC :=       \
-	src/app      \
-	src/backdrop \
-	src/camera   \
-	src/draw     \
-	src/instance \
-	src/icosphere\
-	src/loader   \
-	src/log      \
-	src/mat      \
-	src/model    \
-	src/shader   \
-	src/shaded   \
-	src/theme    \
-	src/vset     \
-	src/window   \
-	src/wireframe\
-	src/worker   \
+SRC :=                  \
+	src/app             \
+	src/backdrop        \
+	src/camera          \
+	src/draw            \
+	src/instance        \
+	src/icosphere       \
+	src/loader          \
+	src/log             \
+	src/mat             \
+	src/model           \
+	src/shader          \
+	src/shaded          \
+	src/theme           \
+	src/vset            \
+	src/window          \
+	src/wireframe       \
+	src/worker          \
 	vendor/glew/glew    \
 	# end of source files
 
 # Force the version-generation script to run before
 # anything else, generating version.c and log_align.h
-_GEN := $(shell sh gen.sh $(SRC))
+_GEN := $(shell sh gen.sh $(SRC:=.c))
 
 # Generated files
 # (listed separately so that 'make clean' deletes them)
