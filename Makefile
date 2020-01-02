@@ -4,8 +4,9 @@ SRC :=                  \
 	src/backdrop        \
 	src/camera          \
 	src/draw            \
-	src/instance        \
 	src/icosphere       \
+	src/instance        \
+	src/indirect        \
 	src/loader          \
 	src/log             \
 	src/mat             \

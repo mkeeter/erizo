@@ -21,8 +21,6 @@ static const GLchar* SHADED_FS_SRC = GLSL(330,
 in vec3 ec_pos;
 
 uniform mat4 proj;
-uniform mat4 view;
-uniform mat4 model;
 
 uniform vec3 key;
 uniform vec3 fill;
