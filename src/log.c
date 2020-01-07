@@ -43,6 +43,7 @@ FILE* log_preamble(log_type_t t, const char* file, int line)
     for (int i=line; i; i /= 10, pad++);
     pad += strlen(filename);
     pad = LOG_ALIGN - pad - 6;
+    assert(pad >= 0);
 
     platform_set_terminal_color(out, log_message_color(t));
     fprintf(out, "[erizo]");
