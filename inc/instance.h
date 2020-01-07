@@ -3,6 +3,7 @@
 struct app_;
 struct backdrop_;
 struct camera_;
+struct indirect_;
 struct model_;
 struct theme_;
 
@@ -14,6 +15,8 @@ typedef struct instance_ {
     // Different rendering modes
     struct draw_* shaded;
     struct draw_* wireframe;
+
+    struct indirect_* indirect;
 
     enum {
         DRAW_SHADED,

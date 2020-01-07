@@ -3,6 +3,7 @@
 #include "camera.h"
 #include "draw.h"
 #include "instance.h"
+#include "indirect.h"
 #include "loader.h"
 #include "log.h"
 #include "mat.h"
@@ -40,6 +41,8 @@ instance_t* instance_new(app_t* parent, const char* filepath, int proj) {
     instance->shaded = shaded_new();
     instance->wireframe = wireframe_new();
     instance->draw_mode = DRAW_SHADED;
+
+    instance->indirect = indirect_new(width, height);
 
     /*  At the very last moment, check on the loader */
     loader_finish(loader, instance->model, instance->camera);
@@ -146,6 +149,9 @@ bool instance_draw(instance_t* instance, theme_t* theme) {
     const bool needs_redraw = camera_check_anim(instance->camera);
 
     glfwMakeContextCurrent(instance->window);
+    indirect_draw(instance->indirect, instance->model, instance->camera);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear(GL_DEPTH_BUFFER_BIT);
     backdrop_draw(instance->backdrop, theme);
 
