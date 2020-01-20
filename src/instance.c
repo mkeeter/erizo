@@ -67,6 +67,7 @@ void instance_delete(instance_t* instance) {
     draw_delete(instance->shaded);
     draw_delete(instance->wireframe);
     OBJECT_DELETE_MEMBER(instance, window);
+    OBJECT_DELETE_MEMBER(instance, indirect);
     free(instance);
 }
 
@@ -97,6 +98,9 @@ void instance_cb_window_size(instance_t* instance, int width, int height)
 {
     /*  Update camera size (and recalculate projection matrix) */
     camera_set_size(instance->camera, width, height);
+
+    /*  Resize buffers for indirect rendering */
+    indirect_resize(instance->indirect, width, height);
 
 #ifdef PLATFORM_DARWIN
     /*  Continue to render while the window is being resized
@@ -152,7 +156,7 @@ bool instance_draw(instance_t* instance, theme_t* theme) {
     indirect_draw(instance->indirect, instance->model, instance->camera);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClear(GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     backdrop_draw(instance->backdrop, theme);
 
     switch (instance->draw_mode) {
@@ -163,6 +167,7 @@ bool instance_draw(instance_t* instance, theme_t* theme) {
             draw(instance->wireframe, instance->model, instance->camera, theme);
             break;
     }
+
     glfwSwapBuffers(instance->window);
     return needs_redraw;
 }
