@@ -14,6 +14,7 @@ SRC :=                  \
 	src/shader          \
 	src/shaded          \
 	src/theme           \
+	src/version         \
 	src/vset            \
 	src/window          \
 	src/wireframe       \
@@ -21,15 +22,43 @@ SRC :=                  \
 	vendor/glew/glew    \
 	# end of source files
 
-# Force the version-generation script to run before
-# anything else, generating version.c and log_align.h
-_GEN := $(shell sh gen.sh $(SRC:=.c))
+################################################################################
 
 # Generated files
 # (listed separately so that 'make clean' deletes them)
-GEN :=       \
-	src/version  \
-	# end of generated files
+VERSION_FILE := src/version.c
+LOG_ALIGN_FILE := inc/log_align.h
+GEN := $(VERSION_FILE) $(LOG_ALIGN_FILE)
+
+################################################################################
+# File generation for version and log alignment
+GIT_REV := $(shell git log --pretty=format:'%h' -n 1)
+GIT_DIFF := $(shell git diff --quiet --exit-code || echo +)
+GIT_TAG := $(shell git describe --exact-match --tags 2> /dev/null || echo "")
+GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+
+VERSION := const char* GIT_REV="$(GIT_REV)$(GIT_DIFF)";\
+const char* GIT_TAG="$(GIT_TAG)";\
+const char* GIT_BRANCH="$(GIT_BRANCH)";
+
+PREV_VERSION := $(shell cat $(VERSION_FILE) 2> /dev/null || echo "")
+
+ifneq ($(VERSION), $(PREV_VERSION))
+# Hilarious string escaping shenanigans
+VERSION := $(subst =,=\",$(VERSION))
+VERSION := $(subst ;,\";,$(VERSION))
+$(shell echo "$(VERSION)" > $(VERSION_FILE))
+endif
+
+LONGEST=$(shell wc -l src/*.c|grep -v total|sed "s/ //g"|awk '{print length}'|sort|tail -1)
+LOG_ALIGN=\#define LOG_ALIGN (1 + $(LONGEST))
+PREV_LOG_ALIGN := $(shell cat $(LOG_ALIGN_FILE) 2> /dev/null || echo "")
+
+ifneq ($(LOG_ALIGN), $(PREV_LOG_ALIGN))
+$(shell echo "$(LOG_ALIGN)" > $(LOG_ALIGN_FILE))
+endif
+
+################################################################################
 
 # Platform detection
 ifndef TARGET
@@ -80,11 +109,13 @@ else
 	ERIZO_TEST := erizo-test
 endif
 
+################################################################################
+
 BUILD_DIR := build-$(TARGET)
 
-all: $(ERIZO_APP) $(ERIZO_TEST)
+all: $(GEN) $(ERIZO_APP) $(ERIZO_TEST)
 
-OBJ := $(addprefix $(BUILD_DIR)/,$(SRC:=.o) $(GEN:=.o))
+OBJ := $(addprefix $(BUILD_DIR)/,$(SRC:=.o))
 DEP := $(OBJ:.o=.d)
 
 ifeq ($(TARGET), win32-cross)
@@ -106,9 +137,9 @@ $(BUILD_DIR)/%.o: %.mm | $(BUILD_DIR)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(DEP)
-$(BUILD_DIR)/%.d: %.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.d: %.c | $(BUILD_DIR) $(GEN)
 	$(CC) $< $(PLATFORM) $(CFLAGS) -MM -MT $(@:.d=.o) > $@
-$(BUILD_DIR)/%.d: %.mm | $(BUILD_DIR)
+$(BUILD_DIR)/%.d: %.mm | $(BUILD_DIR) $(GEN)
 	$(CC) $< $(PLATFORM) -Iinc -MM -MT $(@:.d=.o) > $@
 endif
 
@@ -118,10 +149,12 @@ $(BUILD_DIR):
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -rf $(GEN:=.c)
+	rm -rf $(GEN)
 	rm -f $(ERIZO_APP)
 	rm -f $(ERIZO_TEST)
 
+################################################################################
+# Building vendored GLFW
 glfw:
 	cd vendor/glfw && mkdir -p build-$(TARGET)
 ifeq ($(TARGET), win32-cross)
