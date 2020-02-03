@@ -31,6 +31,7 @@ extern "C" {
 }
 -(void) onOpen;
 -(void) onClose;
+-(void) onAboutMenu;
 @end
 
 @implementation Glue
@@ -86,6 +87,16 @@ extern "C" {
     [self->orthographic setState:NSOnState];
     app_view_orthographic(self->app);
 }
+
+-(void)onAboutMenu {
+    extern const char* GIT_REV;
+    NSString *version = [NSString stringWithFormat:@"Version: %s", GIT_REV];
+    NSDictionary* d = @{
+        NSAboutPanelOptionApplicationVersion: version,
+    };
+    [[NSApplication sharedApplication] orderFrontStandardAboutPanelWithOptions:d];
+}
+
 @end
 
 static Glue* GLUE = NULL;
@@ -215,8 +226,15 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
         GLUE->perspective = perspective;
     }
 
-    [[NSApplication sharedApplication].mainMenu insertItem:fileMenuItem atIndex:1];
-    [[NSApplication sharedApplication].mainMenu insertItem:viewMenuItem atIndex:2];
+    NSApplication * nsApp = [NSApplication sharedApplication];
+    [nsApp.mainMenu insertItem:fileMenuItem atIndex:1];
+    [nsApp.mainMenu insertItem:viewMenuItem atIndex:2];
+
+    // Patch the "About" menu item to call our custom function
+    NSMenu* appMenu = [nsApp.mainMenu itemWithTitle:@""].submenu;
+    NSMenuItem* aboutItem = [appMenu itemAtIndex:0];
+    aboutItem.action = @selector(onAboutMenu);
+    aboutItem.target = GLUE;
 }
 
 extern "C" void platform_warning(const char* title, const char* text) {
