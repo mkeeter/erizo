@@ -12,7 +12,7 @@ convert icon512.png -resize 16x16 icon016.png
 png2icns ../darwin/erizo.icns icon*.png
 
 # Build the Windows icon
-convert icon*.png ../win64/erizo.ico
+convert icon*.png ../win32/erizo.ico
 
 # Clean up
 rm icon512.png icon256.png icon128.png icon032.png icon016.png
