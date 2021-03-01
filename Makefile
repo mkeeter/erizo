@@ -133,7 +133,7 @@ $(ERIZO_TEST): $(BUILD_DIR)/src/test.o $(OBJ)
 $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c99 $<
 $(BUILD_DIR)/%.o: %.mm | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ $<
+	$(CC) $(CFLAGS) $(PLATFORM) -c -o $@ -std=c++11 $<
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(DEP)
