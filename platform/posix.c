@@ -156,3 +156,7 @@ const char* platform_filename(const char* filepath) {
     }
     return target;
 }
+
+bool platform_is_tty() {
+    return isatty(STDOUT_FILENO);
+}

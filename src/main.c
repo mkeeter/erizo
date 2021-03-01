@@ -31,5 +31,6 @@ int main(int argc, char** argv) {
         glfwWaitEvents();
     }
 
+    log_deinit();
     return 0;
 }

@@ -314,3 +314,7 @@ void platform_warning(const char* title, const char* text) {
 const char* platform_filename(const char* filepath) {
     return filepath;
 }
+
+bool platform_is_tty() {
+    return true;
+}

@@ -13,10 +13,20 @@ platform_terminal_color_t log_message_color(log_type_t t) {
 }
 
 static struct platform_mutex_* mut = NULL;
+static FILE* log_file = NULL;
 
 void log_init() {
     assert(mut == NULL);
     mut = platform_mutex_new();
+    if (!platform_is_tty()) {
+        log_file = fopen("/tmp/erizo.log", "w");
+    }
+}
+
+void log_deinit() {
+    if (log_file) {
+        fclose(log_file);
+    }
 }
 
 void log_lock() {
@@ -37,7 +47,14 @@ FILE* log_preamble(log_type_t t, const char* file, int line)
 
     const uint64_t dt_usec = platform_get_time() - start_usec;
 
-    FILE* out = (t == LOG_ERROR) ? stderr : stdout;
+    FILE* out;
+    if (log_file) {
+        out = log_file;
+    } else if (t == LOG_ERROR) {
+        out = stderr;
+    } else {
+        out = stdout;
+    }
 
     const char* filename = platform_filename(file);
 
@@ -48,14 +65,20 @@ FILE* log_preamble(log_type_t t, const char* file, int line)
     pad = LOG_ALIGN - pad - 6;
     assert(pad >= 0);
 
-    platform_set_terminal_color(out, log_message_color(t));
+    if (!log_file) {
+        platform_set_terminal_color(out, log_message_color(t));
+    }
     fprintf(out, "[erizo]");
 
-    platform_set_terminal_color(out, TERM_COLOR_WHITE);
+    if (!log_file) {
+        platform_set_terminal_color(out, TERM_COLOR_WHITE);
+    }
     fprintf(out, " (%u.%06u) ", (uint32_t)(dt_usec / 1000000),
                                 (uint32_t)(dt_usec % 1000000));
 
-    platform_clear_terminal_color(out);
+    if (!log_file) {
+        platform_clear_terminal_color(out);
+    }
     fprintf(out, "%s:%i ", filename, line);
 
     while (pad--) {

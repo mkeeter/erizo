@@ -10,6 +10,7 @@ void platform_munmap(platform_mmap_t* m);
 
 /*  Returns time in microseconds */
 int64_t platform_get_time(void);
+bool platform_is_tty(void);
 
 /*  Based on 8-color ANSI terminals */
 typedef enum {
