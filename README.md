@@ -29,7 +29,15 @@ At the moment, Erizo supports compiling a native application on MacOS,
 or cross-compiling to Windows (if `TARGET=win32-cross` is set).
 
 ## Building dependencies
-GLFW is shipped in the repository, to easily build a static binary.  It only needs to be compiled once.
+GLFW depends on `cmake` having been installed.
+
+```
+# osx 
+brew install cmake
+```
+
+GLFW is shipped in the repository, to easily build a static binary.  It only needs to be compiled once.  
+
 ```
 [env TARGET=win32-cross] make glfw
 ```
