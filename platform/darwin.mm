@@ -65,26 +65,26 @@ extern "C" {
 }
 
 -(void) onShaded {
-    [self->shaded setState:NSOnState];
-    [self->wireframe setState:NSOffState];
+    [self->shaded setState:NSControlStateValueOn];
+    [self->wireframe setState:NSControlStateValueOff];
     app_view_shaded(self->app);
 }
 
 -(void) onWireframe {
-    [self->shaded setState:NSOffState];
-    [self->wireframe setState:NSOnState];
+    [self->shaded setState:NSControlStateValueOff];
+    [self->wireframe setState:NSControlStateValueOn];
     app_view_wireframe(self->app);
 }
 
 -(void) onPerspective {
-    [self->perspective setState:NSOnState];
-    [self->orthographic setState:NSOffState];
+    [self->perspective setState:NSControlStateValueOn];
+    [self->orthographic setState:NSControlStateValueOff];
     app_view_perspective(self->app);
 }
 
 -(void) onOrthographic {
-    [self->perspective setState:NSOffState];
-    [self->orthographic setState:NSOnState];
+    [self->perspective setState:NSControlStateValueOff];
+    [self->orthographic setState:NSControlStateValueOn];
     app_view_orthographic(self->app);
 }
 
@@ -184,7 +184,7 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
             keyEquivalent:@""
             ] autorelease];
         shaded.target = GLUE;
-        [shaded setState:NSOnState];
+        [shaded setState:NSControlStateValueOn];
         [viewMenu addItem:shaded];
         GLUE->shaded = shaded;
     }
@@ -210,7 +210,7 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
             keyEquivalent:@""
             ] autorelease];
         orthographic.target = GLUE;
-        [orthographic setState:NSOnState];
+        [orthographic setState:NSControlStateValueOn];
         [viewMenu addItem:orthographic];
         GLUE->orthographic = orthographic;
     }
