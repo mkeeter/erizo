@@ -93,15 +93,15 @@ static const char* loader_parse_ascii(const char* data, size_t* size) {
         data += strlen(VERTEX_STR);
 
         for (unsigned i=0; i < 3; ++i) {
-            SKIP_WHILE(isspace);
-            float f;
-            const int r = sscanf(data, "%f", &f);
-            ABORT_IF(r == 0 || r == EOF, "Failed to parse float");
+            char* end_ptr = NULL;
+            const float f = strtof(data, &end_ptr);
+            ABORT_IF(errno != 0, "Failed to parse float");
             if (buf_size == buf_count) {
                 buf_size *= 2;
                 buffer = (float*)realloc(buffer, buf_size * sizeof(float));
             }
             buffer[buf_count++] = f;
+            data = end_ptr;
 
             SKIP_WHILE(!isspace);
         }
