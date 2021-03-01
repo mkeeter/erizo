@@ -316,5 +316,6 @@ const char* platform_filename(const char* filepath) {
 }
 
 bool platform_is_tty() {
+    /* For now, always assume Windows should log to the console */
     return true;
 }
