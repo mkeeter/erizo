@@ -32,12 +32,12 @@ typedef struct platform_mutex_ platform_mutex_t;
 typedef struct platform_cond_ platform_cond_t;
 typedef struct platform_thread_ platform_thread_t;
 
-platform_mutex_t* platform_mutex_new();
+platform_mutex_t* platform_mutex_new(void);
 void platform_mutex_delete(platform_mutex_t* mutex);
 int platform_mutex_lock(platform_mutex_t* mutex);
 int platform_mutex_unlock(platform_mutex_t* mutex);
 
-platform_cond_t* platform_cond_new();
+platform_cond_t* platform_cond_new(void);
 void platform_cond_delete(platform_cond_t* cond);
 int platform_cond_wait(platform_cond_t* cond,
                        platform_mutex_t* mutex);

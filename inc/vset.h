@@ -20,7 +20,7 @@ typedef struct vset_ {
 } vset_t;
 
 /*  Constructs a new vset */
-vset_t* vset_new();
+vset_t* vset_new(void);
 void vset_delete(vset_t* v);
 
 /*  Inserts a vertex (three floats) into the set, returning an index */

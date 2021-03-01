@@ -14,9 +14,9 @@ typedef struct theme_uniforms_ {
     GLint base;
 } theme_uniforms_t;
 
-theme_t* theme_new_solarized();
-theme_t* theme_new_nord();
-theme_t* theme_new_gruvbox();
+theme_t* theme_new_solarized(void);
+theme_t* theme_new_nord(void);
+theme_t* theme_new_gruvbox(void);
 
 /*  Looks up uniforms for theme binding */
 theme_uniforms_t theme_get_uniforms(GLuint prog);

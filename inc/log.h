@@ -7,8 +7,9 @@ typedef enum {
     LOG_ERROR,
 } log_type_t;
 
-void log_lock();
-void log_unlock();
+void log_init(void);
+void log_lock(void);
+void log_unlock(void);
 FILE* log_preamble(log_type_t t, const char* file, int line);
 
 #define log_print(t, ...) do {                          \

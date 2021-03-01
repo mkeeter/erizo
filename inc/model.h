@@ -8,5 +8,5 @@ typedef struct model_ {
     GLuint ibo;
 } model_t;
 
-model_t* model_new();
+model_t* model_new(void);
 void model_delete(model_t* model);
