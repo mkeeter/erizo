@@ -103,8 +103,12 @@ static Glue* GLUE = NULL;
 
 void fopenFiles(id self, SEL _cmd, NSApplication* application,
                 NSArray<NSString *>* openFiles) {
+    //  We defer loading files until control hits the main event loop.  This
+    //  prevents an issue when someone starts the app by dragging a file onto
+    //  its icon, which would otherwise call fopenFiles within the first call
+    //  to glfwCreateWindow, hanging until the app is re-focused.
     for (NSString* t in openFiles) {
-        app_open(GLUE->app, [t UTF8String]);
+        app_defer_open(GLUE->app, [t UTF8String]);
     }
 }
 
@@ -148,7 +152,7 @@ extern "C" void platform_init(app_t* app, int argc, char** argv)
         window_new("", 1.0f, 1.0f);
 
         //  If no file was opened, then load the default
-        if (app->instance_count == 0) {
+        if (app->instance_count == 0 && !app->deferred_files) {
             app_open(app, ":/sphere");
         }
     }

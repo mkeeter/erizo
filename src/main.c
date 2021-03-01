@@ -14,6 +14,8 @@ int main(int argc, char** argv) {
         .instances_size=0,
         .theme=NULL,
         .draw_mode=DRAW_SHADED,
+        .deferred_count=0,
+        .deferred_files=NULL,
     };
     app.theme = theme_new_solarized();
 

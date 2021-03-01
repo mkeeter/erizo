@@ -34,6 +34,15 @@ instance_t* app_open(app_t* app, const char* filename) {
     return instance;
 }
 
+void app_defer_open(app_t* app, const char* filename) {
+    const size_t len = strlen(filename);
+    char* f = calloc(1, len + 1);
+    strcpy(f, filename);
+    app->deferred_files = realloc(app->deferred_files,
+                                  sizeof(char*) * app->deferred_count + 1);
+    app->deferred_files[app->deferred_count++] = f;
+}
+
 void app_view_shaded(app_t* app) {
     app->draw_mode = DRAW_SHADED;
     for (unsigned i=0; i < app->instance_count; ++i) {
@@ -82,8 +91,20 @@ instance_t* app_get_front(app_t* app) {
 }
 
 bool app_run(app_t* app) {
-    unsigned i=0;
+    /*  On some platforms, we defer loading of files until the event loop
+     *  begins running, so handle them all here. */
+    if (app->deferred_files) {
+        for (unsigned i=0; i < app->deferred_count; ++i) {
+            app_open(app, app->deferred_files[i]);
+            free(app->deferred_files[i]);
+        }
+        free(app->deferred_files);
+        app->deferred_files = NULL;
+        app->deferred_count = 0;
+    }
+
     bool needs_redraw = false;
+    unsigned i = 0;
     while (i < app->instance_count) {
         needs_redraw |= instance_draw(app->instances[i], app->theme);
         if (glfwWindowShouldClose(app->instances[i]->window)) {

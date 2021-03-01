@@ -11,13 +11,19 @@ typedef struct app_ {
     struct theme_* theme;
     int draw_mode; // shaded or wireframe
     int draw_proj; // orthographic or perspective
+
+    unsigned deferred_count;
+    char** deferred_files;
 } app_t;
 
 /*  Calls instance_run on every instance */
 bool app_run(app_t* app);
 
-/*  Triggered from the UI */
+/*  Synchronously loads a file (triggered from UI menu items) */
 struct instance_* app_open(app_t* app, const char* filename);
+
+/*  Loads a file when control returns to the event loop */
+void app_defer_open(app_t* app, const char* filename);
 
 /*  Changes the view mode for the whole application */
 void app_view_shaded(app_t* app);
