@@ -14,12 +14,15 @@ platform_terminal_color_t log_message_color(log_type_t t) {
 
 static struct platform_mutex_* mut = NULL;
 
+void log_init() {
+    assert(mut == NULL);
+    mut = platform_mutex_new();
+}
+
 void log_lock() {
-    if (mut == NULL) {
-        mut = platform_mutex_new();
-    }
     platform_mutex_lock(mut);
 }
+
 void log_unlock() {
     platform_mutex_unlock(mut);
 }

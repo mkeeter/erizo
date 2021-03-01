@@ -6,6 +6,7 @@
 #include "window.h"
 
 int main(int argc, char** argv) {
+    log_init();
     log_info("Startup!");
     app_t app = {
         .instances=NULL,
