@@ -40,15 +40,13 @@ extern "C" {
     NSArray *fileTypes = [NSArray arrayWithObjects:@"stl", @"STL", nil];
     [panel setAllowedFileTypes:fileTypes];
 
-    [panel beginWithCompletionHandler:^(NSInteger result){
-        if (result == NSModalResponseOK) {
-            NSURL *doc = [[panel URLs] objectAtIndex:0];
-            NSString *urlString = [doc path];
-            instance_t* instance = app_open(self->app, [urlString UTF8String]);
-            NSWindow* window = glfwGetCocoaWindow(instance->window);
-            [window makeKeyWindow];
-        }
-    }];
+    if ([panel runModal] == NSModalResponseOK) {
+        NSURL *doc = [[panel URLs] objectAtIndex:0];
+        NSString *urlString = [doc path];
+        instance_t* instance = app_open(self->app, [urlString UTF8String]);
+        NSWindow* window = glfwGetCocoaWindow(instance->window);
+        [window makeKeyWindow];
+    }
 }
 
 -(void) onClose {
