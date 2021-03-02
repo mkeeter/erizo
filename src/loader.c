@@ -102,8 +102,6 @@ static const char* loader_parse_ascii(const char* data, size_t* size) {
             }
             buffer[buf_count++] = f;
             data = end_ptr;
-
-            SKIP_WHILE(!isspace);
         }
     }
     log_trace("Parsed ASCII STL");
