@@ -6,7 +6,6 @@ SRC :=                  \
 	src/draw            \
 	src/icosphere       \
 	src/instance        \
-	src/indirect        \
 	src/loader          \
 	src/log             \
 	src/mat             \

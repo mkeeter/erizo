@@ -3,7 +3,6 @@
 #include "camera.h"
 #include "draw.h"
 #include "instance.h"
-#include "indirect.h"
 #include "loader.h"
 #include "log.h"
 #include "mat.h"
@@ -42,8 +41,6 @@ instance_t* instance_new(app_t* parent, const char* filepath, int proj) {
     instance->wireframe = wireframe_new();
     instance->draw_mode = DRAW_SHADED;
 
-    instance->indirect = indirect_new(width, height);
-
     /*  At the very last moment, check on the loader */
     loader_finish(loader, instance->model, instance->camera);
 
@@ -67,7 +64,6 @@ void instance_delete(instance_t* instance) {
     draw_delete(instance->shaded);
     draw_delete(instance->wireframe);
     OBJECT_DELETE_MEMBER(instance, window);
-    OBJECT_DELETE_MEMBER(instance, indirect);
     free(instance);
 }
 
@@ -98,9 +94,6 @@ void instance_cb_window_size(instance_t* instance, int width, int height)
 {
     /*  Update camera size (and recalculate projection matrix) */
     camera_set_size(instance->camera, width, height);
-
-    /*  Resize buffers for indirect rendering */
-    indirect_resize(instance->indirect, width, height);
 
 #ifdef PLATFORM_DARWIN
     /*  Continue to render while the window is being resized
@@ -153,7 +146,6 @@ bool instance_draw(instance_t* instance, theme_t* theme) {
     const bool needs_redraw = camera_check_anim(instance->camera);
 
     glfwMakeContextCurrent(instance->window);
-    indirect_draw(instance->indirect, instance->model, instance->camera);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
