@@ -93,6 +93,9 @@ static const char* loader_parse_ascii(const char* data, size_t* size) {
         data += strlen(VERTEX_STR);
 
         for (unsigned i=0; i < 3; ++i) {
+            /* errno can be set by realloc even on non-failures,
+             * so clear it before the call to strtof */
+            errno = 0;
             char* end_ptr = NULL;
             const float f = strtof(data, &end_ptr);
             ABORT_IF(errno != 0, "Failed to parse float");
