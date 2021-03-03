@@ -107,6 +107,7 @@ void fopenFiles(id self, SEL _cmd, NSApplication* application,
     //  to glfwCreateWindow, hanging until the app is re-focused.
     for (NSString* t in openFiles) {
         app_defer_open(GLUE->app, [t UTF8String]);
+        glfwPostEmptyEvent();
     }
 }
 
