@@ -5,6 +5,9 @@ EXE=Erizo
 APP=$EXE.app
 
 cd ../..
+if [ ! -f vendor/glfw/build-darwin/src/libglfw3.a ]; then
+    make glfw
+fi
 make clean
 make -j8
 strip erizo
