@@ -7,7 +7,7 @@ which was challenged by [`meshview`](https://github.com/fogleman/meshview).
 - Implemented in fast, native code
 - Distributed as a single, statically-linked binary
 
-![terrace bridge](http://www.mattkeeter.com/projects/erizo/terrace.png)  
+![terrace bridge](http://www.mattkeeter.com/projects/erizo/terrace.png)\
 *Model by Jennifer Keeter*
 
 # Platforms
@@ -15,6 +15,7 @@ which was challenged by [`meshview`](https://github.com/fogleman/meshview).
 |-|-|-|-|
 |MacOS|`llvm`|[@mkeeter](https://github.com/mkeeter)|Main development platform|
 |Windows|`x86_64-w64-mingw32-gcc`|[@mkeeter](https://github.com/mkeeter)|Cross-compiled and tested with Wine|
+|GNU/Linux|`gcc`|[@snshn](https://github.com/snshn)|Compiled using gcc|
 |Your OS here|`???`|Your username here|Contributors welcome!|
 
 Other platforms will be supported if implemented and maintained by other contributors.
@@ -27,16 +28,18 @@ To become a platform maintainer, open a PR which:
 # Compiling
 At the moment, Erizo supports compiling a native application on MacOS,
 or cross-compiling to Windows (if `TARGET=win32-cross` is set).
+Support for GNU/Linux is present, however with X11 the application doesn’t support
+all of the original control gestures due to platform’s limitations.
 
 ## Building dependencies
 GLFW depends on `cmake` having been installed.
 
 ```
-# osx 
+# osx
 brew install cmake
 ```
 
-GLFW is shipped in the repository, to easily build a static binary.  It only needs to be compiled once.  
+GLFW is shipped in the repository, to easily build a static binary.  It only needs to be compiled once.
 
 ```
 [env TARGET=win32-cross] make glfw
