@@ -64,6 +64,8 @@ ifndef TARGET
 UNAME := $(shell uname)
 	ifeq ($(UNAME), Darwin)
 		TARGET := darwin
+	else ifeq ($(UNAME), Linux)
+		TARGET := linux
 	endif
 endif
 
@@ -83,6 +85,11 @@ ifeq ($(ASAN),1)
 	CFLAGS  += -fsanitize=address
 endif
 
+ifeq ($(TARGET), linux)
+	SRC      += platform/linux platform/posix
+	LDFLAGS   = -lglfw -lGL -lpthread -lm
+	PLATFORM := -DPLATFORM_LINUX
+endif
 ifeq ($(TARGET), darwin)
 	SRC +=  platform/darwin platform/posix
 	LDFLAGS := -framework Foundation             \
