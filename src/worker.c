@@ -60,16 +60,25 @@ static void* worker_run(void* worker_) {
     /*  Find our model's bounds by iterating over deduplicated vertices */
     memcpy(worker->min, vset->vert[1], sizeof(worker->min));
     memcpy(worker->max, vset->vert[1], sizeof(worker->max));
+    bool has_nan = false;
     for (size_t i=1; i <= vset->count; ++i) {
         for (unsigned j=0; j < 3; ++j) {
             const float v = vset->vert[i][j];
-            if (v < worker->min[j]) {
-                worker->min[j] = v;
-            }
-            if (v > worker->max[j]) {
-                worker->max[j] = v;
+            /* Skip NaN / inf when calculating bounds */
+            if (isnan(v) || isinf(v)) {
+                has_nan = true;
+            } else {
+                if (v < worker->min[j]) {
+                    worker->min[j] = v;
+                }
+                if (v > worker->max[j]) {
+                    worker->max[j] = v;
+                }
             }
         }
+    }
+    if (has_nan) {
+        log_warn("Model contains NaN/inf values");
     }
 
     /*  Wait for the loader to set up our triangle offsets, so that
