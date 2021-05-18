@@ -1,6 +1,10 @@
 #ifndef BASE_H
 #define BASE_H
 
+#ifdef PLATFORM_LINUX
+#define _GNU_SOURCE
+#endif
+
 #ifdef PLATFORM_WIN32
 #define _USE_MATH_DEFINES
 #endif
