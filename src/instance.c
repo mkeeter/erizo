@@ -134,6 +134,27 @@ void instance_cb_mouse_scroll(instance_t* instance,
     camera_zoom(instance->camera, yoffset);
 }
 
+void instance_cb_key_press(instance_t* instance, int key, int scancode,
+                           int action, int mods)
+{
+    (void)scancode;
+    (void)mods;
+    if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT ||
+            key == GLFW_KEY_UP || key == GLFW_KEY_DOWN) {
+            if (key == GLFW_KEY_LEFT) {
+                camera_rotate(instance->camera, 2.0f, 0.0f);
+            } else if (key == GLFW_KEY_RIGHT) {
+                camera_rotate(instance->camera, -2.0f, 0.0f);
+            } else if (key == GLFW_KEY_UP) {
+                camera_rotate(instance->camera, 0.0f, 2.0f);
+            } else {
+                camera_rotate(instance->camera, 0.0f, -2.0f);
+            }
+        }
+    }
+}
+
 void instance_cb_focus(instance_t* instance, bool focus)
 {
     instance->focused = focus;
