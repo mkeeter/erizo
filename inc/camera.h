@@ -35,6 +35,9 @@ void camera_zoom(camera_t* camera, float amount);
  *  pan if the button was already held down. */
 void camera_set_mouse_pos(camera_t* camera, float x, float y);
 
+/*  Rotates camera's axes by specified amount of degrees. */
+void camera_rotate(camera_t* camera, float x, float y);
+
 /*  Schedules a camera animation to update projection */
 void camera_anim_proj_perspective(camera_t* camera);
 void camera_anim_proj_orthographic(camera_t* camera);
