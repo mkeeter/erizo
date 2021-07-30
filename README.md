@@ -15,7 +15,7 @@ which was challenged by [`meshview`](https://github.com/fogleman/meshview).
 |-|-|-|-|
 |MacOS|`llvm`|[@mkeeter](https://github.com/mkeeter)|Main development platform|
 |Windows|`x86_64-w64-mingw32-gcc`|[@mkeeter](https://github.com/mkeeter)|Cross-compiled and tested with Wine|
-|GNU/Linux|`gcc`|[@snshn](https://github.com/snshn)|Compiled using gcc|
+|GNU/Linux|`gcc`|[@snshn](https://github.com/snshn)|Compiled using GCC|
 |Your OS here|`???`|Your username here|Contributors welcome!|
 
 Other platforms will be supported if implemented and maintained by other contributors.
@@ -28,8 +28,8 @@ To become a platform maintainer, open a PR which:
 # Compiling
 At the moment, Erizo supports compiling a native application on MacOS,
 or cross-compiling to Windows (if `TARGET=win32-cross` is set).
-Support for GNU/Linux is present, however with X11 the application doesn’t support
-all of the original control gestures due to platform’s limitations.
+Support for GNU/Linux is present; however, with X11 the application doesn't support
+all of the original control gestures (due to platform limitations).
 
 ## Building dependencies
 GLFW depends on `cmake` having been installed.
