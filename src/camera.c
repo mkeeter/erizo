@@ -193,6 +193,29 @@ void camera_set_mouse_pos(camera_t* camera, float x, float y) {
     }
 }
 
+void camera_rotate(camera_t* camera, float x, float y)
+{
+    /*  Update pitch and clamp values */
+    camera->pitch += y / 360.0f * M_PI;
+    if (camera->pitch < -M_PI) {
+        camera->pitch = -M_PI;
+    } else if (camera->pitch > 0.0f) {
+        camera->pitch = 0.0f;
+    }
+
+    /*  Update yaw and keep it under 360 degrees */
+    camera->yaw += x / 360.0f * M_PI;
+    while (camera->yaw < 0.0f) {
+        camera->yaw += 2.0f * M_PI;
+    }
+    while (camera->yaw > 2.0f * M_PI) {
+        camera->yaw -= 2.0f * M_PI;
+    }
+
+    /*  Rebuild view matrix with new values */
+    camera_update_view(camera);
+}
+
 static void camera_set_anim(camera_t* camera, anim_t* anim) {
     if (camera->anim) {
         log_warn("Triggered an animation while another was running; skipping");
