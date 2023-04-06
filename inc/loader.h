@@ -22,6 +22,7 @@ typedef enum loader_state_ {
     LOADER_ERROR_NO_FILE,
     LOADER_ERROR_BAD_ASCII_STL,
     LOADER_ERROR_WRONG_SIZE,
+    LOADER_ERROR_STDIN,
 } loader_state_t;
 
 typedef struct loader_ loader_t;

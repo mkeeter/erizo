@@ -14,6 +14,8 @@ typedef struct app_ {
 
     unsigned deferred_count;
     char** deferred_files;
+
+    bool is_reading_stdin;
 } app_t;
 
 /*  Calls instance_run on every instance */

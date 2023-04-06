@@ -21,40 +21,59 @@ instance_t* instance_new(app_t* parent, const char* filepath, int proj) {
     const float width = 500;
     const float height = 500;
     const char* filename = platform_filename(filepath);
-    GLFWwindow* window = window_new(filename, width, height);
+
+    GLFWwindow* window;
+    if (parent->is_reading_stdin) {
+        if (parent->instance_count == 0) {
+            window = window_new(filename, width, height);
+        } else {
+            window = parent->instances[0]->window;
+        }
+    } else {
+        window = window_new(filename, width, height);
+    }
+
+    glfwShowWindow(window);
+    log_trace("Showed window");
 
     /*  Highest priority once OpenGL is running: allocate the VBO
      *  and pass it to the loader thread.  */
     loader_allocate_vbo(loader);
 
-    glfwShowWindow(window);
-    log_trace("Showed window");
+    if ((parent->is_reading_stdin && parent->instance_count == 0) || parent->instance_count <= 0) {
+      OBJECT_ALLOC(instance);
+      instance->parent = parent;
 
-    OBJECT_ALLOC(instance);
-    instance->parent = parent;
+      /*  Next, build the OpenGL-dependent objects */
+      instance->backdrop = backdrop_new();
+      instance->camera = camera_new(width, height, proj);
+      instance->model = model_new();
+      instance->shaded = shaded_new();
+      instance->wireframe = wireframe_new();
+      instance->draw_mode = DRAW_SHADED;
 
-    /*  Next, build the OpenGL-dependent objects */
-    instance->backdrop = backdrop_new();
-    instance->camera = camera_new(width, height, proj);
-    instance->model = model_new();
-    instance->shaded = shaded_new();
-    instance->wireframe = wireframe_new();
-    instance->draw_mode = DRAW_SHADED;
+      /*  At the very last moment, check on the loader */
+      loader_finish(loader, instance->model, instance->camera);
 
-    /*  At the very last moment, check on the loader */
-    loader_finish(loader, instance->model, instance->camera);
+      /*  This needs to happen after setting up the instance, because
+       *  on Windows, the window size callback is invoked when we add
+       *  the menu, which requires the camera to be populated. */
+      window_bind(window, instance);
 
-    /*  This needs to happen after setting up the instance, because
-     *  on Windows, the window size callback is invoked when we add
-     *  the menu, which requires the camera to be populated. */
-    window_bind(window, instance);
+      /*  Sets the error string, or NULL if there was no error. */
+      instance->error = loader_error_string(loader);
 
-    /*  Sets the error string, or NULL if there was no error. */
-    instance->error = loader_error_string(loader);
+      /*  Clean up and return */
+      loader_delete(loader);
+      return instance;
+    }
 
-    /*  Clean up and return */
-    loader_delete(loader);
-    return instance;
+    loader_finish(
+      loader,
+      parent->instances[0]->model,
+      parent->instances[0]->camera
+    );
+    return parent->instances[0];
 }
 
 void instance_delete(instance_t* instance) {

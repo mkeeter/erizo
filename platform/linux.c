@@ -9,7 +9,14 @@ static app_t* app_handle = NULL;
 void platform_init(app_t* app, int argc, char** argv) {
     app_handle = app;
     if (argc == 2) {
-        app_open(app, argv[1]);
+        // Defer loading stl from stdin. It has to happen in the main event loop
+        // to avoid creating new windows.
+        app->is_reading_stdin = !strcmp(argv[1], "-");
+        if (app->is_reading_stdin) {
+            app_defer_open(app, argv[1]);
+        } else {
+            app_open(app, argv[1]);
+        }
     }
     if (app->instance_count == 0) {
         //  Construct a dummy window, which triggers GLFW initialization

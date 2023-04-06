@@ -139,6 +139,56 @@ static void* loader_run(void* loader_) {
      *  rather than something in the filesystem */
     if (!strcmp(loader->filename, ":/sphere")) {
         data = icosphere_stl(1, &size);
+    /* And this magic filename tells us to read from stdin. */
+    } else if(!strcmp(loader->filename, "-")) {
+      log_trace("Reading from stdin");
+      /* Because stls don't contain filesize data within their headers, the pipe
+       * producer must first send the total size of the file first as a textual
+       * number ending with a space. This decision to use a textual number is so
+       * it's easy to also use other programs in a shell together, such as
+       * `echo -n "$(filesize file.stl) $(cat file.stl)" | erizo -` */
+      const size_t MAX_BYTES_TEXTUAL_NUMBER = 16;
+      const size_t MAX_BYTES_BUFFER = 1024;
+      char filesizeText[MAX_BYTES_TEXTUAL_NUMBER];
+      char c[1];
+      size_t bytes_read = 0;
+      int n;
+      do {
+        if((n = fread(c, 1, 1, stdin)) < 0) {
+          log_error("Error reading from stdin: %i", n);
+          loader_next(loader, LOADER_ERROR_STDIN);
+          return NULL;
+        } else {
+          filesizeText[bytes_read] = c[0];
+          bytes_read += 1;
+          if (bytes_read > MAX_BYTES_TEXTUAL_NUMBER) {
+            log_error("Invalid filesize specified from stdin.");
+            loader_next(loader, LOADER_ERROR_STDIN);
+            return NULL;
+          }
+        }
+      } while (*c != ' ');
+      filesizeText[bytes_read-1] = '\0';
+      int filesize = atoi(filesizeText);
+      log_trace("Reading in %i bytes", filesize);
+      data = (char *) malloc(filesize);
+      bytes_read = 0;
+      do {
+        int remains = filesize - bytes_read;
+        int n = fread(
+          (void *)&data[bytes_read],
+          1,
+          remains > MAX_BYTES_BUFFER ? MAX_BYTES_BUFFER : remains,
+          stdin
+        ); 
+        if (n <= 0) {
+          log_error("Incoming file on stdin was too small.");
+          loader_next(loader, LOADER_ERROR_STDIN);
+          return NULL;
+        }
+        bytes_read += n;
+      } while(bytes_read < filesize);
+      size = filesize;
     } else {
         mapped = platform_mmap(loader->filename);
         if (mapped) {
@@ -391,6 +441,8 @@ const char* loader_error_string(loader_t* loader) {
             return "Failed to parse ASCII stl";
         case LOADER_ERROR_WRONG_SIZE:
             return "File size does not match triangle count";
+        case LOADER_ERROR_STDIN:
+            return "There was a problem reading from stdin";
     }
     log_error_and_abort("Invalid state %i", loader->state);
     return NULL;

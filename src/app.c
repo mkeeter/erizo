@@ -6,6 +6,14 @@
 #include "platform.h"
 
 instance_t* app_open(app_t* app, const char* filename) {
+    if (app->is_reading_stdin) {
+      int c = getchar();
+      ungetc(c, stdin);
+      if (c == 0 || c == -1) {
+        return NULL;
+      }
+    }
+
     instance_t* instance = instance_new(app, filename, app->draw_proj);
 
     /*  If loading failed, then do a special one-time drawing of
@@ -18,18 +26,21 @@ instance_t* app_open(app_t* app, const char* filename) {
         glfwSetWindowShouldClose(instance->window, 1);
     }
 
-    /*  Add this instance at the back of the array */
-    if (app->instance_count == app->instances_size) {
-        if (app->instances_size) {
-            app->instances_size *= 2;
-        } else {
-            app->instances_size = 1;
-        }
-        app->instances = (instance_t**)realloc(
-                app->instances, sizeof(instance_t*) * app->instances_size);
+    if ((app->is_reading_stdin && app->instance_count == 0) || app->instance_count <= 0) {
+      /*  Add this instance at the back of the array */
+      if (app->instance_count == app->instances_size) {
+          if (app->instances_size) {
+              app->instances_size *= 2;
+          } else {
+              app->instances_size = 1;
+          }
+          app->instances = (instance_t**)realloc(
+                  app->instances, sizeof(instance_t*) * app->instances_size);
+      }
+      instance->draw_mode = app->draw_mode;
+      app->instances[app->instance_count++] = instance;
     }
-    instance->draw_mode = app->draw_mode;
-    app->instances[app->instance_count++] = instance;
+
     instance_cb_focus(instance, true);
     return instance;
 }
@@ -96,11 +107,15 @@ bool app_run(app_t* app) {
     if (app->deferred_files) {
         for (unsigned i=0; i < app->deferred_count; ++i) {
             app_open(app, app->deferred_files[i]);
-            free(app->deferred_files[i]);
+            if (!app->is_reading_stdin)
+                free(app->deferred_files[i]);
         }
-        free(app->deferred_files);
-        app->deferred_files = NULL;
-        app->deferred_count = 0;
+        /* Never free stdin because it must be checked constantly. */
+        if (!app->is_reading_stdin) {
+            free(app->deferred_files);
+            app->deferred_files = NULL;
+            app->deferred_count = 0;
+        }
     }
 
     bool needs_redraw = false;
